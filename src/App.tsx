@@ -9,6 +9,7 @@ import { Toaster } from "react-hot-toast";
 
 import { Layout } from "./components/Layout";
 import { Login } from "./components/Login";
+import { Signup } from "./components/Signup";
 import { Dashboard } from "./components/Dashboard";
 import { VisitorApproval } from "./components/VisitorApproval";
 import { PublicDisplay } from "./components/PublicDisplay";
@@ -53,6 +54,7 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/display" element={<PublicDisplay />} />
         <Route path="/request-visit" element={<RequestVisit />} />
 

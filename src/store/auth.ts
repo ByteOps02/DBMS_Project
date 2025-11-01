@@ -20,6 +20,7 @@ interface AuthState {
   error: string | null;
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, name: string, departmentId: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -112,6 +113,50 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: false,
         user: null,
       });
+    }
+  },
+
+  // ✅ Signup function
+  signup: async (email: string, password: string, name: string, departmentId: string) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (signUpError) throw signUpError;
+
+      if (!authData.user) {
+        throw new Error("Failed to create user account");
+      }
+
+      console.log("User account created:", authData.user.id);
+
+      const { error: hostError } = await supabase.from("hosts").insert({
+        auth_id: authData.user.id,
+        name,
+        email,
+        department_id: departmentId,
+        role: "host",
+        active: true,
+      });
+
+      if (hostError) {
+        console.error("Failed to create host record:", hostError);
+        throw new Error("Failed to complete registration. Please contact support.");
+      }
+
+      console.log("Signup successful!");
+      set({ isLoading: false, error: null });
+    } catch (error: any) {
+      console.error("Signup failed:", error.message);
+      set({
+        error: error.message || "Failed to create account",
+        isLoading: false,
+      });
+      throw error;
     }
   },
 

@@ -47,6 +47,12 @@ const Home = () => {
                         Request Visit
                     </button>
                     <button
+                        onClick={() => navigate("/signup")}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-5 rounded-lg text-sm transition-all duration-300"
+                    >
+                        Sign Up
+                    </button>
+                    <button
                         onClick={() => navigate("/login")}
                         className="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-5 rounded-lg text-sm transition-all duration-300"
                     >
