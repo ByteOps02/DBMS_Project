@@ -32,7 +32,8 @@ console.log("🔍 Supabase Anon Key:", supabaseAnonKey ? "✅ Loaded (truncated 
     // Test both auth and data access
     const [sessionCheck, dataCheck] = await Promise.all([
       supabase.auth.getSession(),
-      supabase.from('visits').select('*', { count: 'exact', head: true })
+      supabase.from('visits').select('*', { count: 'exact', head: true }),
+      supabase.from('departments').select('*', { count: 'exact', head: true })
     ]);
 
     if (sessionCheck.error) {

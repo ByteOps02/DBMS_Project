@@ -101,7 +101,7 @@ export function RequestVisit() {
                 .from("hosts")
                 .select("id")
                 .eq("email", formData.entityEmail)
-                .eq("role", "entity") // Make sure we're getting an entity role
+                .eq("role", "host") // Make sure we're getting a host role
                 .maybeSingle();
       
               if (entityError && entityError.code !== "PGRST116") {
@@ -184,7 +184,7 @@ export function RequestVisit() {
       const { error: visitError } = await supabase.from("visits").insert({
         id: visitId,
         visitor_id: visitorId,
-        entity_id : entityId,
+        host_id: entityId,
         purpose: formData.purpose,
         status: "pending",
         check_in_time: formData.checkInTime
