@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { VisitDetailsModal } from "./VisitDetailsModal";
 import { Visit } from "./VisitDetailsModal";
+import { useNavigate } from "react-router-dom";
 
 type StatItem = {
   name: string;
@@ -32,6 +33,7 @@ const VISIT_STATUS = {
 import { StatItem } from "./StatItem";
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const [stats, setStats] = useState<StatItem[]>([]);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -139,6 +141,7 @@ export function Dashboard() {
               icon: Users,
               color: "text-blue-500",
               bgColor: "bg-blue-50",
+              status: "total_users",
             },
             {
               name: "Approved Visits",
@@ -525,6 +528,10 @@ export function Dashboard() {
   }, [user]);
 
   const handleStatCardClick = useCallback(async (status: string) => {
+    if (status === "total_users") {
+      navigate("/dashboard/users");
+      return;
+    }
     const getDateRange = () => {
       const now = new Date();
       const todayStart = new Date(now.setHours(0, 0, 0, 0)).toISOString();

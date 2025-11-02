@@ -21,7 +21,13 @@ export function UserManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState<Host[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
+
+  const [isUserManagementModalOpen, setIsUserManagementModalOpen] = useState(false);
+
+  const handleToggleModal = () => {
+    setIsUserManagementModalOpen(!isUserManagementModalOpen);
+  };
 
   const {
     register,
@@ -91,7 +97,7 @@ export function UserManagement() {
 
       toast.success('User created successfully!');
       fetchUsers(); // Refetch users
-      setIsModalOpen(false);
+      handleToggleModal();
       reset();
     } catch (error: unknown) {
       toast.error((error as Error).message);
@@ -111,7 +117,7 @@ export function UserManagement() {
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
           <button
             type="button"
-            onClick={() => setIsModalOpen(true)}
+            onClick={handleToggleModal}
             className="inline-flex items-center justify-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -203,7 +209,7 @@ export function UserManagement() {
         </div>
       </div>
 
-      {isModalOpen && (
+      {isUserManagementModalOpen && (
         <div className="fixed z-10 inset-0 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 transition-opacity" aria-hidden="true">
@@ -267,7 +273,7 @@ export function UserManagement() {
                         <button type="submit" disabled={isSubmitting} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-gray-400">
                           Create User
                         </button>
-                        <button type="button" onClick={() => setIsModalOpen(false)} className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        <button type="button" onClick={handleToggleModal} className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                           Cancel
                         </button>
                       </div>
