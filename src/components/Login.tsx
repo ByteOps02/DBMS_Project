@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Shield } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
-import { ThemeSwitcher } from './ThemeSwitcher';
+import { BackButton } from './BackButton';
 
 export function Login() {
   const navigate = useNavigate();
@@ -26,9 +26,7 @@ export function Login() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="absolute top-4 right-4">
-        <ThemeSwitcher />
-      </div>
+      <BackButton />
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <Shield className="h-12 w-12 text-primary-600" />

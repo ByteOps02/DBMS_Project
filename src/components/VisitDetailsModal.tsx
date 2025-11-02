@@ -189,16 +189,16 @@ export function VisitDetailsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-xl font-semibold">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+          <h2 className="text-xl font-semibold dark:text-white">
             {getStatusLabel(status)} Visits - Today
             {userRole &&
               ` (${userRole.charAt(0).toUpperCase() + userRole.slice(1)})`}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-100"
+            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
@@ -207,49 +207,49 @@ export function VisitDetailsModal({
 
         <div className="flex-1 overflow-auto p-4">
           {visits.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               No {status} visits found for today.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Visitor
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Host
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Purpose
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Requested At
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Approved At
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {visits.map((visit) => (
-                    <tr key={visit.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr key={visit.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {visit.visitor_name ||
                           (visit.visitors?.name ?? "Unknown Visitor")}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                         {visit.host_name ||
                           (visit.hosts?.name ?? "Unknown Host")}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-xs truncate">
                         {visit.purpose}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -261,10 +261,10 @@ export function VisitDetailsModal({
                           {getStatusLabel(visit.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                         {formatDateTime(visit.created_at)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                         {visit.approved_at
                           ? formatDateTime(visit.approved_at)
                           : "N/A"}
@@ -355,9 +355,9 @@ export function VisitDetailsModal({
           )}
         </div>
 
-        <div className="border-t p-4 flex justify-between items-center">
+        <div className="border-t dark:border-gray-700 p-4 flex justify-between items-center">
           <div>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Showing {offset + 1} to {Math.min(offset + limit, totalVisits)} of {totalVisits} results
             </p>
           </div>
@@ -365,21 +365,21 @@ export function VisitDetailsModal({
             <button
               onClick={() => setOffset(offset - limit)}
               disabled={offset === 0}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md disabled:opacity-50"
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
             >
               Previous
             </button>
             <button
               onClick={() => setOffset(offset + limit)}
               disabled={offset + limit >= totalVisits}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md disabled:opacity-50"
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
             >
               Next
             </button>
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md"
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
           >
             Close
           </button>

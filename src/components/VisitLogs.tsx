@@ -94,11 +94,11 @@ export function VisitLogs() {
   );
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
+    <div className="px-4 sm:px-6 lg:px-8 dark:bg-gray-900">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-xl font-semibold text-gray-900">Visit Logs</h1>
-          <p className="mt-2 text-sm text-gray-700">
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Visit Logs</h1>
+          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
             A complete list of all campus visits including check-in and check-out times.
           </p>
         </div>
@@ -126,7 +126,7 @@ export function VisitLogs() {
                 </div>
                 <input
                   id="search"
-                  className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 leading-5 placeholder-gray-500 focus:border-primary-500 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-500 sm:text-sm"
+                  className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 leading-5 placeholder-gray-500 focus:border-primary-500 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   placeholder="Search visits"
                   type="search"
                   value={searchTerm}
@@ -143,7 +143,7 @@ export function VisitLogs() {
                 type="date"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 leading-5 placeholder-gray-500 focus:border-primary-500 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-500 sm:text-sm"
+                className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 leading-5 placeholder-gray-500 focus:border-primary-500 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 title="Select a date to filter visits"
               />
             </div>
@@ -154,46 +154,46 @@ export function VisitLogs() {
           <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
             <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
               <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
                       <th
                         scope="col"
-                        className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
+                        className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-6"
                       >
                         Visitor
                       </th>
-                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Purpose</th>
-                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Host</th>
-                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Check In</th>
-                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Check Out</th>
-                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
+                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">Purpose</th>
+                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">Host</th>
+                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">Check In</th>
+                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">Check Out</th>
+                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
+                  <tbody className="divide-y divide-gray-200 bg-white dark:bg-gray-900 dark:divide-gray-700">
                     {filteredLogs.map((log) => {
                       const dynamicStatus = getDynamicStatus(log);
                       return (
                         <tr key={log.id}>
-                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-6">
                             {log.visitor_name}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{log.purpose}</td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{log.host_name}</td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">{log.purpose}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">{log.host_name}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
                             {log.check_in ? new Date(log.check_in).toLocaleString() : '-'}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
                             {log.check_out ? new Date(log.check_out).toLocaleString() : '-'}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
                             <span
-                              className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
+                              className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${ 
                                 dynamicStatus === 'completed'
-                                  ? 'bg-green-100 text-green-800'
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                   : dynamicStatus === 'ongoing'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-yellow-100 text-yellow-800'
+                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                               }`}
                             >
                               {dynamicStatus}
@@ -210,5 +210,4 @@ export function VisitLogs() {
         </div>
       </div>
     </div>
-  );
-}
+  );}

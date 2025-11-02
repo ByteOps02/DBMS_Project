@@ -396,16 +396,16 @@ export function VisitStatsDashboard() {
   };
 
   return (
-    <div>
+    <div className="dark:bg-gray-900">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Welcome back, {user?.name || "Guest"}
         </h1>
-        <p className="mt-2 text-md text-gray-600">
+        <p className="mt-2 text-md text-gray-600 dark:text-gray-300">
           Here's what's happening in your campus today
         </p>
         {connectionError && (
-          <div className="mt-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded-lg flex items-center">
+          <div className="mt-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded-lg flex items-center dark:bg-red-900 dark:text-red-200 dark:border-red-800">
             <AlertCircle className="h-5 w-5 mr-2" />
             <span>Connection issue detected: {connectionError}</span>
           </div>
@@ -416,24 +416,24 @@ export function VisitStatsDashboard() {
         {stats.map((stat) => (
           <div
             key={stat.name}
-            className={`bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300 ${stat.status ? 'cursor-pointer' : ''}`}
+            className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow duration-300 ${stat.status ? 'cursor-pointer' : ''}`}
             onClick={() => stat.status ? handleStatCardClick(stat.status) : null}
             aria-label={stat.status ? `View ${stat.name.toLowerCase()}` : undefined}
             tabIndex={stat.status ? 0 : undefined}
           >
             <div className="p-6">
               <div className="flex items-center">
-                <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                <div className={`p-3 rounded-lg ${stat.bgColor} dark:bg-gray-700`}>
                   <stat.icon className={`h-6 w-6 ${stat.color}`} aria-hidden="true" />
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-sm font-medium text-gray-600">{stat.name}</h3>
-                  <p className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{stat.value}</p>
+                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">{stat.name}</h3>
+                  <p className="mt-1 text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">{stat.value}</p>
                 </div>
               </div>
             </div>
-            <div className={`px-6 py-2 bg-gray-50 rounded-b-xl border-t border-gray-100`}>
-              <div className="flex items-center text-xs text-gray-500">
+            <div className={`px-6 py-2 bg-gray-50 dark:bg-gray-700 rounded-b-xl border-t border-gray-100 dark:border-gray-600`}>
+              <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
                 <TrendingUp className="h-3 w-3 mr-1" />
                 <span>Today</span>
               </div>

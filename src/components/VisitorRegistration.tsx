@@ -253,14 +253,14 @@ export function VisitorRegistration() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto dark:bg-gray-900">
       <div className="md:grid md:grid-cols-3 md:gap-6">
         <div className="md:col-span-1">
           <div className="px-4 sm:px-0">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">
+            <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
               Register New Visitor
             </h3>
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
               Please fill in the visitor's details and take their photo for
               security purposes.
             </p>
@@ -270,24 +270,24 @@ export function VisitorRegistration() {
         <div className="mt-5 md:mt-0 md:col-span-2">
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="shadow sm:rounded-md sm:overflow-hidden">
-              <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
+              <div className="px-4 py-5 bg-white dark:bg-gray-800 space-y-6 sm:p-6">
                 {/* Visitor Information Section */}
                 <div>
-                  <h4 className="text-md font-medium text-gray-700 mb-4">
+                  <h4 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-4">
                     Visitor Information
                   </h4>
                   <div className="grid grid-cols-6 gap-6">
                     <div className="col-span-6 sm:col-span-3">
                       <label
                         htmlFor="name"
-                        className="block text-sm font-medium text-gray-700"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >
                         Full name
                       </label>
                       <input
                         type="text"
                         {...register("name", { required: "Name is required" })}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
                       {errors.name && (
                         <p className="mt-1 text-sm text-red-600">
@@ -299,7 +299,7 @@ export function VisitorRegistration() {
                     <div className="col-span-6 sm:col-span-3">
                       <label
                         htmlFor="email"
-                        className="block text-sm font-medium text-gray-700"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >
                         Email address
                       </label>
@@ -308,7 +308,7 @@ export function VisitorRegistration() {
                         {...register("email", {
                           required: "Email is required",
                         })}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
                       {errors.email && (
                         <p className="mt-1 text-sm text-red-600">
@@ -320,7 +320,7 @@ export function VisitorRegistration() {
                     <div className="col-span-6 sm:col-span-3">
                       <label
                         htmlFor="phone"
-                        className="block text-sm font-medium text-gray-700"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >
                         Phone number
                       </label>
@@ -329,7 +329,7 @@ export function VisitorRegistration() {
                         {...register("phone", {
                           required: "Phone number is required",
                         })}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
                       {errors.phone && (
                         <p className="mt-1 text-sm text-red-600">
@@ -341,29 +341,29 @@ export function VisitorRegistration() {
                     <div className="col-span-6 sm:col-span-3">
                       <label
                         htmlFor="company"
-                        className="block text-sm font-medium text-gray-700"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >
                         Company
                       </label>
                       <input
                         type="text"
                         {...register("company")}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
                     </div>
                   </div>
 
                   <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Visitor Photo
                     </label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md dark:border-gray-600">
                       <div className="space-y-1 text-center">
                         <Camera className="mx-auto h-12 w-12 text-gray-400" />
-                        <div className="flex text-sm text-gray-600">
+                        <div className="flex text-sm text-gray-600 dark:text-gray-400">
                           <label
                             htmlFor="photo"
-                            className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
+                            className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
                           >
                             <span>Upload a photo</span>
                             <input
@@ -375,7 +375,7 @@ export function VisitorRegistration() {
                             />
                           </label>
                         </div>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           PNG, JPG up to 10MB
                         </p>
                       </div>
@@ -385,14 +385,14 @@ export function VisitorRegistration() {
 
                 {/* Visit Information Section */}
                 <div>
-                  <h4 className="text-md font-medium text-gray-700 mb-4">
+                  <h4 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-4">
                     Visit Information
                   </h4>
                   <div className="grid grid-cols-6 gap-6">
                     <div className="col-span-6">
                       <label
                         htmlFor="purpose"
-                        className="block text-sm font-medium text-gray-700"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >
                         Purpose of visit
                       </label>
@@ -401,7 +401,7 @@ export function VisitorRegistration() {
                         {...register("purpose", {
                           required: "Purpose is required",
                         })}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
                       {errors.purpose && (
                         <p className="mt-1 text-sm text-red-600">
@@ -413,7 +413,7 @@ export function VisitorRegistration() {
                     <div className="col-span-6">
                       <label
                         htmlFor="hostEmail"
-                        className="block text-sm font-medium text-gray-700"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >
                         Host email
                       </label>
@@ -422,7 +422,7 @@ export function VisitorRegistration() {
                         {...register("hostEmail", {
                           required: "Host email is required",
                         })}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
                       {errors.hostEmail && (
                         <p className="mt-1 text-sm text-red-600">
@@ -434,16 +434,16 @@ export function VisitorRegistration() {
                     <div className="col-span-6">
                       <label
                         htmlFor="entityEmail"
-                        className="block text-sm font-medium text-gray-700"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >
                         Entity email
                       </label>
                       <input
                         type="email"
                         {...register("entityEmail")}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                         Enter the email of the entity associated with this visit
                         (optional)
                       </p>
@@ -452,35 +452,35 @@ export function VisitorRegistration() {
                     <div className="col-span-6 sm:col-span-3">
                       <label
                         htmlFor="checkInTime"
-                        className="block text-sm font-medium text-gray-700"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >
                         Check-in time
                       </label>
                       <input
                         type="datetime-local"
                         {...register("checkInTime")}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
                     </div>
 
                     <div className="col-span-6 sm:col-span-3">
                       <label
                         htmlFor="checkOutTime"
-                        className="block text-sm font-medium text-gray-700"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >
                         Check-out time
                       </label>
                       <input
                         type="datetime-local"
                         {...register("checkOutTime")}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
                     </div>
 
                     <div className="col-span-6 sm:col-span-3">
                       <label
                         htmlFor="validUntil"
-                        className="block text-sm font-medium text-gray-700"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >
                         Valid until
                       </label>
@@ -489,7 +489,7 @@ export function VisitorRegistration() {
                         {...register("validUntil", {
                           required: "Valid until date is required",
                         })}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
                       {errors.validUntil && (
                         <p className="mt-1 text-sm text-red-600">
@@ -501,14 +501,14 @@ export function VisitorRegistration() {
                     <div className="col-span-6">
                       <label
                         htmlFor="notes"
-                        className="block text-sm font-medium text-gray-700"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >
                         Notes (optional)
                       </label>
                       <textarea
                         {...register("notes")}
                         rows={3}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
                     </div>
                   </div>
@@ -518,7 +518,7 @@ export function VisitorRegistration() {
                 <div className="text-center">
                   {qrImageUrl && (
                     <div className="mt-6">
-                      <h5 className="text-md font-medium text-gray-700">
+                      <h5 className="text-md font-medium text-gray-700 dark:text-gray-300">
                         Visitor's QR Code
                       </h5>
                       <img
@@ -531,7 +531,7 @@ export function VisitorRegistration() {
                 </div>
               </div>
 
-              <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
+              <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-right sm:px-6">
                 <button
                   type="submit"
                   disabled={isSubmitting || !userId}

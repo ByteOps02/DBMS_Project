@@ -51,18 +51,23 @@ export function RegisterVisitor() {
     setQrImageUrl(null);
 
     try {
-      // 1. Find the host
-      const { data: hostData, error: hostError } = await supabase
-        .from('hosts')
-        .select('id, name')
-        .eq('email', formData.hostEmail)
-        .single();
+      let hostId = null;
+      let hostName = null;
 
-      if (hostError || !hostData) {
-        throw new Error(`Host not found with email: ${formData.hostEmail}`);
+      // 1. Find the host if email is provided
+      if (formData.hostEmail) {
+        const { data: hostData, error: hostError } = await supabase
+          .from('hosts')
+          .select('id, name')
+          .eq('email', formData.hostEmail)
+          .single();
+
+        if (hostError || !hostData) {
+          throw new Error(`Host not found with email: ${formData.hostEmail}`);
+        }
+        hostId = hostData.id;
+        hostName = hostData.name;
       }
-      const hostId = hostData.id;
-      const hostName = hostData.name;
 
       // 2. Find or create the visitor
       let visitorId: string;
@@ -336,17 +341,19 @@ export function RegisterVisitor() {
 
                   <div className="col-span-6">
                     <label htmlFor="hostEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Host email
+                      Host email (optional)
                     </label>
                     <input
                       type="email"
                       name="hostEmail"
                       id="hostEmail"
-                      required
                       value={formData.hostEmail}
                       onChange={handleChange}
                       className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Enter the email of the host associated with this visit
+                    </p>
                   </div>
 
                   <div className="col-span-6 sm:col-span-3">

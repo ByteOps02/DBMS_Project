@@ -1,0 +1,16 @@
+
+{
+  "name": "Vite + React + TS",
+  "short_name": "ViteReactTS",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "description": "A Vite, React and TypeScript boilerplate.",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
