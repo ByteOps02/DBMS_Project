@@ -27,6 +27,10 @@ type VisitDetailsModalProps = {
   userId?: string;
   visits: Visit[];
   onStatusChange: () => void;
+  limit: number;
+  offset: number;
+  setOffset: (offset: number) => void;
+  totalVisits: number;
 };
 
 export function VisitDetailsModal({
@@ -37,6 +41,10 @@ export function VisitDetailsModal({
   userId,
   visits,
   onStatusChange,
+  limit,
+  offset,
+  setOffset,
+  totalVisits,
 }: VisitDetailsModalProps) {
   const [loading, setLoading] = useState(false);
   const [currentVisit, setCurrentVisit] = useState<Visit | null>(null);
@@ -89,7 +97,6 @@ export function VisitDetailsModal({
           });
 
           const qrUrl = await QRCode.toDataURL(qrData);
-          setQrImageUrl(qrUrl);
 
           // Step 4: Send Email using EmailJS
           try {
@@ -348,7 +355,28 @@ export function VisitDetailsModal({
           )}
         </div>
 
-        <div className="border-t p-4 flex justify-end">
+        <div className="border-t p-4 flex justify-between items-center">
+          <div>
+            <p className="text-sm text-gray-600">
+              Showing {offset + 1} to {Math.min(offset + limit, totalVisits)} of {totalVisits} results
+            </p>
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setOffset(offset - limit)}
+              disabled={offset === 0}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setOffset(offset + limit)}
+              disabled={offset + limit >= totalVisits}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
           <button
             onClick={onClose}
             className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md"

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../store/auth";
 import {
@@ -29,6 +29,8 @@ const VISIT_STATUS = {
   DENIED: "denied",
 };
 
+import { StatItem } from "./StatItem";
+
 export function Dashboard() {
   const { user } = useAuthStore();
   const [stats, setStats] = useState<StatItem[]>([]);
@@ -37,77 +39,11 @@ export function Dashboard() {
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [connectionTested, setConnectionTested] = useState(false);
   const [selectedVisits, setSelectedVisits] = useState<Visit[]>([]);
+  const [limit, setLimit] = useState(10);
+  const [offset, setOffset] = useState(0);
+  const [totalVisits, setTotalVisits] = useState(0);
 
-  useEffect(() => {
-    if (!user?.role) return;
-
-    console.log("Current user role:", user.role);
-
-    fetchStats(user.role);
-
-    const testConnection = async () => {
-      try {
-        console.log("Testing Supabase connection...");
-        const { data, error } = await supabase
-          .from("visits")
-          .select("id")
-          .limit(1);
-
-        if (error) {
-          console.error("Supabase connection test failed:", error);
-          setConnectionError(`Connection error: ${error.message}`);
-        } else {
-          console.log("Supabase connection successful, sample data:", data);
-          setConnectionError(null);
-        }
-      } catch (err: unknown) {
-        console.error("Supabase connection test exception:", err);
-        setConnectionError(`Connection exception: ${(err as Error).message}`);
-      } finally {
-        setConnectionTested(true);
-      }
-    };
-
-    if (!connectionTested) {
-      testConnection();
-    }
-
-    const subscription = supabase
-      .channel("visits")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "visits",
-        },
-        (payload) => {
-          console.log("Realtime change detected:", payload);
-          fetchStats(user.role);
-        }
-      )
-      .subscribe((status) => {
-        console.log("Realtime subscription status:", status);
-      });
-
-    return () => {
-      console.log("Cleaning up subscription");
-      supabase.removeChannel(subscription);
-    };
-  }, [user?.role, connectionTested]);
-
-  const getDateRange = () => {
-    const now = new Date();
-    const todayStart = new Date(now.setHours(0, 0, 0, 0)).toISOString();
-    const todayEnd = new Date(now.setHours(23, 59, 59, 999)).toISOString();
-    return { todayStart, todayEnd };
-  };
-
-  const handleStatusChange = () => {
-    fetchStats(user?.role || "");
-  };
-
-  const fetchStats = async (role: string) => {
+  const fetchStats = useCallback(async (role: string) => {
     console.log(`Fetching stats for role: ${role}`);
     try {
       const localToday = new Date();
@@ -586,12 +522,28 @@ export function Dashboard() {
         console.error("Even fallback query failed:", fallbackErr);
       }
     }
-  };
+  }, [user]);
 
-  const handleStatCardClick = async (status: string) => {
+  const handleStatCardClick = useCallback(async (status: string) => {
+    const getDateRange = () => {
+      const now = new Date();
+      const todayStart = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+      const todayEnd = new Date(now.setHours(23, 59, 59, 999)).toISOString();
+      return { todayStart, todayEnd };
+    };
+
     setSelectedStatus(status);
+    setOffset(0);
     try {
       const { todayStart, todayEnd } = getDateRange();
+      const { count, error: countError } = await supabase
+        .from("visits")
+        .select("*", { count: "exact", head: true })
+        .eq("status", status);
+
+      if (countError) throw countError;
+      setTotalVisits(count || 0);
+
       let query = supabase
         .from("visits")
         .select(
@@ -601,7 +553,8 @@ export function Dashboard() {
           hosts:host_id (name)
         `
         )
-        .eq("status", status);
+        .eq("status", status)
+        .range(offset, offset + limit - 1);
 
       if (status === "pending") {
         query = query.gte("created_at", todayStart).lte("created_at", todayEnd);
@@ -626,15 +579,77 @@ export function Dashboard() {
     } catch (error) {
       console.error("Error fetching visits:", error);
     }
+  }, [limit, offset]);
+
+  useEffect(() => {
+    if (!user?.role) return;
+
+    console.log("Current user role:", user.role);
+
+    fetchStats(user.role);
+
+    const testConnection = async () => {
+      try {
+        console.log("Testing Supabase connection...");
+        const { data, error } = await supabase
+          .from("visits")
+          .select("id")
+          .limit(1);
+
+        if (error) {
+          console.error("Supabase connection test failed:", error);
+          setConnectionError(`Connection error: ${error.message}`);
+        } else {
+          console.log("Supabase connection successful, sample data:", data);
+          setConnectionError(null);
+        }
+      } catch (err: unknown) {
+        console.error("Supabase connection test exception:", err);
+        setConnectionError(`Connection exception: ${(err as Error).message}`);
+      } finally {
+        setConnectionTested(true);
+      }
+    };
+
+    if (!connectionTested) {
+      testConnection();
+    }
+
+    const subscription = supabase
+      .channel("visits")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "visits",
+        },
+        (payload) => {
+          console.log("Realtime change detected:", payload);
+          fetchStats(user.role);
+        }
+      )
+      .subscribe((status) => {
+        console.log("Realtime subscription status:", status);
+      });
+
+    return () => {
+      console.log("Cleaning up subscription");
+      supabase.removeChannel(subscription);
+    };
+  }, [user?.role, connectionTested, fetchStats]);
+
+  const handleStatusChange = () => {
+    fetchStats(user?.role || "");
   };
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Welcome back, {user?.name || "Guest"}
         </h1>
-        <p className="mt-2 text-md text-gray-600">
+        <p className="mt-2 text-md text-gray-600 dark:text-gray-300">
           Here's what's happening in your campus today
         </p>
         {connectionError && (
@@ -647,44 +662,7 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <div
-            key={stat.name}
-            className={`bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300 ${
-              stat.status ? "cursor-pointer" : ""
-            }`}
-            onClick={() => stat.status && handleStatCardClick(stat.status)}
-            aria-label={
-              stat.status ? `View ${stat.name.toLowerCase()}` : undefined
-            }
-            tabIndex={stat.status ? 0 : undefined}
-          >
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon
-                    className={`h-6 w-6 ${stat.color}`}
-                    aria-hidden="true"
-                  />
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-sm font-medium text-gray-600">
-                    {stat.name}
-                  </h3>
-                  <p className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
-                    {stat.value}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div
-              className={`px-6 py-2 bg-gray-50 rounded-b-xl border-t border-gray-100`}
-            >
-              <div className="flex items-center text-xs text-gray-500">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                <span>Today</span>
-              </div>
-            </div>
-          </div>
+          <StatItem key={stat.name} {...stat} onClick={handleStatCardClick} />
         ))}
       </div>
 
@@ -696,6 +674,10 @@ export function Dashboard() {
         userId={user?.id}
         visits={selectedVisits}
         onStatusChange={handleStatusChange}
+        limit={limit}
+        offset={offset}
+        setOffset={setOffset}
+        totalVisits={totalVisits}
       />
     </div>
   );

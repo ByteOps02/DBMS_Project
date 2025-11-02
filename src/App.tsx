@@ -17,10 +17,13 @@ import { RegisterVisitor } from "./components/RegisterVisitor";
 import { UserManagement } from "./components/UserManagement";
 import { VisitLogs } from "./components/VisitLogs";
 import { VisitorRegistration } from "./components/VisitorRegistration";
+import { PreRegisterVisitor } from "./components/PreRegisterVisitor";
 import { useAuthStore } from "./store/auth";
 import Home from "./components/Home";
 import { RequestVisit } from "./components/RequestVisit";
 
+
+import { BulkVisitorUpload } from "./components/BulkVisitorUpload";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -73,6 +76,8 @@ function App() {
           <Route path="users" element={<UserManagement />} />
           <Route path="logs" element={<VisitLogs />} />
           <Route path="register-visitor" element={<VisitorRegistration />} />
+          <Route path="pre-register-visitor" element={<PreRegisterVisitor />} />
+          <Route path="bulk-visitor-upload" element={<BulkVisitorUpload />} />
         </Route>
       </Routes>
       <Toaster />
