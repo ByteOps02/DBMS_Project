@@ -8,7 +8,6 @@ import {
   CheckCircle,
   XCircle,
   TrendingUp,
-  X,
 } from "lucide-react";
 import { VisitDetailsModal } from "./VisitDetailsModal";
 import { Visit } from "./VisitDetailsModal";
@@ -61,9 +60,9 @@ export function Dashboard() {
           console.log("Supabase connection successful, sample data:", data);
           setConnectionError(null);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Supabase connection test exception:", err);
-        setConnectionError(`Connection exception: ${err.message}`);
+        setConnectionError(`Connection exception: ${(err as Error).message}`);
       } finally {
         setConnectionTested(true);
       }
@@ -314,7 +313,8 @@ export function Dashboard() {
           break;
         }
 
-        case "resident": {
+        case "resident":
+        case "host": {
           const userId = user?.id;
           if (!userId) {
             console.error("No user ID available for resident");
@@ -569,8 +569,8 @@ export function Dashboard() {
       }
 
       setStats(statsData);
-    } catch (err: any) {
-      console.error("⚠️ Error fetching stats:", err.message);
+    } catch (err: unknown) {
+      console.error("⚠️ Error fetching stats:", (err as Error).message);
       console.error("Error details:", err);
 
       try {

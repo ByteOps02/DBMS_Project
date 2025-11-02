@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { Camera } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { supabase } from "../lib/supabase";
-import type { Database } from "../lib/database.types";
-import QRCode from "qrcode";
 import { v4 as uuidv4 } from "uuid";
 
 type VisitorFormData = {
@@ -31,19 +29,6 @@ export function RequestVisit() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<VisitorFormData>();
-  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-
-  // Get the current user session when component mounts
-  useEffect(() => {
-    async function getUserId() {
-      const { data } = await supabase.auth.getSession();
-      if (data.session?.user) {
-        setUserId(data.session.user.id);
-      }
-    }
-    getUserId();
-  }, []);
 
   const onSubmit = async (formData: VisitorFormData) => {
     try {
@@ -62,7 +47,7 @@ export function RequestVisit() {
         const fileName = `${uuidv4()}.${fileExt}`; // Using UUID for unique filenames
         const filePath = fileName;
 
-        const { error: uploadError, data: uploadData } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from("identification-images")
           .upload(filePath, file, {
             cacheControl: "3600",
@@ -205,22 +190,11 @@ export function RequestVisit() {
       }
 
       // Step 3: Generate QR code with visit info
-      const qrData = JSON.stringify({
-        visitId,
-        name: formData.name,
-        email: formData.email,
-        purpose: formData.purpose,
-        validUntil: formData.validUntil,
-      });
-
-      const qrUrl = await QRCode.toDataURL(qrData);
-      setQrImageUrl(qrUrl);
-
       toast.success("Visit requested successfully!");
       reset();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Registration error:", error);
-      toast.error(`Failed: ${error.message || "Unknown error"}`);
+      toast.error(`Failed: ${(error as Error).message || "Unknown error"}`);
     }
   };
 

@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "../lib/supabase";
-import { X, Check, Ban, Clock, CheckCircle, XCircle } from "lucide-react";
+import { X, Check, Ban, CheckCircle } from "lucide-react";
 import QRCode from "qrcode";
 import emailjs from "@emailjs/browser";
-import { v4 as uuidv4 } from "uuid";
 
 export type Visit = {
   id: string;
@@ -41,7 +40,6 @@ export function VisitDetailsModal({
 }: VisitDetailsModalProps) {
   const [loading, setLoading] = useState(false);
   const [currentVisit, setCurrentVisit] = useState<Visit | null>(null);
-  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
   const [actionType, setActionType] = useState<
     "approve" | "deny" | "comple3te" | null
   >(null);

@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS visits (
   host_id uuid REFERENCES hosts(id),
   purpose text NOT NULL,
   status visit_status DEFAULT 'pending',
+  approved_at timestamptz,
   check_in_time timestamptz,
   check_out_time timestamptz,
   valid_until timestamptz NOT NULL,
@@ -68,12 +69,19 @@ DROP POLICY IF EXISTS "Users can insert themselves as hosts" ON hosts;
 DROP POLICY IF EXISTS "Users can view only their own host record" ON hosts;
 DROP POLICY IF EXISTS "Admins have full access on hosts" ON hosts;
 
+CREATE OR REPLACE FUNCTION is_admin(user_id uuid)
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM hosts WHERE auth_id = user_id AND role = 'admin'
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
 -- ✅ RLS Policies
 
--- Departments readable by all authenticated
+-- Departments readable by all
 CREATE POLICY "Departments readable"
   ON departments FOR SELECT
-  TO authenticated
+  TO public
   USING (true);
 
 -- Hosts security
@@ -90,16 +98,8 @@ CREATE POLICY "Users can view only their own host record"
 CREATE POLICY "Admins have full access on hosts"
   ON hosts FOR ALL
   TO authenticated
-  USING (
-    EXISTS (SELECT 1 FROM hosts h
-            WHERE h.auth_id = auth.uid()
-            AND h.role = 'admin')
-  )
-  WITH CHECK (
-    EXISTS (SELECT 1 FROM hosts h
-            WHERE h.auth_id = auth.uid()
-            AND h.role = 'admin')
-  );
+  USING (is_admin(auth.uid()))
+  WITH CHECK (is_admin(auth.uid()));
 
 -- Visitors
 CREATE POLICY "Visitors insert allowed"
@@ -127,10 +127,17 @@ CREATE POLICY "Visits insert allowed"
   TO authenticated
   WITH CHECK (true);
 
-CREATE POLICY "Visits read allowed"
+DROP POLICY IF EXISTS "Visits read allowed" ON visits;
+
+CREATE POLICY "Hosts can see their own visits"
   ON visits FOR SELECT
   TO authenticated
-  USING (true);
+  USING (auth.uid() = (SELECT auth_id FROM hosts WHERE id = visits.host_id));
+
+CREATE POLICY "Admins and guards can see all visits"
+  ON visits FOR SELECT
+  TO authenticated
+  USING (is_admin(auth.uid()) OR EXISTS (SELECT 1 FROM hosts WHERE auth_id = auth.uid() AND role = 'guard'));
 
 CREATE POLICY "Visits update by guard/admin/host"
   ON visits FOR UPDATE

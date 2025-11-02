@@ -3,7 +3,6 @@ import { useForm } from "react-hook-form";
 import { Camera } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { supabase } from "../lib/supabase";
-import type { Database } from "../lib/database.types";
 import QRCode from "qrcode";
 import emailjs from "@emailjs/browser";
 import { v4 as uuidv4 } from "uuid";
@@ -64,7 +63,7 @@ export function VisitorRegistration() {
         const filePath = fileName; // Remove "visitor-photos/" prefix
 
         // Make sure we're using the correct bucket name and have proper permissions
-        const { error: uploadError, data: uploadData } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from("identification-images") // Make sure this bucket exists
           .upload(filePath, file, {
             cacheControl: "3600",
@@ -247,9 +246,9 @@ export function VisitorRegistration() {
 
       toast.success("Visitor registered successfully!");
       reset();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Registration error:", error);
-      toast.error(`Failed: ${error.message || "Unknown error"}`);
+      toast.error(`Failed: ${(error as Error).message || "Unknown error"}`);
     }
   };
 

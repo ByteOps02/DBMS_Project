@@ -51,9 +51,9 @@ export function VisitStatsDashboard() {
           console.log("Supabase connection successful, sample data:", data);
           setConnectionError(null);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Supabase connection test exception:", err);
-        setConnectionError(`Connection exception: ${err.message}`);
+        setConnectionError(`Connection exception: ${(err as Error).message}`);
       }
     };
     
@@ -367,8 +367,8 @@ export function VisitStatsDashboard() {
           console.warn("Unknown role:", role);
           setStats([]);
       }
-    } catch (err: any) {
-      console.error("⚠️ Error fetching stats:", err.message);
+    } catch (err: unknown) {
+      console.error("⚠️ Error fetching stats:", (err as Error).message);
       // Log more detailed error information
       console.error("Error details:", err);
       

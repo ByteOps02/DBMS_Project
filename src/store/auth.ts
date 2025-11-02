@@ -65,12 +65,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       } else {
         set({ isAuthenticated: false, isLoading: false, user: null });
       }
-    } catch (err: any) {
-      console.error("❌ Authentication Initialization Failed:", err.message);
+    } catch (err: unknown) {
+      console.error("❌ Authentication Initialization Failed:", (err as Error).message);
       set({
         isAuthenticated: false,
         isLoading: false,
-        error: err.message || "Failed to initialize auth",
+        error: (err as Error).message || "Failed to initialize auth",
       });
     }
   },
@@ -105,10 +105,10 @@ export const useAuthStore = create<AuthState>((set) => ({
           error: null,
         });
       }
-    } catch (error: any) {
-      console.error("❌ Login failed:", error.message);
+    } catch (error: unknown) {
+      console.error("❌ Login failed:", (error as Error).message);
       set({
-        error: error.message || "Invalid credentials",
+        error: (error as Error).message || "Invalid credentials",
         isLoading: false,
         isAuthenticated: false,
         user: null,
@@ -150,10 +150,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       console.log("Signup successful!");
       set({ isLoading: false, error: null });
-    } catch (error: any) {
-      console.error("Signup failed:", error.message);
+    } catch (error: unknown) {
+      console.error("Signup failed:", (error as Error).message);
       set({
-        error: error.message || "Failed to create account",
+        error: (error as Error).message || "Failed to create account",
         isLoading: false,
       });
       throw error;
@@ -167,8 +167,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       await supabase.auth.signOut();
       console.log("🚪 User logged out");
       set({ user: null, isAuthenticated: false, isLoading: false, error: null });
-    } catch (error: any) {
-      console.error("❌ Logout failed:", error.message);
+    } catch (error: unknown) {
+      console.error("❌ Logout failed:", (error as Error).message);
       set({ error: "Failed to logout", isLoading: false });
     }
   },

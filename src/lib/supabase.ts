@@ -22,6 +22,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+if (typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN') {
+      console.log('User signed in:', session?.user.email);
+    }
+    if (event === 'SIGNED_OUT') {
+      console.log('User signed out');
+    }
+  });
+}
+
 // ✅ Debugging: Log environment variables (DO NOT expose keys in production)
 console.log("🔍 Supabase URL:", supabaseUrl ? "✅ Loaded" : "❌ Missing");
 console.log("🔍 Supabase Anon Key:", supabaseAnonKey ? "✅ Loaded (truncated for security)" : "❌ Missing");

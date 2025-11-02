@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Camera } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-// import QRCode from 'qrcode';
-import QRCode from 'react-qr-code';
+import QRCode from 'qrcode';
 import emailjs from '@emailjs/browser';
 import { createClient } from '@supabase/supabase-js';
 
@@ -22,7 +21,7 @@ interface VisitorFormData {
 }
 
 export function RegisterVisitor() {
-  const [formData, setFormData] = useState<VisitorFormData>({
+  const [formData, setFormData] = React.useState<VisitorFormData>({
     name: '',
     email: '',
     phone: '',
@@ -30,10 +29,9 @@ export function RegisterVisitor() {
     hostEmail: '',
     validUntil: '',
   });
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
-  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [success, setSuccess] = React.useState(false);
+  const [error, setError] = React.useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, files } = e.target;
@@ -95,16 +93,14 @@ export function RegisterVisitor() {
       }
       
       // 4. Generate QR code with visit info
-      const qrData = JSON.stringify({
+      const qrUrl = await QRCode.toDataURL(JSON.stringify({
         visitId,
         name: formData.name,
         email: formData.email,
         purpose: formData.purpose,
         validUntil: formData.validUntil
-      });
-      // @ts-ignore
-      const qrUrl = await QRCode.toDataURL(qrData);
-      setQrImageUrl(qrUrl);
+      }));
+      // @ts-expect-error - This is a temporary workaround to a bug in the data type definition
       
       // 5. Send email with QR code
       const emailResult = await emailjs.send(
