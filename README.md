@@ -7,6 +7,7 @@ This is a modern, real-time Visitor Management System designed to streamline the
 *   [About the Project](#about-the-project)
 *   [Key Features](#key-features)
 *   [Technologies Used](#technologies-used)
+*   [Project Structure](#project-structure)
 *   [Getting Started](#getting-started)
     *   [Prerequisites](#prerequisites)
     *   [Installation and Setup](#installation-and-setup)
@@ -15,6 +16,7 @@ This is a modern, real-time Visitor Management System designed to streamline the
     *   [User Roles](#user-roles)
     *   [Logging in as an Admin or Guard](#logging-in-as-an-admin-or-guard)
     *   [Registering a New Visitor](#registering-a-new-visitor)
+*   [Documentation](#documentation)
 *   [Troubleshooting](#troubleshooting)
 
 ## About the Project
@@ -38,6 +40,25 @@ The goal of this project is to replace traditional, paper-based visitor manageme
 *   **Supabase:** An open-source Firebase alternative for building secure and scalable applications.
 *   **Tailwind CSS:** A utility-first CSS framework for rapidly building custom user interfaces.
 *   **Vite:** A fast build tool and development server for modern web projects.
+
+## Project Structure
+
+The project follows a clean and organized structure:
+
+```
+DBMS_Project/
+├── docs/              # All documentation files
+├── public/            # Static assets
+│   └── assets/        # Organized images and media
+├── src/               # Source code
+│   ├── components/    # React components
+│   ├── lib/          # Utilities and configurations
+│   └── store/        # State management
+├── Supabase/         # Database schema
+└── ...               # Configuration files
+```
+
+For a detailed breakdown of the project structure, see [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md).
 
 ## Getting Started
 
@@ -80,9 +101,18 @@ The goal of this project is to replace traditional, paper-based visitor manageme
     ```
     VITE_SUPABASE_URL="https://your-project-ref.supabase.co"
     VITE_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlvdXItcHJvamVjdC1yZWYiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTY3ODkwNTYwMCwiZXhwIjoxOTk0MjY1NjAwfQ.YOUR_ANON_KEY_HERE"
+    
+    # Optional: EmailJS Configuration (for visitor registration email notifications)
+    VITE_EMAILJS_SERVICE_ID="your-service-id"
+    VITE_EMAILJS_TEMPLATE_ID="your-template-id"
+    VITE_EMAILJS_PUBLIC_KEY="your-public-key"
     ```
 
-    **Important:** Do not commit your `.env` file to version control (e.g., Git). It's already included in the `.gitignore` file to prevent this.
+    **Note:** The EmailJS configuration is optional. If not provided, the system will skip email notifications but visitor registration will still work.
+    
+    **To set up EmailJS** (for email notifications with QR codes), see the detailed guide: [EMAILJS_SETUP.md](./docs/EMAILJS_SETUP.md)
+
+    **Important:** Do not commit your `.env` file to version control (e.g., Git). It's already included in the `.gitignore` file to prevent this. You can use the provided `.env.example` file as a template.
 
 4.  **Set up the database:**
 
@@ -149,16 +179,20 @@ As a host, you can register a new visitor by navigating to the "Register Visitor
 *   **Valid until:** The date and time until which the visit is valid.
 *   **Notes:** Any additional notes or special instructions about the visit (optional).
 
+## Documentation
+
+Additional documentation is available in the `docs/` folder:
+
+*   **[QUICKSTART.md](./docs/QUICKSTART.md)** - Quick start guide for getting up and running
+*   **[EMAILJS_SETUP.md](./docs/EMAILJS_SETUP.md)** - Detailed EmailJS configuration guide
+*   **[CODE_QUALITY.md](./docs/CODE_QUALITY.md)** - Code quality guidelines and best practices
+*   **[CONSOLE_LOGGING_GUIDE.md](./docs/CONSOLE_LOGGING_GUIDE.md)** - Guide for debugging and logging
+*   **[IMPROVEMENTS.md](./docs/IMPROVEMENTS.md)** - Planned features and improvements
+*   **[PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)** - Detailed project structure documentation
+*   **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Guidelines for contributing to the project
+
 ## Troubleshooting
 
 *   **Department selection is not appearing on the signup page:** This is likely due to an issue with the database policies. Ensure you have run the latest version of the `Supabase/20250403050148_nameless_haze.sql` script in your Supabase project.
 *   **"Failed to create host record" error during signup:** This is likely because email confirmation is enabled in your Supabase project. Please follow the instructions in the "Database Setup" section to disable email confirmation.
 *   **"Infinite recursion" error during login:** This is due to an issue with the database security policies. Ensure you have run the latest version of the `Supabase/20250403050148_nameless_haze.sql` script in your Supabase project.
-
-## Technologies Used
-
-*   **React:** A JavaScript library for building user interfaces.
-*   **TypeScript:** A typed superset of JavaScript that compiles to plain JavaScript.
-*   **Supabase:** An open-source Firebase alternative for building secure and scalable applications.
-*   **Tailwind CSS:** A utility-first CSS framework for rapidly building custom user interfaces.
-*   **Vite:** A fast build tool and development server for modern web projects.

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Camera } from "lucide-react";
+import { Camera, UserCheck } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import QRCode from "qrcode";
@@ -37,26 +37,47 @@ export function VisitorRegistration() {
   // Get the current user session when component mounts
   useEffect(() => {
     async function getUserId() {
+      console.log('[VisitorRegistration] Fetching user session...');
       const { data } = await supabase.auth.getSession();
       if (data.session?.user) {
+        console.log('[VisitorRegistration] User session found:', data.session.user.id);
         setUserId(data.session.user.id);
+      } else {
+        console.warn('[VisitorRegistration] No user session found');
       }
     }
     getUserId();
   }, []);
 
   const onSubmit = async (formData: VisitorFormData) => {
+    console.log('[VisitorRegistration] Form submission started');
+    console.log('[VisitorRegistration] Form data:', {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      company: formData.company,
+      purpose: formData.purpose,
+      hostEmail: formData.hostEmail,
+      hostEmailEmpty: !formData.hostEmail || formData.hostEmail.trim() === '',
+      entityEmail: formData.entityEmail,
+      hasPhoto: formData.photo ? formData.photo.length > 0 : false
+    });
+    
     try {
       // Check if user is authenticated
       if (!userId) {
+        console.error('[VisitorRegistration] User not authenticated');
         toast.error("You must be logged in to register visitors");
         return;
       }
+      
+      console.log('[VisitorRegistration] User authenticated:', userId);
 
       let photoUrl = null;
 
       // Upload photo if provided
       if (formData.photo?.[0]) {
+        console.log('[VisitorRegistration] Uploading visitor photo...');
         const file = formData.photo[0];
         const fileExt = file.name.split(".").pop();
         const fileName = `${uuidv4()}.${fileExt}`; // Using UUID for unique filenames
@@ -71,9 +92,11 @@ export function VisitorRegistration() {
           });
 
         if (uploadError) {
-          console.error("Photo upload error:", uploadError);
+          console.error('[VisitorRegistration] Photo upload error:', uploadError);
           throw new Error(`Photo upload failed: ${uploadError.message}`);
         }
+        
+        console.log('[VisitorRegistration] Photo uploaded successfully');
 
         const {
           data: { publicUrl },
@@ -84,20 +107,39 @@ export function VisitorRegistration() {
         photoUrl = publicUrl;
       }
 
-      // Get host details
-      const { data: hostData, error: hostError } = await supabase
-        .from("hosts")
-        .select("id")
-        .eq("email", formData.hostEmail)
-        .single();
+      // Get host details if email is provided
+      let hostId = null;
+      if (formData.hostEmail && formData.hostEmail.trim() !== "") {
+        console.log('[VisitorRegistration] Looking up host with email:', formData.hostEmail);
+        const { data: hostData, error: hostError } = await supabase
+          .from("hosts")
+          .select("id")
+          .eq("email", formData.hostEmail)
+          .maybeSingle();
 
-      if (hostError) {
-        throw new Error("Host not found with email: " + formData.hostEmail);
+        if (hostError && hostError.code !== "PGRST116") {
+          console.error('[VisitorRegistration] Host lookup error:', hostError);
+          throw new Error("Error looking up host: " + hostError.message);
+        }
+
+        if (hostData) {
+          hostId = hostData.id;
+          console.log('[VisitorRegistration] Host found:', hostId);
+        } else {
+          console.warn('[VisitorRegistration] No host found with email:', formData.hostEmail);
+          toast.error(
+            "No host found with the provided email. Please make sure the host exists in the system."
+          );
+          throw new Error(
+            "No host found with email: " + formData.hostEmail
+          );
+        }
       }
 
       // Look up entity by email in the hosts table, if provided
       let entityId = null;
       if (formData.entityEmail && formData.entityEmail.trim() !== "") {
+        console.log('[VisitorRegistration] Looking up entity with email:', formData.entityEmail);
         const { data: entityData, error: entityError } = await supabase
           .from("hosts")
           .select("id")
@@ -106,13 +148,15 @@ export function VisitorRegistration() {
           .maybeSingle();
 
         if (entityError && entityError.code !== "PGRST116") {
-          console.error("Entity lookup error:", entityError);
+          console.error('[VisitorRegistration] Entity lookup error:', entityError);
           throw new Error("Error looking up entity: " + entityError.message);
         }
 
         if (entityData) {
           entityId = entityData.id;
+          console.log('[VisitorRegistration] Entity found:', entityId);
         } else {
+          console.warn('[VisitorRegistration] No entity found with email:', formData.entityEmail);
           toast.error(
             "No entity found with the provided email. Please make sure the entity exists in the system."
           );
@@ -125,6 +169,7 @@ export function VisitorRegistration() {
       // Step 1: Create or find existing visitor
       let visitorId;
 
+      console.log('[VisitorRegistration] Checking for existing visitor with email:', formData.email);
       const { data: existingVisitor, error: visitorLookupError } =
         await supabase
           .from("visitors")
@@ -133,10 +178,12 @@ export function VisitorRegistration() {
           .maybeSingle();
 
       if (visitorLookupError && visitorLookupError.code !== "PGRST116") {
+        console.error('[VisitorRegistration] Visitor lookup error:', visitorLookupError);
         throw visitorLookupError;
       }
 
       if (existingVisitor) {
+        console.log('[VisitorRegistration] Existing visitor found:', existingVisitor.id);
         visitorId = existingVisitor.id;
 
         const { error: updateError } = await supabase
@@ -151,10 +198,12 @@ export function VisitorRegistration() {
           .eq("id", visitorId);
 
         if (updateError) {
-          console.error("Visitor update error:", updateError);
+          console.error('[VisitorRegistration] Visitor update error:', updateError);
           throw updateError;
         }
+        console.log('[VisitorRegistration] Visitor updated successfully');
       } else {
+        console.log('[VisitorRegistration] Creating new visitor...');
         const { data: newVisitor, error: createError } = await supabase
           .from("visitors")
           .insert({
@@ -170,21 +219,24 @@ export function VisitorRegistration() {
           .single();
 
         if (createError) {
-          console.error("Visitor creation error:", createError);
+          console.error('[VisitorRegistration] Visitor creation error:', createError);
           throw createError;
         }
 
         visitorId = newVisitor.id;
+        console.log('[VisitorRegistration] New visitor created:', visitorId);
       }
 
       // Step 2: Create visit record
       const currentTime = new Date().toISOString();
       const visitId = uuidv4(); // Generate unique visit ID
+      
+      console.log('[VisitorRegistration] Creating visit record with ID:', visitId);
 
       const { error: visitError } = await supabase.from("visits").insert({
         id: visitId,
         visitor_id: visitorId,
-        host_id: hostData.id,
+        host_id: hostId, // Can be null if no host email provided
         entity_id: entityId, // Now using the correctly looked-up entity ID
         purpose: formData.purpose,
         status: "pending",
@@ -201,11 +253,14 @@ export function VisitorRegistration() {
       });
 
       if (visitError) {
-        console.error("Visit creation error:", visitError);
+        console.error('[VisitorRegistration] Visit creation error:', visitError);
         throw visitError;
       }
+      
+      console.log('[VisitorRegistration] Visit record created successfully');
 
       // Step 3: Generate QR code with visit info
+      console.log('[VisitorRegistration] Generating QR code...');
       const qrData = JSON.stringify({
         visitId,
         name: formData.name,
@@ -217,60 +272,83 @@ export function VisitorRegistration() {
 
       const qrUrl = await QRCode.toDataURL(qrData);
       setQrImageUrl(qrUrl);
+      console.log('[VisitorRegistration] QR code generated successfully');
 
       // Step 4: Send Email using EmailJS
-      try {
-        const emailResult = await emailjs.send(
-          "", // Your EmailJS Service ID
-          "", // Your EmailJS Template ID
-          {
+      const emailServiceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+      const emailTemplateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+      const emailPublicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+      if (!emailServiceId || !emailTemplateId || !emailPublicKey) {
+        console.warn('[VisitorRegistration] EmailJS credentials not configured. Skipping email notification.');
+      } else {
+        try {
+          console.log('[VisitorRegistration] Sending email to:', formData.email);
+          const emailParams = {
             to_name: formData.name,
             to_email: formData.email,
+            email: formData.email, // Some templates use 'email' instead of 'to_email'
+            name: formData.name, // Some templates use 'name' instead of 'to_name'
             qr_code: qrUrl,
             visit_id: visitId,
             visit_purpose: formData.purpose,
-            host_email: formData.hostEmail,
+            purpose: formData.purpose, // Alternative naming
+            host_email: formData.hostEmail || "N/A",
+            host_name: formData.hostEmail || "N/A",
             entity_email: formData.entityEmail || "N/A",
             valid_until: new Date(formData.validUntil).toLocaleString(),
-          },
-          "" // Your EmailJS Public Key
-        );
+          };
+          
+          console.log('[VisitorRegistration] Email parameters:', emailParams);
+          
+          const emailResult = await emailjs.send(
+            emailServiceId,
+            emailTemplateId,
+            emailParams,
+            emailPublicKey
+          );
 
-        if (emailResult.status !== 200) {
-          console.warn("Email sending failed with status:", emailResult.status);
+          console.log('[VisitorRegistration] Email send result:', emailResult);
+          if (emailResult.status !== 200) {
+            console.warn('[VisitorRegistration] Email sending failed with status:', emailResult.status);
+          } else {
+            console.log('[VisitorRegistration] Email sent successfully');
+          }
+        } catch (emailError) {
+          console.error('[VisitorRegistration] Failed to send email:', emailError);
+          // Continue execution even if email fails
         }
-      } catch (emailError) {
-        console.error("Failed to send email:", emailError);
-        // Continue execution even if email fails
       }
 
+      console.log('[VisitorRegistration] Registration completed successfully');
       toast.success("Visitor registered successfully!");
       reset();
     } catch (error: unknown) {
-      console.error("Registration error:", error);
+      console.error('[VisitorRegistration] Registration error:', error);
       toast.error(`Failed: ${(error as Error).message || "Unknown error"}`);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto dark:bg-gray-900">
-      <div className="md:grid md:grid-cols-3 md:gap-6">
-        <div className="md:col-span-1">
-          <div className="px-4 sm:px-0">
-            <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
-              Register New Visitor
-            </h3>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-              Please fill in the visitor's details and take their photo for
-              security purposes.
-            </p>
+    <div className="px-4 sm:px-6 lg:px-8">
+      <div className="sm:flex sm:items-center mb-8">
+        <div className="sm:flex-auto">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg">
+              <UserCheck className="h-6 w-6 text-white" strokeWidth={2.5} />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Register New Visitor</h1>
           </div>
+          <p className="mt-2 text-sm text-gray-700 dark:text-slate-300">
+            Please fill in the visitor's details and take their photo for security purposes.
+          </p>
         </div>
+      </div>
 
-        <div className="mt-5 md:mt-0 md:col-span-2">
+      <div className="max-w-3xl mx-auto">
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="shadow sm:rounded-md sm:overflow-hidden">
-              <div className="px-4 py-5 bg-white dark:bg-gray-800 space-y-6 sm:p-6">
+              <div className="px-4 py-5 bg-white dark:bg-slate-900 space-y-6 sm:p-6">
                 {/* Visitor Information Section */}
                 <div>
                   <h4 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-4">
@@ -280,14 +358,14 @@ export function VisitorRegistration() {
                     <div className="col-span-6 sm:col-span-3">
                       <label
                         htmlFor="name"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        className="block text-sm font-medium text-gray-700 dark:text-slate-300"
                       >
                         Full name
                       </label>
                       <input
                         type="text"
                         {...register("name", { required: "Name is required" })}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-slate-800 dark:border-slate-600 dark:text-white"
                       />
                       {errors.name && (
                         <p className="mt-1 text-sm text-red-600">
@@ -299,7 +377,7 @@ export function VisitorRegistration() {
                     <div className="col-span-6 sm:col-span-3">
                       <label
                         htmlFor="email"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        className="block text-sm font-medium text-gray-700 dark:text-slate-300"
                       >
                         Email address
                       </label>
@@ -308,7 +386,7 @@ export function VisitorRegistration() {
                         {...register("email", {
                           required: "Email is required",
                         })}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-slate-800 dark:border-slate-600 dark:text-white"
                       />
                       {errors.email && (
                         <p className="mt-1 text-sm text-red-600">
@@ -320,7 +398,7 @@ export function VisitorRegistration() {
                     <div className="col-span-6 sm:col-span-3">
                       <label
                         htmlFor="phone"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        className="block text-sm font-medium text-gray-700 dark:text-slate-300"
                       >
                         Phone number
                       </label>
@@ -329,7 +407,7 @@ export function VisitorRegistration() {
                         {...register("phone", {
                           required: "Phone number is required",
                         })}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-slate-800 dark:border-slate-600 dark:text-white"
                       />
                       {errors.phone && (
                         <p className="mt-1 text-sm text-red-600">
@@ -341,14 +419,14 @@ export function VisitorRegistration() {
                     <div className="col-span-6 sm:col-span-3">
                       <label
                         htmlFor="company"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        className="block text-sm font-medium text-gray-700 dark:text-slate-300"
                       >
                         Company
                       </label>
                       <input
                         type="text"
                         {...register("company")}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-slate-800 dark:border-slate-600 dark:text-white"
                       />
                     </div>
                   </div>
@@ -357,13 +435,13 @@ export function VisitorRegistration() {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Visitor Photo
                     </label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md dark:border-gray-600">
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md dark:border-slate-600">
                       <div className="space-y-1 text-center">
                         <Camera className="mx-auto h-12 w-12 text-gray-400" />
-                        <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex text-sm text-gray-600 dark:text-slate-400">
                           <label
                             htmlFor="photo"
-                            className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
+                            className="relative cursor-pointer bg-white dark:bg-slate-900 rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
                           >
                             <span>Upload a photo</span>
                             <input
@@ -375,7 +453,7 @@ export function VisitorRegistration() {
                             />
                           </label>
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-gray-500 dark:text-slate-400">
                           PNG, JPG up to 10MB
                         </p>
                       </div>
@@ -392,7 +470,7 @@ export function VisitorRegistration() {
                     <div className="col-span-6">
                       <label
                         htmlFor="purpose"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        className="block text-sm font-medium text-gray-700 dark:text-slate-300"
                       >
                         Purpose of visit
                       </label>
@@ -401,7 +479,7 @@ export function VisitorRegistration() {
                         {...register("purpose", {
                           required: "Purpose is required",
                         })}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-slate-800 dark:border-slate-600 dark:text-white"
                       />
                       {errors.purpose && (
                         <p className="mt-1 text-sm text-red-600">
@@ -413,37 +491,34 @@ export function VisitorRegistration() {
                     <div className="col-span-6">
                       <label
                         htmlFor="hostEmail"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        className="block text-sm font-medium text-gray-700 dark:text-slate-300"
                       >
                         Host email
                       </label>
                       <input
                         type="email"
-                        {...register("hostEmail", {
-                          required: "Host email is required",
-                        })}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        {...register("hostEmail")}
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-slate-800 dark:border-slate-600 dark:text-white"
                       />
-                      {errors.hostEmail && (
-                        <p className="mt-1 text-sm text-red-600">
-                          {errors.hostEmail.message}
-                        </p>
-                      )}
+                      <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+                        Enter the email of the host associated with this visit
+                        (optional)
+                      </p>
                     </div>
 
                     <div className="col-span-6">
                       <label
                         htmlFor="entityEmail"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        className="block text-sm font-medium text-gray-700 dark:text-slate-300"
                       >
                         Entity email
                       </label>
                       <input
                         type="email"
                         {...register("entityEmail")}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-slate-800 dark:border-slate-600 dark:text-white"
                       />
-                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
                         Enter the email of the entity associated with this visit
                         (optional)
                       </p>
@@ -452,35 +527,35 @@ export function VisitorRegistration() {
                     <div className="col-span-6 sm:col-span-3">
                       <label
                         htmlFor="checkInTime"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        className="block text-sm font-medium text-gray-700 dark:text-slate-300"
                       >
                         Check-in time
                       </label>
                       <input
                         type="datetime-local"
                         {...register("checkInTime")}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-slate-800 dark:border-slate-600 dark:text-white"
                       />
                     </div>
 
                     <div className="col-span-6 sm:col-span-3">
                       <label
                         htmlFor="checkOutTime"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        className="block text-sm font-medium text-gray-700 dark:text-slate-300"
                       >
                         Check-out time
                       </label>
                       <input
                         type="datetime-local"
                         {...register("checkOutTime")}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-slate-800 dark:border-slate-600 dark:text-white"
                       />
                     </div>
 
                     <div className="col-span-6 sm:col-span-3">
                       <label
                         htmlFor="validUntil"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        className="block text-sm font-medium text-gray-700 dark:text-slate-300"
                       >
                         Valid until
                       </label>
@@ -489,7 +564,7 @@ export function VisitorRegistration() {
                         {...register("validUntil", {
                           required: "Valid until date is required",
                         })}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-slate-800 dark:border-slate-600 dark:text-white"
                       />
                       {errors.validUntil && (
                         <p className="mt-1 text-sm text-red-600">
@@ -501,14 +576,14 @@ export function VisitorRegistration() {
                     <div className="col-span-6">
                       <label
                         htmlFor="notes"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        className="block text-sm font-medium text-gray-700 dark:text-slate-300"
                       >
                         Notes (optional)
                       </label>
                       <textarea
                         {...register("notes")}
                         rows={3}
-                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-slate-800 dark:border-slate-600 dark:text-white"
                       />
                     </div>
                   </div>
@@ -531,18 +606,23 @@ export function VisitorRegistration() {
                 </div>
               </div>
 
-              <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-right sm:px-6">
+              <div className="px-4 py-3 bg-gray-50 dark:bg-slate-800 text-right sm:px-6">
+                {!userId && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mb-2">
+                    You must be logged in to register visitors
+                  </p>
+                )}
                 <button
                   type="submit"
                   disabled={isSubmitting || !userId}
-                  className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 hover:from-cyan-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
+                  <UserCheck className="h-4 w-4" strokeWidth={2.5} />
                   {isSubmitting ? "Registering..." : "Register Visitor"}
                 </button>
               </div>
             </div>
           </form>
-        </div>
       </div>
     </div>
   );

@@ -15,12 +15,6 @@ export type Visit = {
   check_out: string | null;
   status: 'pending' | 'approved' | 'denied' | 'completed' | 'cancelled';
 };
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
 
 export type Database = {
   public: {

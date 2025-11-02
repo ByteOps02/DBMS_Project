@@ -651,16 +651,16 @@ export function Dashboard() {
   };
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+    <div className="animate-fadeIn">
+      <div className="mb-8 animate-fadeInUp">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-400 dark:to-blue-400 bg-clip-text text-transparent">
           Welcome back, {user?.name || "Guest"}
         </h1>
-        <p className="mt-2 text-md text-gray-600 dark:text-gray-300">
+        <p className="mt-2 text-md text-gray-600 dark:text-slate-300">
           Here's what's happening in your campus today
         </p>
         {connectionError && (
-          <div className="mt-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded-lg flex items-center">
+          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-lg flex items-center animate-fadeIn">
             <AlertCircle className="h-5 w-5 mr-2" />
             <span>Connection issue detected: {connectionError}</span>
           </div>
@@ -668,8 +668,10 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <StatItem key={stat.name} {...stat} onClick={handleStatCardClick} />
+        {stats.map((stat, index) => (
+          <div key={stat.name} style={{animationDelay: `${index * 0.1}s`}}>
+            <StatItem {...stat} onClick={handleStatCardClick} />
+          </div>
         ))}
       </div>
 

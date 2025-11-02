@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
 export const ThemeSwitcher = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
     const isDark = localStorage.getItem('theme') === 'dark';
@@ -14,25 +14,37 @@ export const ThemeSwitcher = () => {
   }, []);
 
   const toggleTheme = () => {
+    setIsAnimating(true);
     const newIsDarkMode = !isDarkMode;
-    setIsDarkMode(newIsDarkMode);
-    if (newIsDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
+    
+    setTimeout(() => {
+      setIsDarkMode(newIsDarkMode);
+      if (newIsDarkMode) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+      setIsAnimating(false);
+    }, 150);
   };
 
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white rounded-md"
+      className="relative p-2.5 text-gray-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 rounded-lg transition-all duration-300 hover:bg-gray-100 dark:hover:bg-slate-800 group"
       aria-label="Toggle theme"
       title="Toggle theme"
     >
-      {isDarkMode ? <Sun className="h-6 w-6" /> : <Moon className="h-6 w-6" />}
+      <div className={`transition-all duration-300 ${isAnimating ? 'rotate-180 scale-0' : 'rotate-0 scale-100'}`}>
+        {isDarkMode ? (
+          <Sun className="h-5 w-5" />
+        ) : (
+          <Moon className="h-5 w-5" />
+        )}
+      </div>
+      
     </button>
   );
 };
