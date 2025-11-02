@@ -94,8 +94,11 @@ DROP POLICY IF EXISTS "Visitors insert allowed" ON visitors;
 DROP POLICY IF EXISTS "Visitors read allowed" ON visitors;
 DROP POLICY IF EXISTS "Visitors update by guard/admin" ON visitors;
 DROP POLICY IF EXISTS "visitors_insert_authenticated" ON visitors;
+DROP POLICY IF EXISTS "visitors_insert_public" ON visitors;
 DROP POLICY IF EXISTS "visitors_select_authenticated" ON visitors;
 DROP POLICY IF EXISTS "visitors_update_privileged" ON visitors;
+DROP POLICY IF EXISTS "visitors_update_public" ON visitors;
+DROP POLICY IF EXISTS "visitors_update_public_or_privileged" ON visitors;
 DROP POLICY IF EXISTS "visitors_delete_admin_only" ON visitors;
 
 DROP POLICY IF EXISTS "Visits insert allowed" ON visits;
@@ -104,6 +107,7 @@ DROP POLICY IF EXISTS "Hosts can see their own visits" ON visits;
 DROP POLICY IF EXISTS "Admins and guards can see all visits" ON visits;
 DROP POLICY IF EXISTS "Visits update by guard/admin/host" ON visits;
 DROP POLICY IF EXISTS "visits_insert_authenticated" ON visits;
+DROP POLICY IF EXISTS "visits_insert_public" ON visits;
 DROP POLICY IF EXISTS "visits_select_own_or_privileged" ON visits;
 DROP POLICY IF EXISTS "visits_update_host_or_privileged" ON visits;
 DROP POLICY IF EXISTS "visits_delete_admin_only" ON visits;
@@ -159,27 +163,31 @@ CREATE POLICY "hosts_delete_admin_only"
   USING (is_admin(auth.uid()));
 
 -- ✅ VISITORS Policies
-CREATE POLICY "visitors_insert_authenticated"
+-- Allow public inserts for request-visit functionality (unauthenticated users)
+CREATE POLICY "visitors_insert_public"
   ON visitors FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
+  WITH CHECK (true);
 
 CREATE POLICY "visitors_select_authenticated"
   ON visitors FOR SELECT
   USING (auth.role() = 'authenticated');
 
-CREATE POLICY "visitors_update_privileged"
+-- Allow public updates for request-visit functionality (updating existing visitor info)
+-- Also allow privileged users (admin/guard) to update
+CREATE POLICY "visitors_update_public_or_privileged"
   ON visitors FOR UPDATE
-  USING (is_admin(auth.uid()) OR is_guard(auth.uid()))
-  WITH CHECK (is_admin(auth.uid()) OR is_guard(auth.uid()));
+  USING (true)
+  WITH CHECK (true);
 
 CREATE POLICY "visitors_delete_admin_only"
   ON visitors FOR DELETE
   USING (is_admin(auth.uid()));
 
 -- ✅ VISITS Policies
-CREATE POLICY "visits_insert_authenticated"
+-- Allow public inserts for request-visit functionality (unauthenticated users)
+CREATE POLICY "visits_insert_public"
   ON visits FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
+  WITH CHECK (true);
 
 CREATE POLICY "visits_select_own_or_privileged"
   ON visits FOR SELECT
