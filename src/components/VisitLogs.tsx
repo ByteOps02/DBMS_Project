@@ -1,35 +1,96 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Download } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import type { Visit } from '../lib/database.types';
+
+const getDynamicStatus = (visit: Visit) => {
+  // Get current date and time
+  const now = new Date();
+  const currentTimestamp = now.getTime(); // milliseconds since epoch
+  
+  // Parse check-in date and time
+  const checkIn = visit.check_in ? new Date(visit.check_in) : null;
+  const checkInTimestamp = checkIn ? checkIn.getTime() : null;
+  
+  // Parse check-out date and time
+  const checkOut = visit.check_out ? new Date(visit.check_out) : null;
+  const checkOutTimestamp = checkOut ? checkOut.getTime() : null;
+
+  // Debug logging (remove after testing)
+  console.log('Current time:', now.toLocaleString(), '| Timestamp:', currentTimestamp);
+  if (checkIn) console.log('Check-in time:', checkIn.toLocaleString(), '| Timestamp:', checkInTimestamp);
+  if (checkOut) console.log('Check-out time:', checkOut.toLocaleString(), '| Timestamp:', checkOutTimestamp);
+
+  // If no check-in time, can't determine status
+  if (!checkInTimestamp) return 'upcoming';
+
+  // Completed: current time is at or past check-out time
+  if (checkOutTimestamp && currentTimestamp >= checkOutTimestamp) {
+    console.log('Status: COMPLETED');
+    return 'completed';
+  }
+  
+  // Ongoing: current time is at or past check-in (and before check-out or no check-out)
+  if (currentTimestamp >= checkInTimestamp) {
+    console.log('Status: ONGOING');
+    return 'ongoing';
+  }
+  
+  // Upcoming: current time is before check-in
+  console.log('Status: UPCOMING');
+  return 'upcoming';
+};
 
 export function VisitLogs() {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [logs, setLogs] = useState<Visit[]>([]);
 
-  // Mock data - replace with actual API call
-  const logs = [
-    {
-      id: 1,
-      visitorName: 'Alice Johnson',
-      purpose: 'Meeting',
-      host: 'Prof. Smith',
-      checkIn: '2024-03-10T09:00:00',
-      checkOut: '2024-03-10T10:30:00',
-      status: 'completed',
-    },
-    {
-      id: 2,
-      visitorName: 'Bob Wilson',
-      purpose: 'Delivery',
-      host: 'Admin Office',
-      checkIn: '2024-03-10T11:00:00',
-      status: 'active',
-    },
-  ];
+  useEffect(() => {
+    const fetchVisits = async () => {
+      const { data, error } = await supabase
+        .from('visits')
+        .select('*, visitor:visitors(name), host:hosts(name)')
+        .eq('status', 'approved');
+      if (error) {
+        console.error('Error fetching visits:', error);
+      } else {
+        const formattedData: Visit[] = data.map((visit) => ({
+          id: visit.id,
+          visitor_name: visit.visitor.name,
+          purpose: visit.purpose,
+          host_name: visit.host.name,
+          check_in: visit.check_in_time,
+          check_out: visit.check_out_time,
+          status: visit.status,
+        }));
+        setLogs(formattedData);
+      }
+    };
+
+    fetchVisits();
+
+    const subscription = supabase
+      .channel('custom-all-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'visits' },
+        (payload) => {
+          console.log('Change received!', payload);
+          fetchVisits(); // Refetch on change
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const filteredLogs = logs.filter(
     (log) =>
-      log.visitorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.host.toLowerCase().includes(searchTerm.toLowerCase())
+      (log.visitor_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (log.host_name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -110,32 +171,37 @@ export function VisitLogs() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
-                    {filteredLogs.map((log) => (
-                      <tr key={log.id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                          {log.visitorName}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{log.purpose}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{log.host}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {new Date(log.checkIn).toLocaleString()}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {log.checkOut ? new Date(log.checkOut).toLocaleString() : '-'}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          <span
-                            className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                              log.status === 'completed'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-blue-100 text-blue-800'
-                            }`}
-                          >
-                            {log.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {filteredLogs.map((log) => {
+                      const dynamicStatus = getDynamicStatus(log);
+                      return (
+                        <tr key={log.id}>
+                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                            {log.visitor_name}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{log.purpose}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{log.host_name}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            {log.check_in ? new Date(log.check_in).toLocaleString() : '-'}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            {log.check_out ? new Date(log.check_out).toLocaleString() : '-'}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            <span
+                              className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
+                                dynamicStatus === 'completed'
+                                  ? 'bg-green-100 text-green-800'
+                                  : dynamicStatus === 'ongoing'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}
+                            >
+                              {dynamicStatus}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

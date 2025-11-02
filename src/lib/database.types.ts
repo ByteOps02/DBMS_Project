@@ -4,6 +4,22 @@ export type Json =
   | boolean
   | null
   | { [key: string]: Json | undefined }
+  | Json[];
+
+export type Visit = {
+  id: string;
+  visitor_name: string;
+  purpose: string;
+  host_name: string;
+  check_in: string | null;
+  check_out: string | null;
+  status: 'pending' | 'approved' | 'denied' | 'completed' | 'cancelled';
+};
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
   | Json[]
 
 export type Database = {
