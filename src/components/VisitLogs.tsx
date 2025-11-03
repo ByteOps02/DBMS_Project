@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Search, Download, ClipboardList, User, Clock, CheckCircle2, Circle } from 'lucide-react';
+import { Search, Download, ClipboardList, User, Clock, CheckCircle2, Circle, XCircle, Ban } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Visit } from '../lib/database.types';
 
 const getDynamicStatus = (visit: Visit) => {
   // Get current date and time
   const now = new Date();
-  const currentTimestamp = now.getTime(); // milliseconds since epoch
+  const currentTimestamp = now.getTime();
   
   // Parse check-in date and time
   const checkIn = visit.check_in ? new Date(visit.check_in) : null;
@@ -16,7 +16,9 @@ const getDynamicStatus = (visit: Visit) => {
   const checkOut = visit.check_out ? new Date(visit.check_out) : null;
   const checkOutTimestamp = checkOut ? checkOut.getTime() : null;
 
-  // Dynamic status calculation based on timestamps
+  // If visit is denied or cancelled, show that status
+  if (visit.status === 'denied') return 'denied';
+  if (visit.status === 'cancelled') return 'cancelled';
 
   // If no check-in time, can't determine status
   if (!checkInTimestamp) return 'upcoming';
@@ -42,10 +44,12 @@ export function VisitLogs() {
 
   useEffect(() => {
     const fetchVisits = async () => {
+      // FIX: Fetch all visits, not just approved ones
       const { data, error } = await supabase
         .from('visits')
         .select('*, visitor:visitors(name), host:hosts(name)')
-        .eq('status', 'approved');
+        .in('status', ['approved', 'denied', 'cancelled', 'completed']);
+      
       if (error) {
         if (import.meta.env.DEV) {
           console.error('Error fetching visits:', error);
@@ -53,9 +57,9 @@ export function VisitLogs() {
       } else {
         const formattedData: Visit[] = data.map((visit) => ({
           id: visit.id,
-          visitor_name: visit.visitor.name,
+          visitor_name: visit.visitor?.name || 'Unknown Visitor',
           purpose: visit.purpose,
-          host_name: visit.host.name,
+          host_name: visit.host?.name || 'Unknown Host',
           check_in: visit.check_in_time,
           check_out: visit.check_out_time,
           status: visit.status,
@@ -211,6 +215,10 @@ export function VisitLogs() {
                                   ? 'bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 dark:from-emerald-900/50 dark:to-green-900/50 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800'
                                   : dynamicStatus === 'ongoing'
                                   ? 'bg-gradient-to-r from-blue-100 to-sky-100 text-blue-800 dark:from-blue-900/50 dark:to-sky-900/50 dark:text-blue-200 border border-blue-300 dark:border-blue-800'
+                                  : dynamicStatus === 'denied'
+                                  ? 'bg-gradient-to-r from-red-100 to-rose-100 text-red-800 dark:from-red-900/50 dark:to-rose-900/50 dark:text-red-200 border border-red-300 dark:border-red-800'
+                                  : dynamicStatus === 'cancelled'
+                                  ? 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 dark:from-gray-900/50 dark:to-slate-900/50 dark:text-gray-200 border border-gray-300 dark:border-gray-800'
                                   : 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 dark:from-amber-900/50 dark:to-yellow-900/50 dark:text-amber-200 border border-amber-300 dark:border-amber-800'
                               }`}
                             >
@@ -218,6 +226,10 @@ export function VisitLogs() {
                                 <CheckCircle2 className="h-3 w-3" />
                               ) : dynamicStatus === 'ongoing' ? (
                                 <Circle className="h-3 w-3 animate-pulse" />
+                              ) : dynamicStatus === 'denied' ? (
+                                <Ban className="h-3 w-3" />
+                              ) : dynamicStatus === 'cancelled' ? (
+                                <XCircle className="h-3 w-3" />
                               ) : (
                                 <Clock className="h-3 w-3" />
                               )}
@@ -235,4 +247,5 @@ export function VisitLogs() {
         </div>
       </div>
     </div>
-  );}
+  );
+}

@@ -44,6 +44,7 @@ export function Dashboard() {
   const [limit, setLimit] = useState(10);
   const [offset, setOffset] = useState(0);
   const [totalVisits, setTotalVisits] = useState(0);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   const fetchStats = useCallback(async (role: string) => {
     console.log(`Fetching stats for role: ${role}`);
@@ -86,7 +87,7 @@ export function Dashboard() {
             { count: approvedToday, error: approvedError },
             { count: newRequestsToday, error: newRequestsError },
             { count: completedToday, error: completedError },
-            { count: cancelledToday, error: cancelledError },
+            { count: cancelledAndDenied, error: cancelledError },
           ] = await Promise.all([
             supabase
               .from("visits")
@@ -95,12 +96,11 @@ export function Dashboard() {
               .gte("approved_at", utcTodayStart)
               .lt("approved_at", utcTomorrowStart),
 
+            // Show ALL pending visits
             supabase
               .from("visits")
               .select("*", { count: "exact", head: true })
-              .eq("status", VISIT_STATUS.PENDING)
-              .gte("created_at", utcTodayStart)
-              .lt("created_at", utcTomorrowStart),
+              .eq("status", VISIT_STATUS.PENDING),
 
             supabase
               .from("visits")
@@ -109,10 +109,11 @@ export function Dashboard() {
               .gte("check_out_time", utcTodayStart)
               .lt("check_out_time", utcTomorrowStart),
 
+            // FIX: Include both cancelled and denied visits
             supabase
               .from("visits")
               .select("*", { count: "exact", head: true })
-              .eq("status", VISIT_STATUS.CANCELLED),
+              .in("status", [VISIT_STATUS.CANCELLED, VISIT_STATUS.DENIED]),
           ]);
 
           const errors = [
@@ -131,7 +132,7 @@ export function Dashboard() {
             approvedToday,
             newRequestsToday,
             completedToday,
-            cancelledToday,
+            cancelledAndDenied,
           });
 
           statsData = [
@@ -168,12 +169,12 @@ export function Dashboard() {
               status: VISIT_STATUS.COMPLETED,
             },
             {
-              name: "Cancelled Visits",
-              value: cancelledToday ?? 0,
+              name: "Cancelled/Denied Visits",
+              value: cancelledAndDenied ?? 0,
               icon: XCircle,
               color: "text-red-500",
               bgColor: "bg-red-50",
-              status: VISIT_STATUS.CANCELLED,
+              status: "cancelled_denied", // Special status for combined view
             },
           ];
           break;
@@ -186,7 +187,7 @@ export function Dashboard() {
             { count: approvedToday },
             { count: newRequestsToday },
             { count: completedToday },
-            { count: cancelledToday },
+            { count: cancelledAndDenied },
           ] = await Promise.all([
             supabase
               .from("visits")
@@ -198,9 +199,7 @@ export function Dashboard() {
             supabase
               .from("visits")
               .select("*", { count: "exact", head: true })
-              .eq("status", VISIT_STATUS.PENDING)
-              .gte("created_at", utcTodayStart)
-              .lt("created_at", utcTomorrowStart),
+              .eq("status", VISIT_STATUS.PENDING),
 
             supabase
               .from("visits")
@@ -209,10 +208,11 @@ export function Dashboard() {
               .gte("check_out_time", utcTodayStart)
               .lt("check_out_time", utcTomorrowStart),
 
+            // FIX: Include both cancelled and denied
             supabase
               .from("visits")
               .select("*", { count: "exact", head: true })
-              .eq("status", VISIT_STATUS.CANCELLED),
+              .in("status", [VISIT_STATUS.CANCELLED, VISIT_STATUS.DENIED]),
           ]);
 
           statsData = [
@@ -241,12 +241,12 @@ export function Dashboard() {
               status: VISIT_STATUS.COMPLETED,
             },
             {
-              name: "Cancelled Visits",
-              value: cancelledToday ?? 0,
+              name: "Cancelled/Denied Visits",
+              value: cancelledAndDenied ?? 0,
               icon: XCircle,
               color: "text-red-500",
               bgColor: "bg-red-50",
-              status: VISIT_STATUS.CANCELLED,
+              status: "cancelled_denied",
             },
           ];
           break;
@@ -266,7 +266,7 @@ export function Dashboard() {
             { count: approvedToday },
             { count: newRequestsToday },
             { count: completedToday },
-            { count: cancelledToday },
+            { count: cancelledAndDenied },
           ] = await Promise.all([
             supabase
               .from("visits")
@@ -280,9 +280,7 @@ export function Dashboard() {
               .from("visits")
               .select("*", { count: "exact", head: true })
               .eq("host_id", userId)
-              .eq("status", VISIT_STATUS.PENDING)
-              .gte("created_at", utcTodayStart)
-              .lt("created_at", utcTomorrowStart),
+              .eq("status", VISIT_STATUS.PENDING),
 
             supabase
               .from("visits")
@@ -292,11 +290,12 @@ export function Dashboard() {
               .gte("check_out_time", utcTodayStart)
               .lt("check_out_time", utcTomorrowStart),
 
+            // FIX: Include both cancelled and denied
             supabase
               .from("visits")
               .select("*", { count: "exact", head: true })
               .eq("host_id", userId)
-              .eq("status", VISIT_STATUS.CANCELLED),
+              .in("status", [VISIT_STATUS.CANCELLED, VISIT_STATUS.DENIED]),
           ]);
 
           statsData = [
@@ -325,12 +324,12 @@ export function Dashboard() {
               status: VISIT_STATUS.COMPLETED,
             },
             {
-              name: "Cancelled Visits",
-              value: cancelledToday ?? 0,
+              name: "Cancelled/Denied Visits",
+              value: cancelledAndDenied ?? 0,
               icon: XCircle,
               color: "text-red-500",
               bgColor: "bg-red-50",
-              status: VISIT_STATUS.CANCELLED,
+              status: "cancelled_denied",
             },
           ];
           break;
@@ -349,7 +348,7 @@ export function Dashboard() {
             { count: approvedToday },
             { count: newRequestsToday },
             { count: completedToday },
-            { count: cancelledToday },
+            { count: cancelledAndDenied },
           ] = await Promise.all([
             supabase
               .from("visits")
@@ -363,9 +362,7 @@ export function Dashboard() {
               .from("visits")
               .select("*", { count: "exact", head: true })
               .eq("visitor_id", visitorId)
-              .eq("status", VISIT_STATUS.PENDING)
-              .gte("created_at", utcTodayStart)
-              .lt("created_at", utcTomorrowStart),
+              .eq("status", VISIT_STATUS.PENDING),
 
             supabase
               .from("visits")
@@ -375,11 +372,12 @@ export function Dashboard() {
               .gte("check_out_time", utcTodayStart)
               .lt("check_out_time", utcTomorrowStart),
 
+            // FIX: Include both cancelled and denied
             supabase
               .from("visits")
               .select("*", { count: "exact", head: true })
               .eq("visitor_id", visitorId)
-              .eq("status", VISIT_STATUS.CANCELLED),
+              .in("status", [VISIT_STATUS.CANCELLED, VISIT_STATUS.DENIED]),
           ]);
 
           statsData = [
@@ -408,12 +406,12 @@ export function Dashboard() {
               status: VISIT_STATUS.COMPLETED,
             },
             {
-              name: "Cancelled Visits",
-              value: cancelledToday ?? 0,
+              name: "Cancelled/Denied Visits",
+              value: cancelledAndDenied ?? 0,
               icon: XCircle,
               color: "text-red-500",
               bgColor: "bg-red-50",
-              status: VISIT_STATUS.CANCELLED,
+              status: "cancelled_denied",
             },
           ];
           break;
@@ -432,7 +430,7 @@ export function Dashboard() {
             { count: approvedToday },
             { count: newRequestsToday },
             { count: completedToday },
-            { count: cancelledToday },
+            { count: cancelledAndDenied },
           ] = await Promise.all([
             supabase
               .from("visits")
@@ -446,9 +444,7 @@ export function Dashboard() {
               .from("visits")
               .select("*", { count: "exact", head: true })
               .eq("entity_id", userId)
-              .eq("status", VISIT_STATUS.PENDING)
-              .gte("created_at", utcTodayStart)
-              .lt("created_at", utcTomorrowStart),
+              .eq("status", VISIT_STATUS.PENDING),
 
             supabase
               .from("visits")
@@ -458,11 +454,12 @@ export function Dashboard() {
               .gte("check_out_time", utcTodayStart)
               .lt("check_out_time", utcTomorrowStart),
 
+            // FIX: Include both cancelled and denied
             supabase
               .from("visits")
               .select("*", { count: "exact", head: true })
               .eq("entity_id", userId)
-              .eq("status", VISIT_STATUS.CANCELLED),
+              .in("status", [VISIT_STATUS.CANCELLED, VISIT_STATUS.DENIED]),
           ]);
 
           statsData = [
@@ -491,12 +488,12 @@ export function Dashboard() {
               status: VISIT_STATUS.COMPLETED,
             },
             {
-              name: "Cancelled Visits",
-              value: cancelledToday ?? 0,
+              name: "Cancelled/Denied Visits",
+              value: cancelledAndDenied ?? 0,
               icon: XCircle,
               color: "text-red-500",
               bgColor: "bg-red-50",
-              status: VISIT_STATUS.CANCELLED,
+              status: "cancelled_denied",
             },
           ];
           break;
@@ -508,6 +505,7 @@ export function Dashboard() {
       }
 
       setStats(statsData);
+      setLastRefresh(new Date());
     } catch (err: unknown) {
       console.error("⚠️ Error fetching stats:", (err as Error).message);
       console.error("Error details:", err);
@@ -532,21 +530,33 @@ export function Dashboard() {
       navigate("/dashboard/users");
       return;
     }
-    const getDateRange = () => {
-      const now = new Date();
-      const todayStart = new Date(now.setHours(0, 0, 0, 0)).toISOString();
-      const todayEnd = new Date(now.setHours(23, 59, 59, 999)).toISOString();
-      return { todayStart, todayEnd };
-    };
 
     setSelectedStatus(status);
     setOffset(0);
     try {
-      const { todayStart, todayEnd } = getDateRange();
-      const { count, error: countError } = await supabase
+      // FIX: Handle cancelled_denied status specially
+      const isMultiStatus = status === "cancelled_denied";
+      const statusFilter = isMultiStatus 
+        ? [VISIT_STATUS.CANCELLED, VISIT_STATUS.DENIED]
+        : [status];
+
+      // FIX: Build query based on user role to filter out null hosts for hosts
+      let countQuery = supabase
         .from("visits")
-        .select("*", { count: "exact", head: true })
-        .eq("status", status);
+        .select("*", { count: "exact", head: true });
+
+      if (isMultiStatus) {
+        countQuery = countQuery.in("status", statusFilter);
+      } else {
+        countQuery = countQuery.eq("status", status);
+      }
+
+      // FIX: For host role, exclude visits with null host_id
+      if (user?.role === "host" || user?.role === "resident") {
+        countQuery = countQuery.not("host_id", "is", null);
+      }
+
+      const { count, error: countError } = await countQuery;
 
       if (countError) throw countError;
       setTotalVisits(count || 0);
@@ -559,17 +569,22 @@ export function Dashboard() {
           visitors:visitor_id (name),
           hosts:host_id (name)
         `
-        )
-        .eq("status", status)
-        .range(offset, offset + limit - 1);
-
-      if (status === "pending") {
-        query = query.gte("created_at", todayStart).lte("created_at", todayEnd);
-      } else if (status === "approved") {
-        query = query.or(
-          `and(approved_at.gte.${todayStart},approved_at.lte.${todayEnd}),approved_at.is.null`
         );
+
+      if (isMultiStatus) {
+        query = query.in("status", statusFilter);
+      } else {
+        query = query.eq("status", status);
       }
+
+      // FIX: For host role, exclude visits with null host_id
+      if (user?.role === "host" || user?.role === "resident") {
+        query = query.not("host_id", "is", null);
+      }
+
+      query = query
+        .order("created_at", { ascending: false })
+        .range(0, limit - 1);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -579,6 +594,8 @@ export function Dashboard() {
           ...visit,
           visitor_name: visit.visitors?.name || "Unknown Visitor",
           host_name: visit.hosts?.name || "Unknown Host",
+          check_in_time: visit.check_in_time,
+          scheduled_time: visit.scheduled_time,
         })) || [];
 
       setSelectedVisits(transformedData);
@@ -586,7 +603,7 @@ export function Dashboard() {
     } catch (error) {
       console.error("Error fetching visits:", error);
     }
-  }, [limit, offset]);
+  }, [limit, navigate, user?.role]);
 
   useEffect(() => {
     if (!user?.role) return;
@@ -594,6 +611,12 @@ export function Dashboard() {
     console.log("Current user role:", user.role);
 
     fetchStats(user.role);
+
+    // Auto-refresh stats every 30 seconds
+    const refreshInterval = setInterval(() => {
+      console.log("Auto-refreshing stats...");
+      fetchStats(user.role);
+    }, 30000);
 
     const testConnection = async () => {
       try {
@@ -623,7 +646,7 @@ export function Dashboard() {
     }
 
     const subscription = supabase
-      .channel("visits")
+      .channel("visits_realtime")
       .on(
         "postgres_changes",
         {
@@ -633,15 +656,26 @@ export function Dashboard() {
         },
         (payload) => {
           console.log("Realtime change detected:", payload);
+          console.log("Event type:", payload.eventType);
+          console.log("Current user role:", user.role);
+          
           fetchStats(user.role);
         }
       )
       .subscribe((status) => {
         console.log("Realtime subscription status:", status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Successfully subscribed to realtime changes for role:', user.role);
+        } else if (status === 'CLOSED') {
+          console.warn('⚠️ Realtime subscription closed, attempting to reconnect...');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Realtime subscription error');
+        }
       });
 
     return () => {
-      console.log("Cleaning up subscription");
+      console.log("Cleaning up subscription and interval");
+      clearInterval(refreshInterval);
       supabase.removeChannel(subscription);
     };
   }, [user?.role, connectionTested, fetchStats]);
@@ -658,6 +692,9 @@ export function Dashboard() {
         </h1>
         <p className="mt-2 text-md text-gray-600 dark:text-slate-300">
           Here's what's happening in your campus today
+        </p>
+        <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+          Last updated: {lastRefresh.toLocaleTimeString()} • Auto-refreshes every 30s
         </p>
         {connectionError && (
           <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-lg flex items-center animate-fadeIn">

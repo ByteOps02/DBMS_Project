@@ -14,6 +14,7 @@ export type Visit = {
   check_out_time?: string;
   created_at: string;
   approved_at?: string;
+  scheduled_time?: string;
   visitors?: { name: string };
   hosts?: { name: string };
   entity_id?: string;
@@ -49,7 +50,7 @@ export function VisitDetailsModal({
   const [loading, setLoading] = useState(false);
   const [currentVisit, setCurrentVisit] = useState<Visit | null>(null);
   const [actionType, setActionType] = useState<
-    "approve" | "deny" | "comple3te" | null
+    "approve" | "deny" | "complete" | null
   >(null);
 
   const handleStatusUpdate = async (visit: Visit, newStatus: string) => {
@@ -146,6 +147,8 @@ export function VisitDetailsModal({
         return "Cancelled";
       case "denied":
         return "Denied";
+      case "cancelled_denied":
+        return "Cancelled/Denied";
       default:
         return status;
     }
@@ -189,10 +192,11 @@ export function VisitDetailsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-7xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
           <h2 className="text-xl font-semibold dark:text-white">
-            {getStatusLabel(status)} Visits - Today
+            {getStatusLabel(status)} Visits
+            {status !== "cancelled" && status !== "denied" && status !== "cancelled_denied" && " - Today"}
             {userRole &&
               ` (${userRole.charAt(0).toUpperCase() + userRole.slice(1)})`}
           </h2>
@@ -208,68 +212,100 @@ export function VisitDetailsModal({
         <div className="flex-1 overflow-auto p-4">
           {visits.length === 0 ? (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              No {status} visits found for today.
+              No {getStatusLabel(status).toLowerCase()} visits found.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                       Visitor
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                       Host
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                       Purpose
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                       Requested At
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                       Approved At
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                      Check-In Time
+                    </th>
+                    {status === "completed" && (
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        Check-Out Time
+                      </th>
+                    )}
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {visits.map((visit) => (
-                    <tr key={visit.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    <tr key={visit.id} className="hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors duration-150">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-blue-600 dark:text-blue-400">
                         {visit.visitor_name ||
                           (visit.visitors?.name ?? "Unknown Visitor")}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-700 dark:text-gray-300">
                         {visit.host_name ||
                           (visit.hosts?.name ?? "Unknown Host")}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-xs truncate">
+                      <td className="px-4 py-4 text-sm font-medium text-gray-600 dark:text-gray-400 max-w-xs truncate">
                         {visit.purpose}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 text-xs rounded-full ${getStatusColor(
+                          className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
                             visit.status
                           )}`}
                         >
                           {getStatusLabel(visit.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-700 dark:text-gray-300">
                         {formatDateTime(visit.created_at)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        {visit.approved_at
-                          ? formatDateTime(visit.approved_at)
-                          : "N/A"}
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {visit.approved_at ? (
+                          <span className="text-green-600 dark:text-green-400 font-semibold">
+                            {formatDateTime(visit.approved_at)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                        )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                        {visit.check_in_time ? (
+                          <span className="text-green-600 dark:text-green-400 font-semibold">
+                            {formatDateTime(visit.check_in_time)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-500">Not Checked In</span>
+                        )}
+                      </td>
+                      {status === "completed" && (
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                          {visit.check_out_time ? (
+                            <span className="text-indigo-600 dark:text-indigo-400 font-semibold">
+                              {formatDateTime(visit.check_out_time)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                          )}
+                        </td>
+                      )}
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                         {canPerformAction(visit) && (
                           <div className="flex space-x-2">
                             {visit.status === "pending" && (
@@ -283,7 +319,7 @@ export function VisitDetailsModal({
                                     currentVisit?.id === visit.id &&
                                     actionType === "approve"
                                   }
-                                  className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-semibold rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 transition-all duration-150"
                                 >
                                   {loading &&
                                     currentVisit?.id === visit.id &&
@@ -305,7 +341,7 @@ export function VisitDetailsModal({
                                     currentVisit?.id === visit.id &&
                                     actionType === "deny"
                                   }
-                                  className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-semibold rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 transition-all duration-150"
                                 >
                                   {loading &&
                                     currentVisit?.id === visit.id &&
@@ -330,7 +366,7 @@ export function VisitDetailsModal({
                                   currentVisit?.id === visit.id &&
                                   actionType === "complete"
                                 }
-                                className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-semibold rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all duration-150"
                               >
                                 {loading &&
                                   currentVisit?.id === visit.id &&
@@ -355,9 +391,9 @@ export function VisitDetailsModal({
           )}
         </div>
 
-        <div className="border-t dark:border-gray-700 p-4 flex justify-between items-center">
+        <div className="border-t dark:border-gray-700 p-4 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
           <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
               Showing {offset + 1} to {Math.min(offset + limit, totalVisits)} of {totalVisits} results
             </p>
           </div>
@@ -365,21 +401,21 @@ export function VisitDetailsModal({
             <button
               onClick={() => setOffset(offset - limit)}
               disabled={offset === 0}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
+              className="px-4 py-2 font-semibold bg-white hover:bg-gray-100 text-gray-700 rounded-md disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white border border-gray-300 dark:border-gray-600 shadow-sm transition-all duration-150"
             >
               Previous
             </button>
             <button
               onClick={() => setOffset(offset + limit)}
               disabled={offset + limit >= totalVisits}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
+              className="px-4 py-2 font-semibold bg-white hover:bg-gray-100 text-gray-700 rounded-md disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white border border-gray-300 dark:border-gray-600 shadow-sm transition-all duration-150"
             >
               Next
             </button>
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
+            className="px-4 py-2 font-semibold bg-white hover:bg-gray-100 text-gray-700 rounded-md dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white border border-gray-300 dark:border-gray-600 shadow-sm transition-all duration-150"
           >
             Close
           </button>
