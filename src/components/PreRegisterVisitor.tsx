@@ -13,10 +13,10 @@ type PreRegisterFormData = {
   email: string;
   phone: string;
   purpose: string;
-  visitDate: string; // Changed back to visitDate as a date input
-  checkInTime: string; // Added for separate check-in time
+  visitDate: string;
+  checkInTime: string;
   hostEmail: string;
-  photo?: FileList; // Added for photo upload
+  photo?: FileList;
 };
 
 export function PreRegisterVisitor() {
@@ -34,6 +34,18 @@ export function PreRegisterVisitor() {
   });
 
   const onSubmit = async (formData: PreRegisterFormData) => {
+    console.log('[PreRegisterVisitor] Form submission started');
+    console.log('[PreRegisterVisitor] Form data:', {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      purpose: formData.purpose,
+      hostEmail: formData.hostEmail,
+      visitDate: formData.visitDate,
+      checkInTime: formData.checkInTime,
+      hasPhoto: formData.photo ? formData.photo.length > 0 : false
+    });
+    
     setLoading(true);
     setSuccessMessage('');
     setErrorMessage('');
@@ -42,29 +54,44 @@ export function PreRegisterVisitor() {
         throw new Error('You must be logged in to pre-register a visitor.');
       }
 
+      console.log('[PreRegisterVisitor] User authenticated:', user.id);
+
       // Resolve the host ID from the provided host email
+      console.log('[PreRegisterVisitor] Looking up host with email:', formData.hostEmail);
       const { data: targetHost, error: targetHostError } = await supabase
         .from('hosts')
         .select('id')
         .eq('email', formData.hostEmail)
-        .single();
+        .maybeSingle();
 
-      if (targetHostError || !targetHost) {
+      if (targetHostError) {
+        console.error('[PreRegisterVisitor] Host lookup error:', targetHostError);
+        throw targetHostError;
+      }
+
+      if (!targetHost) {
         throw new Error(`Host not found with email: ${formData.hostEmail}`);
       }
 
+      console.log('[PreRegisterVisitor] Host found:', targetHost.id);
+
       // 1. Create or find the visitor
-      let { data: visitor, error: visitorError } = await supabase
+      console.log('[PreRegisterVisitor] Checking for existing visitor with email:', formData.email);
+      const { data: visitor, error: visitorError } = await supabase
         .from('visitors')
         .select('id')
         .eq('email', formData.email)
-        .single();
+        .maybeSingle();
 
-      if (visitorError && visitorError.code !== 'PGRST116') { // PGRST116 means no rows found
+      if (visitorError) {
+        console.error('[PreRegisterVisitor] Visitor lookup error:', visitorError);
         throw visitorError;
       }
 
+      let visitorId: string;
+
       if (!visitor) {
+        console.log('[PreRegisterVisitor] Creating new visitor...');
         const { data: newVisitor, error: newVisitorError } = await supabase
           .from('visitors')
           .insert({ name: formData.name, email: formData.email, phone: formData.phone || 'N/A' })
@@ -72,14 +99,20 @@ export function PreRegisterVisitor() {
           .single();
 
         if (newVisitorError) {
+          console.error('[PreRegisterVisitor] Visitor creation error:', newVisitorError);
           throw newVisitorError;
         }
-        visitor = newVisitor;
+        visitorId = newVisitor.id;
+        console.log('[PreRegisterVisitor] New visitor created:', visitorId);
+      } else {
+        visitorId = visitor.id;
+        console.log('[PreRegisterVisitor] Existing visitor found:', visitorId);
       }
 
       // 2. Upload photo if provided
       let photoUrl: string | undefined;
       if (formData.photo && formData.photo.length > 0) {
+        console.log('[PreRegisterVisitor] Uploading visitor photo...');
         const file = formData.photo[0];
         const fileExt = file.name.split('.').pop();
         const fileName = `${uuidv4()}.${fileExt}`;
@@ -93,10 +126,11 @@ export function PreRegisterVisitor() {
           });
 
         if (uploadError) {
-          console.error('Error uploading photo:', uploadError);
+          console.error('[PreRegisterVisitor] Photo upload error:', uploadError);
           // Continue with the process even if photo upload fails
         } else {
-          photoUrl = `${supabase.storage.from('visitor-photos').getPublicUrl(filePath).data?.publicUrl}`;
+          photoUrl = supabase.storage.from('visitor-photos').getPublicUrl(filePath).data?.publicUrl;
+          console.log('[PreRegisterVisitor] Photo uploaded successfully');
         }
       }
 
@@ -107,50 +141,108 @@ export function PreRegisterVisitor() {
 
       // 3. Create the visit
       const visitId = uuidv4();
+      console.log('[PreRegisterVisitor] Creating visit record with ID:', visitId);
+      
       const { error: visitError } = await supabase.from('visits').insert({
         id: visitId,
-        visitor_id: visitor.id,
+        visitor_id: visitorId,
         host_id: targetHost.id,
         purpose: formData.purpose,
         status: 'pending',
         valid_until: validUntilDateTime.toISOString(),
-        // check_in_time and check_out_time are not set during pre-registration
-        // photo_url: photoUrl, // Link photo to visit if needed, or to visitor
       });
 
       if (visitError) {
+        console.error('[PreRegisterVisitor] Visit creation error:', visitError);
         throw visitError;
       }
 
+      console.log('[PreRegisterVisitor] Visit record created successfully');
+
       // 4. Generate QR code
+      console.log('[PreRegisterVisitor] Generating QR code...');
       const qrData = JSON.stringify({ visitId });
       const qrCodeUrl = await QRCode.toDataURL(qrData);
+      console.log('[PreRegisterVisitor] QR code generated successfully');
 
-      // 5. Send invitation email
-      // Replace with your actual EmailJS credentials
-      const emailResult = await emailjs.send(
-        'service_tmagvgd', // Your EmailJS Service ID
-        'template_c4a4dpu', // Your EmailJS Template ID
-        {
-          to_name: formData.name,
-          to_email: formData.email,
-          qr_code: qrCodeUrl,
-          visit_id: visitId,
-          visit_purpose: formData.purpose,
-          host_name: targetHost.email, // Using host email as name for now
-          valid_until: validUntilDateTime.toLocaleString(),
-        },
-        'ApAlChy6Mq77wiEue' // Your EmailJS Public Key
-      );
+      // 5. Send invitation email using EmailJS with environment variables
+      const emailServiceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+      const emailTemplateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+      const emailPublicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
-      if (emailResult.status !== 200) {
-        console.warn("Email sending failed with status:", emailResult.status);
+      if (!emailServiceId || !emailTemplateId || !emailPublicKey) {
+        console.warn('[PreRegisterVisitor] EmailJS credentials not configured. Skipping email notification.');
+        setSuccessMessage('Visitor pre-registered successfully! However, email configuration is missing.');
+        toast('Visitor pre-registered, but email is not configured.', {
+          icon: '⚠️',
+          style: {
+            background: '#FEF3C7',
+            color: '#92400E',
+          },
+        });
+      } else {
+        try {
+          console.log('[PreRegisterVisitor] Sending email to:', formData.email);
+          
+          const emailParams = {
+            to_name: formData.name,
+            to_email: formData.email,
+            email: formData.email, // Alternative naming
+            name: formData.name, // Alternative naming
+            qr_code: qrCodeUrl,
+            visit_id: visitId,
+            visit_purpose: formData.purpose,
+            purpose: formData.purpose, // Alternative naming
+            host_name: user.name || 'Host',
+            host_email: formData.hostEmail,
+            valid_until: validUntilDateTime.toLocaleString(),
+          };
+          
+          console.log('[PreRegisterVisitor] Email parameters:', emailParams);
+          
+          const emailResult = await emailjs.send(
+            emailServiceId,
+            emailTemplateId,
+            emailParams,
+            emailPublicKey
+          );
+
+          console.log('[PreRegisterVisitor] Email send result:', emailResult);
+          
+          if (emailResult.status === 200) {
+            setSuccessMessage('Visitor pre-registered successfully! An invitation has been sent.');
+            toast.success('Visitor pre-registered and email sent successfully!');
+            console.log('[PreRegisterVisitor] Email sent successfully');
+          } else {
+            setSuccessMessage('Visitor pre-registered successfully! However, email sending may have failed.');
+            toast('Visitor pre-registered, but email sending had issues.', {
+              icon: '⚠️',
+              style: {
+                background: '#FEF3C7',
+                color: '#92400E',
+              },
+            });
+            console.warn('[PreRegisterVisitor] Email sending failed with status:', emailResult.status);
+          }
+        } catch (emailError) {
+          console.error('[PreRegisterVisitor] Email sending error:', emailError);
+          setSuccessMessage('Visitor pre-registered successfully! However, the email could not be sent.');
+          toast('Visitor pre-registered, but email failed to send.', {
+            icon: '⚠️',
+            style: {
+              background: '#FEF3C7',
+              color: '#92400E',
+            },
+          });
+        }
       }
 
-      setSuccessMessage('Visitor pre-registered successfully! An invitation has been sent.');
+      console.log('[PreRegisterVisitor] Registration completed successfully');
       reset();
     } catch (error: any) {
+      console.error('[PreRegisterVisitor] Pre-registration error:', error);
       setErrorMessage(error.message || 'Failed to pre-register visitor.');
+      toast.error(error.message || 'Failed to pre-register visitor.');
     } finally {
       setLoading(false);
     }

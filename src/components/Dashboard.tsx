@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../store/auth";
 import {
@@ -45,6 +45,10 @@ export function Dashboard() {
   const [offset, setOffset] = useState(0);
   const [totalVisits, setTotalVisits] = useState(0);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  
+  // Use ref to track if subscription is active
+  const subscriptionRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const fetchStats = useCallback(async (role: string) => {
     console.log(`Fetching stats for role: ${role}`);
@@ -96,7 +100,6 @@ export function Dashboard() {
               .gte("approved_at", utcTodayStart)
               .lt("approved_at", utcTomorrowStart),
 
-            // Show ALL pending visits
             supabase
               .from("visits")
               .select("*", { count: "exact", head: true })
@@ -109,7 +112,6 @@ export function Dashboard() {
               .gte("check_out_time", utcTodayStart)
               .lt("check_out_time", utcTomorrowStart),
 
-            // FIX: Include both cancelled and denied visits
             supabase
               .from("visits")
               .select("*", { count: "exact", head: true })
@@ -174,7 +176,7 @@ export function Dashboard() {
               icon: XCircle,
               color: "text-red-500",
               bgColor: "bg-red-50",
-              status: "cancelled_denied", // Special status for combined view
+              status: "cancelled_denied",
             },
           ];
           break;
@@ -208,7 +210,6 @@ export function Dashboard() {
               .gte("check_out_time", utcTodayStart)
               .lt("check_out_time", utcTomorrowStart),
 
-            // FIX: Include both cancelled and denied
             supabase
               .from("visits")
               .select("*", { count: "exact", head: true })
@@ -290,7 +291,6 @@ export function Dashboard() {
               .gte("check_out_time", utcTodayStart)
               .lt("check_out_time", utcTomorrowStart),
 
-            // FIX: Include both cancelled and denied
             supabase
               .from("visits")
               .select("*", { count: "exact", head: true })
@@ -372,7 +372,6 @@ export function Dashboard() {
               .gte("check_out_time", utcTodayStart)
               .lt("check_out_time", utcTomorrowStart),
 
-            // FIX: Include both cancelled and denied
             supabase
               .from("visits")
               .select("*", { count: "exact", head: true })
@@ -454,7 +453,6 @@ export function Dashboard() {
               .gte("check_out_time", utcTodayStart)
               .lt("check_out_time", utcTomorrowStart),
 
-            // FIX: Include both cancelled and denied
             supabase
               .from("visits")
               .select("*", { count: "exact", head: true })
@@ -534,13 +532,11 @@ export function Dashboard() {
     setSelectedStatus(status);
     setOffset(0);
     try {
-      // FIX: Handle cancelled_denied status specially
       const isMultiStatus = status === "cancelled_denied";
       const statusFilter = isMultiStatus 
         ? [VISIT_STATUS.CANCELLED, VISIT_STATUS.DENIED]
         : [status];
 
-      // FIX: Build query based on user role to filter out null hosts for hosts
       let countQuery = supabase
         .from("visits")
         .select("*", { count: "exact", head: true });
@@ -551,7 +547,6 @@ export function Dashboard() {
         countQuery = countQuery.eq("status", status);
       }
 
-      // FIX: For host role, exclude visits with null host_id
       if (user?.role === "host" || user?.role === "resident") {
         countQuery = countQuery.not("host_id", "is", null);
       }
@@ -577,7 +572,6 @@ export function Dashboard() {
         query = query.eq("status", status);
       }
 
-      // FIX: For host role, exclude visits with null host_id
       if (user?.role === "host" || user?.role === "resident") {
         query = query.not("host_id", "is", null);
       }
@@ -645,40 +639,62 @@ export function Dashboard() {
       testConnection();
     }
 
-    const subscription = supabase
-      .channel("visits_realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "visits",
-        },
-        (payload) => {
-          console.log("Realtime change detected:", payload);
-          console.log("Event type:", payload.eventType);
-          console.log("Current user role:", user.role);
-          
-          fetchStats(user.role);
-        }
-      )
-      .subscribe((status) => {
-        console.log("Realtime subscription status:", status);
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Successfully subscribed to realtime changes for role:', user.role);
-        } else if (status === 'CLOSED') {
-          console.warn('⚠️ Realtime subscription closed, attempting to reconnect...');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Realtime subscription error');
-        }
-      });
+    // FIX: Only create subscription once
+    if (!isSubscribedRef.current) {
+      console.log("Creating realtime subscription for role:", user.role);
+      
+      const channel = supabase
+        .channel("visits_realtime")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "visits",
+          },
+          (payload) => {
+            console.log("Realtime change detected:", payload);
+            console.log("Event type:", payload.eventType);
+            console.log("Current user role:", user.role);
+            
+            fetchStats(user.role);
+          }
+        )
+        .subscribe((status) => {
+          console.log("Realtime subscription status:", status);
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Successfully subscribed to realtime changes for role:', user.role);
+            isSubscribedRef.current = true;
+          } else if (status === 'CLOSED') {
+            console.warn('⚠️ Realtime subscription closed');
+            isSubscribedRef.current = false;
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Realtime subscription error');
+            isSubscribedRef.current = false;
+          }
+        });
+
+      subscriptionRef.current = channel;
+    }
 
     return () => {
-      console.log("Cleaning up subscription and interval");
+      console.log("Cleaning up interval");
       clearInterval(refreshInterval);
-      supabase.removeChannel(subscription);
+      // Don't remove subscription in cleanup to prevent reconnection issues
     };
   }, [user?.role, connectionTested, fetchStats]);
+
+  // Cleanup subscription only on unmount
+  useEffect(() => {
+    return () => {
+      if (subscriptionRef.current) {
+        console.log("Removing subscription on unmount");
+        supabase.removeChannel(subscriptionRef.current);
+        isSubscribedRef.current = false;
+        subscriptionRef.current = null;
+      }
+    };
+  }, []);
 
   const handleStatusChange = () => {
     fetchStats(user?.role || "");
