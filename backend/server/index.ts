@@ -34,6 +34,10 @@ app.use(
 app.use(express.json());
 
 // ── Routes ───────────────────────────────────────────────────────────────────
+app.get('/', (req, res) => {
+  res.send('Visitor Management System API is running! 🚀');
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/visits', visitsRoutes);
