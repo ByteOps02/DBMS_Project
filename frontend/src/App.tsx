@@ -105,7 +105,7 @@ function App() {
         <div className="flex flex-col items-center gap-5 animate-springIn">
           <div className="relative">
             <div className="w-16 h-16 rounded-[22px] bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-sky-500/30 animate-pulse-slow">
-              <img src="/visitor-management.png" alt="VMS" className="w-9 h-9" />
+              <img src="/visistor-management.png" alt="VMS" className="w-9 h-9" />
             </div>
             <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-black/10 dark:bg-black/30 rounded-full blur-sm" />
           </div>

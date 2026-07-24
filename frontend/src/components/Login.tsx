@@ -72,7 +72,7 @@ export function Login() {
             </h1>
 
             <p className="text-lg text-sky-100/80 mb-10 leading-relaxed font-light">
-              Welcome to the Indian Institute Of Information Technology Nagpur Visitor Management
+              Welcome to the IIIT Nagpur VMS
               System. Designed for uncompromising security and ease of use.
             </p>
 

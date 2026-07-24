@@ -16,7 +16,7 @@ export default defineConfig({
       manifest: {
         name: 'IIIT Nagpur VMS',
         short_name: 'IIITN VMS',
-        description: 'Official IIIT Nagpur VMS. Experience a seamless and secure visitor management process.',
+        description: 'Official IIIT Nagpur VMS.',
         theme_color: '#ffffff',
         icons: [
           {

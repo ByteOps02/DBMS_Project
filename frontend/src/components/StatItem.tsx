@@ -50,12 +50,19 @@ const CARD_THEMES: Record<
     accent: "from-violet-500 to-purple-600",
     badge: "bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300",
   },
-  "text-red-500": {
+  "text-rose-500": {
     gradient: "from-rose-500 to-red-600",
     glow: "shadow-rose-500/30",
     blob: "bg-rose-400/10",
     accent: "from-rose-500 to-red-600",
     badge: "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-300",
+  },
+  "text-teal-500": {
+    gradient: "from-teal-500 to-emerald-600",
+    glow: "shadow-teal-500/30",
+    blob: "bg-teal-400/10",
+    accent: "from-teal-500 to-emerald-600",
+    badge: "bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-300",
   },
   default: {
     gradient: "from-sky-500 to-blue-600",
@@ -110,7 +117,7 @@ export const StatItem = React.memo(
               />
             </div>
             {status && (
-              <div className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+              <div className="transition-all duration-300">
                 <div
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold ${theme.badge}`}
                 >
@@ -137,7 +144,7 @@ export const StatItem = React.memo(
         </div>
 
         <div
-          className={`absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r ${theme.accent} scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`}
+          className={`absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r ${theme.accent}`}
         />
       </div>
     );

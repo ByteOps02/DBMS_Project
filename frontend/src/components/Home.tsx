@@ -62,13 +62,13 @@ const Home = () => {
           onClick={() => navigate("/")}
         >
           <div className="p-1.5 bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg shadow-md shadow-sky-500/30 group-hover:shadow-sky-500/50 transition-all duration-300">
-            <img src="/visitor-management.png" alt="Logo" className="h-6 w-6" />
+            <img src="/visistor-management.png" alt="Logo" className="h-6 w-6" />
           </div>
           <span className="hidden sm:block text-lg font-bold bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-400 dark:to-blue-400 bg-clip-text text-transparent">
             IIIT Nagpur VMS
           </span>
           <span className="sm:hidden text-base font-bold bg-gradient-to-r from-sky-600 to-blue-600 bg-clip-text text-transparent">
-            VMS
+            IIIT Nagpur VMS
           </span>
         </div>
 
@@ -146,7 +146,7 @@ const Home = () => {
               className="text-white/90 font-medium text-base sm:text-lg mb-8 animate-fadeInUp leading-relaxed drop-shadow-sm max-w-xl mx-auto"
               style={{ animationDelay: "0.15s" }}
             >
-              The official Visitor Management System of Indian Institute Of Information Technology
+              The official IIIT Nagpur VMS
               Nagpur. Enhance campus security and visitor efficiency seamlessly.
             </p>
             <div
@@ -223,7 +223,7 @@ const Home = () => {
             Welcome to Indian Institute Of Information Technology Nagpur
           </h3>
           <p className="text-sky-100 mb-7 text-base">
-            Experience a seamless and secure visitor management process.
+            Experience a seamless and secure IIIT Nagpur VMS.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
@@ -246,7 +246,7 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg">
-                <img src="/visitor-management.png" alt="Logo" className="h-5 w-5" />
+                <img src="/visistor-management.png" alt="Logo" className="h-5 w-5" />
               </div>
               <span className="font-bold text-white/90 text-sm">IIIT Nagpur VMS</span>
             </div>
@@ -268,7 +268,7 @@ const Home = () => {
             </div>
 
             <p className="text-gray-500 text-xs">
-              © {new Date().getFullYear()} VMS. All rights reserved.
+              © {new Date().getFullYear()} IIIT Nagpur VMS. All rights reserved.
             </p>
           </div>
         </div>

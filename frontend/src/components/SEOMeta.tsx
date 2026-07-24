@@ -9,7 +9,7 @@ interface SEOMetaProps {
 
 export function SEOMeta({
   title,
-  description = "Official IIIT Nagpur VMS. Experience a seamless and secure visitor management process.",
+  description = "Official IIIT Nagpur VMS.",
   keywords = "IIITN, VMS, IIIT Nagpur VMS, secure access, campus administration, smart campus",
   type = "website",
 }: SEOMetaProps) {

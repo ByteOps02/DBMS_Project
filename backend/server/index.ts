@@ -31,7 +31,7 @@ app.use(express.json());
 
 // Routes
 app.get('/', (req, res) => {
-  res.send('Visitor Management System API is running! 🚀');
+  res.send('IIIT Nagpur VMS API is running! 🚀');
 });
 
 app.use('/api/auth', authRoutes);
