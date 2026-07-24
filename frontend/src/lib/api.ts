@@ -5,7 +5,7 @@ type Row<T extends keyof Tables> = Tables[T]["Row"];
 
 // In production this is set to the deployed backend URL (e.g. https://vms-backend.vercel.app).
 // In local dev it is left empty so the Vite dev-proxy forwards /api/* to localhost:5000.
-const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
+export const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
 
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem("vms_token");

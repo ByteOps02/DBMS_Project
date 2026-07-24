@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 import { useAuthStore } from "../store/auth";
+import { API_BASE } from "../lib/api";
 import { Shield, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { BackButton } from "./BackButton";
 import { PageHeader } from "./PageHeader";
@@ -41,7 +42,7 @@ export function ChangePassword() {
 
     try {
       const token = localStorage.getItem("vms_token");
-      const res = await fetch("/api/auth/change-password", {
+      const res = await fetch(`${API_BASE}/api/auth/change-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

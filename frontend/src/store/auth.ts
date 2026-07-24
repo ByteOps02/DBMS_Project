@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { api } from "../lib/api";
+import { api, API_BASE } from "../lib/api";
 import type { Database } from "../lib/database.types";
 import log from "../lib/logger";
 
@@ -84,7 +84,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
       try {
-        const res = await fetch("/api/auth/me", {
+        const res = await fetch(`${API_BASE}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -124,7 +124,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
 
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -153,7 +153,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
 
-      const res = await fetch("/api/auth/signup", {
+      const res = await fetch(`${API_BASE}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, name, department_id: departmentId }),
