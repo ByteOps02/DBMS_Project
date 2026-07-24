@@ -12,8 +12,6 @@ export type StatItemProps = {
   style?: React.CSSProperties;
   className?: string;
 };
-
-// Rich per-card theme: gradient, glow, blob, border accent
 const CARD_THEMES: Record<
   string,
   {
@@ -59,7 +57,6 @@ const CARD_THEMES: Record<
     accent: "from-rose-500 to-red-600",
     badge: "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-300",
   },
-  // fallback
   default: {
     gradient: "from-sky-500 to-blue-600",
     glow: "shadow-sky-500/30",
@@ -70,36 +67,47 @@ const CARD_THEMES: Record<
 };
 
 export const StatItem = React.memo(
-  ({ name, value, icon: Icon, color, status, onClick, onMouseEnter, style, className }: StatItemProps) => {
+  ({
+    name,
+    value,
+    icon: Icon,
+    color,
+    status,
+    onClick,
+    onMouseEnter,
+    style,
+    className,
+  }: StatItemProps) => {
     const theme = CARD_THEMES[color] ?? CARD_THEMES.default;
 
     return (
       <div
-        className={`relative flex flex-col bg-white dark:bg-slate-900 rounded-[2rem] shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 group animate-fadeInUp overflow-hidden border border-gray-100/80 dark:border-slate-800 ${status ? "cursor-pointer" : ""
-          } ${className || ""}`}
+        className={`relative flex flex-col bg-white dark:bg-slate-900 rounded-[2rem] shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 group animate-fadeInUp overflow-hidden border border-gray-100/80 dark:border-slate-800 ${
+          status ? "cursor-pointer" : ""
+        } ${className || ""}`}
         style={style}
         onClick={() => status && onClick(status)}
         onMouseEnter={() => status && onMouseEnter && onMouseEnter(status)}
         aria-label={status ? `View ${name.toLowerCase()}` : undefined}
         tabIndex={status ? 0 : undefined}
       >
-        {/* Decorative blob in top-right */}
         <div
           className={`absolute -top-6 -right-6 w-28 h-28 rounded-full ${theme.blob} blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:opacity-80`}
         />
-
-        {/* Subtle full-card gradient wash on hover */}
         <div
           className={`absolute inset-0 bg-gradient-to-br ${theme.gradient} opacity-0 group-hover:opacity-[0.04] transition-opacity duration-500`}
         />
 
         <div className="p-4 xs:p-5 sm:p-6 relative z-10 flex-1 flex flex-col">
-          {/* Top row: icon + arrow */}
           <div className="flex items-start justify-between">
             <div
               className={`p-2.5 xs:p-3 sm:p-3.5 rounded-[1rem] sm:rounded-2xl bg-gradient-to-br ${theme.gradient} shadow-lg ${theme.glow} transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}
             >
-              <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" strokeWidth={2.5} aria-hidden="true" />
+              <Icon
+                className="h-5 w-5 sm:h-6 sm:w-6 text-white"
+                strokeWidth={2.5}
+                aria-hidden="true"
+              />
             </div>
             {status && (
               <div className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
@@ -111,8 +119,6 @@ export const StatItem = React.memo(
               </div>
             )}
           </div>
-
-          {/* Value + label */}
           <div className="mt-auto pt-4 sm:pt-5">
             <p className="text-2xl xs:text-3xl sm:text-[2.4rem] font-extrabold tracking-tighter text-gray-900 dark:text-white leading-none tabular-nums">
               {value}

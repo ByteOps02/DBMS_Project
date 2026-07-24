@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { UserCheck } from "lucide-react";
-import { supabase } from "../lib/supabase";
-import type { Database } from "../lib/database.types";
+import { api } from "../lib/api";
 import { BackButton } from "./BackButton";
 
-type Visit = Database["public"]["Tables"]["visits"]["Row"] & {
-  visitors: Database["public"]["Tables"]["visitors"]["Row"];
-  hosts: Database["public"]["Tables"]["hosts"]["Row"];
+type Visit = {
+  id: string;
+  purpose: string;
+  valid_until: string | null;
+  visitor: { name: string } | null;
+  host: { name: string } | null;
 };
 
 export function PublicDisplay() {
@@ -16,21 +18,16 @@ export function PublicDisplay() {
 
   const loadApprovedVisits = async () => {
     try {
-      const { data, error } = await supabase
-        .from("visits")
-        .select(
-          `
-          *,
-          visitors (*),
-          hosts (*)
-        `
-        )
-        .eq("status", "approved")
-        .gte("valid_until", new Date().toISOString())
-        .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setVisits(data as Visit[]);
+      const data = await api.visits.list({ status: "approved" });
+      
+      const now = new Date().getTime();
+      const filteredVisits = data.filter(visit => {
+        if (!visit.valid_until) return true;
+        return new Date(visit.valid_until).getTime() >= now;
+      });
+
+      setVisits(filteredVisits as Visit[]);
     } catch (error) {
       console.error("Error loading approved visits:", error);
     } finally {
@@ -63,7 +60,10 @@ export function PublicDisplay() {
             {loading ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 animate-pulse">
+                  <div
+                    key={i}
+                    className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 animate-pulse"
+                  >
                     <div className="flex items-center">
                       <div className="skeleton w-12 h-12 rounded-full shrink-0" />
                       <div className="ml-5 flex-1 space-y-3">
@@ -93,14 +93,16 @@ export function PublicDisplay() {
                           </div>
                           <div className="ml-5">
                             <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                              {visit.visitors.name}
+                              {visit.visitor?.name || "Unknown Visitor"}
                             </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{visit.purpose}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {visit.purpose}
+                            </p>
                           </div>
                         </div>
                         <div className="mt-4">
                           <div className="text-sm text-gray-900 dark:text-white">
-                            <span className="font-medium">Meeting with:</span> {visit.hosts.name}
+                            <span className="font-medium">Meeting with:</span> {visit.host?.name || "Unknown Host"}
                           </div>
                           <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                             Valid until:{" "}

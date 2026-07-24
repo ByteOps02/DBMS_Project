@@ -64,6 +64,13 @@ export default defineConfig({
   },
   server: {
     port: 5174,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
     headers: {
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'SAMEORIGIN',
@@ -81,7 +88,6 @@ export default defineConfig({
       'zustand',
       'date-fns',
       'lucide-react',
-      '@supabase/supabase-js',
       'react-hook-form',
       'react-hot-toast',
       'react-helmet-async',
@@ -113,10 +119,6 @@ export default defineConfig({
           // Router
           if (id.includes('node_modules/react-router')) {
             return 'router-vendor';
-          }
-          // Supabase — large, changes rarely
-          if (id.includes('node_modules/@supabase/')) {
-            return 'supabase-vendor';
           }
           // Icons — large but tree-shaken; separate chunk for caching
           if (id.includes('node_modules/lucide-react')) {

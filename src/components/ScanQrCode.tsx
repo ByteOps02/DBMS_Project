@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
-import { supabase } from "../lib/supabase";
 import toast from "react-hot-toast";
 import {
   CheckCircle,
@@ -14,12 +13,15 @@ import {
 } from "lucide-react";
 import { BackButton } from "./BackButton";
 import { PageHeader } from "./PageHeader";
-import type { Database } from "../lib/database.types";
+import { api } from "../lib/api";
 import { formatIST } from "../lib/dateIST";
+import { useAuthStore } from "../store/auth";
+
+import type { Database } from "../lib/database.types";
 
 type Visit = Database["public"]["Tables"]["visits"]["Row"] & {
-  visitors: Database["public"]["Tables"]["visitors"]["Row"];
-  hosts: Database["public"]["Tables"]["hosts"]["Row"];
+  visitor: Database["public"]["Tables"]["visitors"]["Row"];
+  host: Database["public"]["Tables"]["hosts"]["Row"] | null;
 };
 
 const CAMPUS_GATES = ["Main Gate", "North Gate", "South Gate", "Administrative Block"];
@@ -38,32 +40,24 @@ export function ScanQrCode() {
   const [visit, setVisit] = useState<Visit | null>(null);
   const [optimisticVisit, setOptimisticVisit] = useState<OptimisticVisit | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated, isLoading } = useAuthStore();
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [scannerReady, setScannerReady] = useState(false);
+  
   const [currentGate, setCurrentGate] = useState(CAMPUS_GATES[0]);
+  const [scannerReady, setScannerReady] = useState(false);
   const [scannerKey, setScannerKey] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session?.user) {
-          setIsAuthenticated(false);
-          setError("You must be logged in to scan QR codes");
-        } else {
-          setIsAuthenticated(true);
-          setError(null);
-        }
-      } finally {
-        setCheckingAuth(false);
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        setError("You must be logged in to scan QR codes");
+      } else {
+        setError(null);
       }
-    };
-    checkAuth();
-  }, []);
+      setCheckingAuth(false);
+    }
+  }, [isAuthenticated, isLoading]);
 
   useEffect(() => {
     if (!isAuthenticated || checkingAuth || visit) return;
@@ -83,10 +77,9 @@ export function ScanQrCode() {
         await scanner.start(
           { facingMode: "environment" },
           {
-            fps: 20, // Lower FPS can be more stable on some devices
+            fps: 20, 
             qrbox: (viewfinderWidth, viewHeight) => {
               const minEdge = Math.min(viewfinderWidth, viewHeight);
-              // Reduced to 55% for a more focused scanning area
               const size = Math.floor(minEdge * 0.55);
               return { width: size, height: size };
             },
@@ -98,7 +91,7 @@ export function ScanQrCode() {
               scanner.stop().catch(console.error);
             }
           },
-          () => { }
+          () => {}
         );
         setScannerReady(true);
       } catch (err) {
@@ -133,7 +126,6 @@ export function ScanQrCode() {
         let visitId: string;
         try {
           const parsed = JSON.parse(scanResult);
-          // Handle both old and new (shortened) keys for compatibility
           visitId = parsed.vId || parsed.visitId;
 
           setOptimisticVisit({
@@ -147,30 +139,21 @@ export function ScanQrCode() {
           visitId = scanResult.trim();
         }
 
-        const { data: visitData, error: visitError } = await supabase
-          .from("visits")
-          .select(`*, visitors:visitor_id (*), hosts:host_id (*)`)
-          .eq("id", visitId)
-          .single();
-
-        if (visitError || !visitData) throw new Error("Visit record not found in database");
+        const visitData = await api.visits.get(visitId);
+        if (!visitData) throw new Error("Visit record not found in database");
 
         const visit = visitData as Visit;
-
-        // Security Check: Blacklist
-        if (visit.visitors?.is_blacklisted) {
+        if (visit.visitor?.is_blacklisted) {
           setError(
-            `SECURITY ALERT: Visitor is on the campus blacklist. Reason: ${visit.visitors.blacklist_reason || "Security violation"}`
+            `SECURITY ALERT: Visitor is on the campus blacklist. Reason: ${visit.visitor.blacklist_reason || "Security violation"}`
           );
           setVisit(visit);
           return;
         }
-
-        // Validity Check
         const now = new Date();
         if (
           visit.status !== "approved" &&
-          visit.status !== "checked-in" &&
+          visit.status !== "checked_in" &&
           visit.status !== "completed"
         ) {
           throw new Error(`Invalid status: Visit is currently '${visit.status}'.`);
@@ -179,41 +162,25 @@ export function ScanQrCode() {
         if (visit.valid_until && new Date(visit.valid_until) < now) {
           throw new Error("Expired Pass: This visit registration is no longer valid.");
         }
-
-        // Check-in / Check-out Logic
         if (
           visit.status === "approved" ||
           (visit.pass_type === "multi_day" && visit.status === "completed")
         ) {
-          const { data: updated, error: uErr } = await supabase
-            .from("visits")
-            .update({
-              check_in_time: now.toISOString(),
-              status: "checked-in",
-              entry_gate: currentGate,
-              updated_at: now.toISOString(),
-            })
-            .eq("id", visitId)
-            .select(`*, visitors:visitor_id (*), hosts:host_id (*)`)
-            .single();
-
-          if (uErr) throw uErr;
+          const updated = await api.visits.update(visitId, {
+            check_in_time: now.toISOString(),
+            status: "checked_in",
+            entry_gate: currentGate,
+            updated_at: now.toISOString(),
+          });
           toast.success("Visitor Checked-in successfully");
           setVisit(updated as Visit);
-        } else if (visit.status === "checked-in") {
-          const { data: updated, error: uErr } = await supabase
-            .from("visits")
-            .update({
-              check_out_time: now.toISOString(),
-              status: "completed",
-              exit_gate: currentGate,
-              updated_at: now.toISOString(),
-            })
-            .eq("id", visitId)
-            .select(`*, visitors:visitor_id (*), hosts:host_id (*)`)
-            .single();
-
-          if (uErr) throw uErr;
+        } else if (visit.status === "checked_in") {
+          const updated = await api.visits.update(visitId, {
+            check_out_time: now.toISOString(),
+            status: "completed",
+            exit_gate: currentGate,
+            updated_at: now.toISOString(),
+          });
           toast.success("Visitor Checked-out successfully");
           setVisit(updated as Visit);
         }
@@ -258,7 +225,6 @@ export function ScanQrCode() {
       </div>
 
       <div className="mt-4 sm:mt-8 max-w-2xl mx-auto space-y-4 sm:space-y-6">
-        {/* Gate Selection */}
         {!visit && !optimisticVisit && (
           <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-gray-200 dark:border-slate-800 shadow-sm flex items-center gap-3 sm:gap-4 transition-all duration-300">
             <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-600 dark:text-slate-400">
@@ -328,14 +294,15 @@ export function ScanQrCode() {
         )}
 
         {(visit || optimisticVisit) && !error && (
-          <div className="bg-white dark:bg-slate-900 shadow-2xl rounded-[2.5rem] overflow-hidden border border-gray-100 dark:border-slate-800 animate-scaleIn">
+          <div id="generated-pass" className="print:m-0 w-full flex justify-center">
+            <div className="bg-white dark:bg-slate-900 shadow-2xl rounded-[2.5rem] overflow-hidden border border-gray-100 dark:border-slate-800 animate-scaleIn w-full">
             <div
-              className={`p-6 ${visit ? (visit.status === "checked-in" ? "bg-emerald-500" : "bg-indigo-600") : "bg-slate-700"} text-white flex items-center justify-between`}
+              className={`p-6 ${visit ? (visit.status === "checked_in" ? "bg-emerald-500" : "bg-indigo-600") : "bg-slate-700"} text-white flex items-center justify-between`}
             >
               <div className="flex items-center gap-3">
                 {isVerifying ? (
                   <Clock className="w-6 h-6 animate-spin" />
-                ) : visit?.status === "checked-in" ? (
+                ) : visit?.status === "checked_in" ? (
                   <CheckCircle className="w-6 h-6" />
                 ) : (
                   <ShieldCheck className="w-6 h-6" />
@@ -343,7 +310,7 @@ export function ScanQrCode() {
                 <h2 className="font-black uppercase tracking-widest text-sm">
                   {isVerifying
                     ? "Verifying Identity..."
-                    : visit?.status === "checked-in"
+                    : visit?.status === "checked_in"
                       ? "Check-in Confirmed"
                       : "Verification Complete"}
                 </h2>
@@ -356,18 +323,18 @@ export function ScanQrCode() {
             <div className="p-8 space-y-8">
               <div className="flex items-center gap-6">
                 <div className="w-24 h-24 rounded-[2rem] bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-4xl font-black text-slate-300 overflow-hidden shadow-inner border-4 border-white dark:border-slate-700">
-                  {visit?.visitors?.photo_url ? (
-                    <img src={visit.visitors.photo_url} className="w-full h-full object-cover" />
+                  {visit?.visitor?.photo_url ? (
+                    <img src={visit.visitor.photo_url} className="w-full h-full object-cover" />
                   ) : (
-                    (visit?.visitors?.name || optimisticVisit?.name || "?").charAt(0).toUpperCase()
+                    (visit?.visitor?.name || optimisticVisit?.name || "?").charAt(0).toUpperCase()
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter truncate leading-none mb-2">
-                    {visit?.visitors?.name || optimisticVisit?.name}
+                    {visit?.visitor?.name || optimisticVisit?.name}
                   </h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 font-bold flex items-center gap-2">
-                    {visit?.visitors?.phone ||
+                    {visit?.visitor?.phone ||
                       optimisticVisit?.email ||
                       "Verification in progress..."}
                   </p>
@@ -388,7 +355,7 @@ export function ScanQrCode() {
                     Host Personnel
                   </span>
                   <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                    {visit?.hosts?.name || "Verifying..."}
+                    {visit?.host?.name || "Verifying..."}
                   </p>
                 </div>
                 {(visit?.vehicle_number || optimisticVisit?.vehicle) && (
@@ -432,7 +399,7 @@ export function ScanQrCode() {
                 )}
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <div className="flex flex-col sm:flex-row gap-4 pt-4 print-hide">
                 <button
                   onClick={handleScanAnother}
                   className="flex-1 py-5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-slate-900/10"
@@ -447,6 +414,7 @@ export function ScanQrCode() {
                 </button>
               </div>
             </div>
+          </div>
           </div>
         )}
       </div>

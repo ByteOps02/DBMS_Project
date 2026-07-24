@@ -2,7 +2,6 @@ import type React from "react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
-import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../store/auth";
 import { Shield, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { BackButton } from "./BackButton";
@@ -42,27 +41,34 @@ export function ChangePassword() {
     }
 
     try {
-      // 1. Verify current password by re-authenticating
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: data.currentPassword,
+      const token = localStorage.getItem("vms_token");
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
+        }),
       });
 
-      if (signInError) {
-        throw new Error("Current password is incorrect.");
+      if (!res.ok) {
+        let errorMsg = "Failed to update password";
+        try {
+          const errorData = await res.json();
+          errorMsg = errorData.error || errorMsg;
+        } catch {
+          // fallback to default error msg
+        }
+        throw new Error(errorMsg);
       }
-
-      // 2. Update to new password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: data.newPassword,
-      });
-
-      if (updateError) throw updateError;
 
       toast.success("Password successfully Updated");
       reset();
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : "Failed to update password";
+      const msg = (error as Error).message || "Failed to update password";
       setErrorMessage(msg);
       toast.error(msg);
     }
@@ -92,7 +98,6 @@ export function ChangePassword() {
             )}
 
             <div className="space-y-6">
-              {/* Current Password */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Current Password
@@ -130,8 +135,6 @@ export function ChangePassword() {
                 <h3 className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">
                   New Credentials
                 </h3>
-
-                {/* New Password */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     New Password
@@ -165,8 +168,6 @@ export function ChangePassword() {
                     <p className="mt-1 text-sm text-red-600">{errors.newPassword.message}</p>
                   )}
                 </div>
-
-                {/* Confirm Password */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Confirm New Password

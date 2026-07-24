@@ -4,7 +4,6 @@ import { useAuthStore } from "../store/auth";
 import { LogOut, X } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { navLinks } from "../lib/navigation";
-import { supabase } from "../lib/supabase";
 
 function getInitials(name: string) {
   return name
@@ -21,30 +20,14 @@ export function Layout() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  // Listen for profile changes (role updates)
   useEffect(() => {
     if (!user?.id) return;
 
-    const profileChannel = supabase
-      .channel(`user_profile_${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "hosts",
-          filter: `id=eq.${user.id}`,
-        },
-        () => {
-          refreshProfile();
-        }
-      )
-      .subscribe();
+    const interval = setInterval(() => {
+      refreshProfile();
+    }, 60000);
 
-    return () => {
-      supabase.removeChannel(profileChannel);
-    };
+    return () => clearInterval(interval);
   }, [user?.id, refreshProfile]);
 
   const handleLogout = async () => {
@@ -53,22 +36,15 @@ export function Layout() {
   };
 
   const accessibleNavLinks = user ? navLinks.filter((link) => link.roles.includes(user.role)) : [];
-
-  // Bottom tab bar shows all links as it's now slidable
   const bottomTabLinks = accessibleNavLinks;
 
   return (
     <div className="h-[100dvh] w-full flex overflow-hidden bg-gray-50 dark:bg-slate-950">
-
-      {/* ══════════════════════════════════════════
-          MOBILE TOP BAR  (< lg)
-          ══════════════════════════════════════════ */}
       <div
         className="lg:hidden fixed top-0 left-0 right-0 z-50 glass-nav"
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
         <div className="flex justify-between h-14 items-center px-4">
-          {/* Brand */}
           <Link to="/app/dashboard" className="flex items-center gap-2">
             <div className="p-1.5 bg-gradient-to-br from-sky-500 to-blue-600 rounded-xl shadow-md shadow-sky-500/20">
               <img src="/visitor-management.png" alt="Logo" className="h-5 w-5" />
@@ -77,11 +53,8 @@ export function Layout() {
               VMS
             </span>
           </Link>
-
-          {/* Right controls */}
           <div className="flex items-center gap-1">
             <ThemeSwitcher />
-            {/* User avatar — tapping opens a slim dropdown */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="ml-1 w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-sky-500 text-white flex items-center justify-center font-bold text-xs shadow-md shadow-indigo-500/20 active:scale-90 transition-transform"
@@ -91,34 +64,26 @@ export function Layout() {
           </div>
         </div>
       </div>
-
-      {/* ══════════════════════════════════════════
-          MOBILE PROFILE SHEET  (slides down from top)
-          Replaces the old full-screen overlay.
-          Locks to its own scroll if content overflows.
-          ══════════════════════════════════════════ */}
       {isMobileMenuOpen && (
         <>
-          {/* Dim backdrop — tap outside to dismiss */}
           <div
             className="lg:hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm animate-fadeIn"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-
-          {/* Sheet */}
           <div
             ref={menuRef}
             className="lg:hidden fixed top-14 right-3 z-50 w-72 glass-panel rounded-3xl shadow-2xl animate-springIn overflow-hidden"
             style={{ marginTop: "env(safe-area-inset-top, 0px)" }}
           >
-            {/* User row */}
             {user && (
               <div className="flex items-center gap-3 p-4 border-b border-gray-100 dark:border-slate-800">
                 <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-sky-500 text-white flex items-center justify-center font-black text-sm shadow-lg shadow-indigo-500/20 shrink-0">
                   {getInitials(user.name)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black text-gray-900 dark:text-white truncate">{user.name}</p>
+                  <p className="text-sm font-black text-gray-900 dark:text-white truncate">
+                    {user.name}
+                  </p>
                   <p className="text-[11px] text-gray-400 dark:text-slate-400 capitalize font-semibold tracking-wide">
                     {user.role}
                   </p>
@@ -135,8 +100,7 @@ export function Layout() {
             <div className="p-3 space-y-1 scroll-ios max-h-[60dvh]">
               {accessibleNavLinks.map((link) => {
                 const isDashboard = link.href === "/app/dashboard";
-                const isDashboardChild =
-                  isDashboard && location.pathname.startsWith("/app/visits");
+                const isDashboardChild = isDashboard && location.pathname.startsWith("/app/visits");
                 const isActive = location.pathname === link.href || isDashboardChild;
 
                 return (
@@ -151,18 +115,17 @@ export function Layout() {
                   >
                     <link.icon className="h-4 w-4" strokeWidth={isActive ? 2.5 : 2} />
                     <span className="text-sm">{link.label}</span>
-                    {isActive && (
-                      <span className="ml-auto w-1.5 h-1.5 bg-sky-500 rounded-full" />
-                    )}
+                    {isActive && <span className="ml-auto w-1.5 h-1.5 bg-sky-500 rounded-full" />}
                   </Link>
                 );
               })}
             </div>
-
-            {/* Logout */}
             <div className="p-3 border-t border-gray-100 dark:border-slate-800">
               <button
-                onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                onClick={() => {
+                  handleLogout();
+                  setIsMobileMenuOpen(false);
+                }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-red-500 dark:text-red-400 font-black text-sm hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
               >
                 <LogOut className="h-4 w-4" strokeWidth={2.5} />
@@ -172,12 +135,7 @@ export function Layout() {
           </div>
         </>
       )}
-
-      {/* ══════════════════════════════════════════
-          DESKTOP SIDEBAR  (≥ lg)
-          ══════════════════════════════════════════ */}
       <aside className="hidden lg:flex flex-col w-72 shrink-0 glass-sidebar z-30 overflow-y-auto scroll-ios relative">
-        {/* Brand */}
         <div className="h-20 flex items-center px-6 border-b border-white/50 dark:border-slate-800 shrink-0">
           <Link to="/app/dashboard" className="flex items-center gap-3 group">
             <div className="p-2 bg-gradient-to-br from-sky-500 to-blue-600 rounded-xl shadow-md shadow-sky-500/20 group-hover:shadow-sky-500/30 transition-all duration-300">
@@ -188,16 +146,13 @@ export function Layout() {
             </span>
           </Link>
         </div>
-
-        {/* Nav links */}
         <nav className="flex-1 px-4 py-6 space-y-1">
           <p className="px-3 text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4">
             Navigation
           </p>
           {accessibleNavLinks.map((link) => {
             const isDashboard = link.href === "/app/dashboard";
-            const isDashboardChild =
-              isDashboard && location.pathname.startsWith("/app/visits");
+            const isDashboardChild = isDashboard && location.pathname.startsWith("/app/visits");
             const isActive = location.pathname === link.href || isDashboardChild;
 
             return (
@@ -217,7 +172,9 @@ export function Layout() {
                 )}
 
                 <link.icon
-                  className={`relative z-10 h-4.5 w-4.5 mr-3 transition-colors duration-200 ${isActive ? "text-sky-600 dark:text-sky-400" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-slate-300"
+                  className={`relative z-10 h-4.5 w-4.5 mr-3 transition-colors duration-200 ${isActive
+                      ? "text-sky-600 dark:text-sky-400"
+                      : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-slate-300"
                     }`}
                   strokeWidth={isActive ? 2.5 : 2}
                 />
@@ -226,8 +183,6 @@ export function Layout() {
             );
           })}
         </nav>
-
-        {/* User + controls footer */}
         <div className="p-4 border-t border-white/50 dark:border-slate-800 shrink-0">
           <div className="flex items-center justify-between px-1 mb-4">
             <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">
@@ -242,8 +197,12 @@ export function Layout() {
                 {getInitials(user.name)}
               </div>
               <div className="ml-3 overflow-hidden text-left flex-1">
-                <p className="text-sm font-black text-gray-900 dark:text-slate-100 truncate">{user.name}</p>
-                <p className="text-xs text-gray-400 dark:text-slate-400 capitalize font-semibold">{user.role}</p>
+                <p className="text-sm font-black text-gray-900 dark:text-slate-100 truncate">
+                  {user.name}
+                </p>
+                <p className="text-xs text-gray-400 dark:text-slate-400 capitalize font-semibold">
+                  {user.role}
+                </p>
               </div>
               <button
                 onClick={handleLogout}
@@ -256,24 +215,13 @@ export function Layout() {
           )}
         </div>
       </aside>
-
-      {/* ══════════════════════════════════════════
-          MAIN CONTENT AREA
-          scroll-ios: rubber-band lives here only
-          ══════════════════════════════════════════ */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Scroll container — rubber-band only inside here */}
         <div className="flex-1 scroll-ios pt-14 pb-[72px] lg:pt-0 lg:pb-0">
           <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-6 py-4 lg:py-8">
             <Outlet />
           </div>
         </div>
       </main>
-
-      {/* ══════════════════════════════════════════
-          IOS BOTTOM TAB BAR  (< lg only)
-          Fixed at bottom, clears iPhone home bar
-          ══════════════════════════════════════════ */}
       <nav
         className="lg:hidden fixed bottom-0 left-0 right-0 z-50 glass-nav"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
@@ -281,8 +229,7 @@ export function Layout() {
         <div className="flex items-stretch h-[56px] overflow-x-auto scrollbar-hide flex-nowrap px-2">
           {bottomTabLinks.map((link) => {
             const isDashboard = link.href === "/app/dashboard";
-            const isDashboardChild =
-              isDashboard && location.pathname.startsWith("/app/visits");
+            const isDashboardChild = isDashboard && location.pathname.startsWith("/app/visits");
             const isActive = location.pathname === link.href || isDashboardChild;
 
             return (
@@ -292,15 +239,12 @@ export function Layout() {
                 className="flex-shrink-0 w-[72px] flex flex-col items-center justify-center gap-1 transition-all duration-200 active:scale-90 relative"
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
-                {/* Active glow dot */}
                 {isActive && (
                   <span className="absolute top-1 w-1.5 h-1.5 bg-sky-500 rounded-full animate-tabPop shadow-[0_0_8px_rgba(14,165,233,0.6)]" />
                 )}
 
                 <div
-                  className={`flex items-center justify-center w-12 h-7 rounded-2xl transition-all duration-300 ${isActive
-                      ? "bg-sky-100 dark:bg-sky-900/40 shadow-sm"
-                      : ""
+                  className={`flex items-center justify-center w-12 h-7 rounded-2xl transition-all duration-300 ${isActive ? "bg-sky-100 dark:bg-sky-900/40 shadow-sm" : ""
                     }`}
                 >
                   <link.icon

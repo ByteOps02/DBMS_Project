@@ -2,11 +2,11 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { toast } from "react-hot-toast";
-import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../store/auth";
 import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
 import log from "../lib/logger";
+import { api } from "../lib/api";
 
 export type UnifiedVisitFormData = {
   name: string;
@@ -61,16 +61,11 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
       }
     }
   }, [user, isVisitor, setValue]);
-
-  // Check blacklist whenever email changes
   useEffect(() => {
     if (visitorEmail && visitorEmail.includes("@")) {
       const checkBlacklist = async () => {
-        const { data } = await supabase
-          .from("visitors")
-          .select("is_blacklisted, blacklist_reason")
-          .eq("email", visitorEmail.trim())
-          .maybeSingle();
+        const visitors = await api.visitors.list({ email: visitorEmail.trim() });
+        const data = visitors[0];
 
         if (data?.is_blacklisted) {
           setIsBlacklisted(true);
@@ -79,13 +74,13 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
           );
         } else {
           setIsBlacklisted(false);
-          if (errorMessage.includes("watchlist") || errorMessage.includes("blocked")) setErrorMessage("");
+          if (errorMessage.includes("watchlist") || errorMessage.includes("blocked"))
+            setErrorMessage("");
         }
       };
       checkBlacklist();
     }
   }, [visitorEmail, errorMessage, isGuardOrAdmin]);
-
 
   const handleFilePreview = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -99,24 +94,21 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
     }
   };
 
-  const uploadToStorage = async (file: File, bucket: string): Promise<string | null> => {
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${uuidv4()}.${fileExt}`;
-    const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file);
-
-    if (uploadError) {
-      log.error(`[UnifiedVisit] ${bucket} upload error:`, uploadError);
+  const uploadToStorage = async (file: File): Promise<string | null> => {
+    try {
+      const res = await api.upload(file);
+      return res.url;
+    } catch (e) {
+      log.error(`[UnifiedVisit] upload error:`, e);
       return null;
     }
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(bucket).getPublicUrl(fileName);
-    return publicUrl;
   };
 
   const onSubmit = async (formData: UnifiedVisitFormData) => {
     if (isBlacklisted) {
-      toast.error("You are blocked and cannot register your visit. Please contact admin or support staff.");
+      toast.error(
+        "You are blocked and cannot register your visit. Please contact admin or support staff."
+      );
       return;
     }
 
@@ -132,71 +124,44 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
       let approverName = "Campus Administration";
 
       if (effectiveHostEmail && effectiveHostEmail.trim() !== "") {
-        const { data: approver, error: approverError } = await supabase
-          .from("hosts")
-          .select("id, name")
-          .ilike("email", effectiveHostEmail.trim())
-          .maybeSingle();
+        const hosts = await api.hosts.list(effectiveHostEmail.trim());
+        const approver = hosts.find(h => h.email.toLowerCase() === effectiveHostEmail.trim().toLowerCase());
 
-        if (approverError) throw approverError;
         if (!approver) throw new Error(`Approver not found with email: ${effectiveHostEmail}`);
         approverId = approver.id;
         approverName = approver.name;
       }
-
-      // Handle File Uploads
       let photoUrl = null;
       if (formData.photo?.[0]) {
-        photoUrl = await uploadToStorage(formData.photo[0], "identification-images");
+        photoUrl = await uploadToStorage(formData.photo[0]);
       }
 
       let idProofUrl = null;
       if (formData.idProof?.[0]) {
-        idProofUrl = await uploadToStorage(formData.idProof[0], "visitor-documents");
+        idProofUrl = await uploadToStorage(formData.idProof[0]);
       }
 
-      // Create or Update Visitor
-      let visitorId;
-      const { data: existingVisitor } = await supabase
-        .from("visitors")
-        .select("id, is_blacklisted")
-        .ilike("email", formData.email.trim())
-        .limit(1)
-        .maybeSingle();
+      const visitors = await api.visitors.list({ email: formData.email.trim() });
+      const existingVisitor = visitors[0];
 
       if (existingVisitor?.is_blacklisted) {
         throw new Error("This user is completely blocked and cannot register any visits.");
       }
 
-      const visitorPayload = {
+      const visitor = await api.visitors.upsert({
         name: formData.name,
         email: formData.email,
         phone: formData.phone || "N/A",
         photo_url: photoUrl || undefined,
         id_proof_url: idProofUrl || undefined,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (existingVisitor) {
-        visitorId = existingVisitor.id;
-        await supabase.from("visitors").update(visitorPayload).eq("id", visitorId);
-      } else {
-        const { data: newVisitor, error: createError } = await supabase
-          .from("visitors")
-          .insert(visitorPayload)
-          .select("id")
-          .single();
-        if (createError) throw createError;
-        visitorId = newVisitor.id;
-      }
-
-      // Create Visit
+      });
+      const visitorId = visitor.id;
       const visitId = uuidv4();
       const visitDate = formData.visitDate ? new Date(formData.visitDate) : new Date();
       const validUntil = formData.validUntil ? new Date(formData.validUntil) : new Date(visitDate);
       if (formData.passType === "single_day") validUntil.setHours(23, 59, 59);
 
-      const { error: visitError } = await supabase.from("visits").insert({
+      await api.visits.create({
         id: visitId,
         visitor_id: visitorId,
         host_id: approverId,
@@ -212,10 +177,6 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
         additional_guests: Number(formData.additionalGuests) || 0,
         pass_type: formData.passType,
       });
-
-      if (visitError) throw visitError;
-
-      // Enrich QR Data with more details as requested - Shortened keys for better scannability
       const qrData = JSON.stringify({
         vId: visitId,
         n: formData.name,
@@ -232,8 +193,6 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
         scale: 10,
       });
       setQrImageUrl(qrUrl);
-
-      // Email Notification
       const emailServiceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
       const emailTemplateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
       const emailPublicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;

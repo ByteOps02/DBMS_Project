@@ -4,16 +4,14 @@ import { BackButton } from "./BackButton";
 import { PageHeader } from "./PageHeader";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
-import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../store/auth";
-import { v4 as uuidv4 } from "uuid";
+import { api } from "../lib/api";
+
 
 type BulkUploadFormData = {
   file: FileList;
   approverEmail: string;
 };
-
-// Maximum file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 export function BulkVisitorUpload() {
@@ -69,26 +67,18 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
       }
 
       const file = formData.file[0];
-      if (!file) {
-        throw new Error("Please select a file to upload.");
-      }
-
-      // Validate file size
+      if (!file) throw new Error("Please select a file to upload.");
       if (file.size > MAX_FILE_SIZE) {
         throw new Error(`File size exceeds ${MAX_FILE_SIZE / (1024 * 1024)}MB limit. Please use a smaller file.`);
       }
 
-      if (!formData.approverEmail) {
-        throw new Error("Faculty/Staff email is required.");
-      }
+      if (!formData.approverEmail) throw new Error("Faculty/Staff email is required.");
 
-      const { data: approver, error: approverError } = await supabase
-        .from("hosts")
-        .select("id")
-        .ilike("email", formData.approverEmail.trim())
-        .maybeSingle();
+      // Find the approver
+      const hosts = await api.hosts.list(formData.approverEmail.trim());
+      const approver = hosts.find(h => h.email.toLowerCase() === formData.approverEmail.trim().toLowerCase());
 
-      if (approverError || !approver) {
+      if (!approver) {
         throw new Error(`No faculty/staff/admin found with email: ${formData.approverEmail}`);
       }
 
@@ -100,123 +90,58 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
         return;
       }
 
-      const newVisitorsData: { name: string; email: string; phone: string }[] = [];
-      const existingVisitorEmails: string[] = [];
-
-      visitors.forEach((visitor: { [key: string]: string }) => {
-        if (visitor.email) {
-          existingVisitorEmails.push(visitor.email);
-        }
-      });
-
-      const { data: existingVisitors, error: existingVisitorsError } = await supabase
-        .from("visitors")
-        .select("id, email")
-        .in("email", existingVisitorEmails);
-
-      if (existingVisitorsError) throw existingVisitorsError;
-
-      const existingVisitorsMap = new Map(existingVisitors?.map((v) => [v.email, v.id]));
-
-      const visitsToInsert: {
-        id: string;
-        visitor_id: string | undefined;
-        host_id: string;
-        purpose: string;
-        status: string;
-        valid_until: string;
-        valid_from: string;
-        created_at: string;
-        updated_at: string;
-        additional_guests: number;
-        vehicle_number: string | null;
-        vehicle_type: string | null;
-        pass_type: "single_day" | "multi_day";
-      }[] = [];
+      let successCount = 0;
 
       for (const visitorData of visitors) {
-        const visitorId: string | undefined = existingVisitorsMap.get(visitorData.email);
+        if (!visitorData.name || !visitorData.email) continue;
 
-        if (!visitorId) {
-          newVisitorsData.push({
+        try {
+          // Upsert visitor using API
+          const visitor = await api.visitors.upsert({
             name: visitorData.name,
             email: visitorData.email,
-            phone: visitorData.phone || "N/A",
+            phone: visitorData.phone || "N/A"
           });
-        }
 
-        // Parse pass_type (default: single_day)
-        const rawPassType = (visitorData.pass_type || "").trim().toLowerCase();
-        const passType: "single_day" | "multi_day" =
-          rawPassType === "multi_day" ? "multi_day" : "single_day";
-
-        // Parse visit_date
-        const visitDate = visitorData.visit_date ? new Date(visitorData.visit_date) : new Date();
-
-        // Parse valid_until based on pass_type
-        let validUntil: Date;
-        if (passType === "multi_day" && visitorData.valid_until) {
-          validUntil = new Date(visitorData.valid_until);
-        } else {
-          validUntil = new Date(visitDate);
-        }
-        validUntil.setHours(23, 59, 59, 999);
-
-        // Parse additional_guests (default: 0)
-        const additionalGuests = parseInt(visitorData.additional_guests, 10) || 0;
-
-        // Parse vehicle info
-        const vehicleNumber = visitorData.vehicle_number?.trim() || null;
-        const vehicleType = visitorData.vehicle_type?.trim() || null;
-
-        visitsToInsert.push({
-          id: uuidv4(),
-          visitor_id: visitorId,
-          host_id: approver.id,
-          purpose: visitorData.purpose || "N/A",
-          status: "pending",
-          valid_until: validUntil.toISOString(),
-          valid_from: visitDate.toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          additional_guests: additionalGuests,
-          vehicle_number: vehicleNumber,
-          vehicle_type: vehicleType,
-          pass_type: passType,
-        });
-      }
-
-      if (newVisitorsData.length > 0) {
-        const { data: insertedVisitors, error: insertVisitorsError } = await supabase
-          .from("visitors")
-          .insert(newVisitorsData)
-          .select("id, email");
-
-        if (insertVisitorsError) throw insertVisitorsError;
-
-        insertedVisitors?.forEach((v) => existingVisitorsMap.set(v.email, v.id));
-      }
-
-      visitsToInsert.forEach((visit, index) => {
-        if (!visit.visitor_id) {
-          const originalVisitorData = visitors[index];
-          if (originalVisitorData) {
-            visit.visitor_id = existingVisitorsMap.get(originalVisitorData.email);
+          const rawPassType = (visitorData.pass_type || "").trim().toLowerCase();
+          const passType: "single_day" | "multi_day" = rawPassType === "multi_day" ? "multi_day" : "single_day";
+          const visitDate = visitorData.visit_date ? new Date(visitorData.visit_date) : new Date();
+          let validUntil: Date;
+          if (passType === "multi_day" && visitorData.valid_until) {
+            validUntil = new Date(visitorData.valid_until);
+          } else {
+            validUntil = new Date(visitDate);
           }
+          validUntil.setHours(23, 59, 59, 999);
+          const additionalGuests = parseInt(visitorData.additional_guests, 10) || 0;
+
+          await api.visits.create({
+            visitor_id: visitor.id,
+            host_id: approver.id,
+            purpose: visitorData.purpose || "N/A",
+            status: "pending",
+            valid_until: validUntil.toISOString(),
+            valid_from: visitDate.toISOString(),
+            additional_guests: additionalGuests,
+            vehicle_number: visitorData.vehicle_number?.trim() || null,
+            vehicle_type: visitorData.vehicle_type?.trim() || null,
+            pass_type: passType,
+          });
+
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to upload visitor: ${visitorData.email}`, err);
         }
-      });
-
-      const { error: visitsError } = await supabase.from("visits").insert(visitsToInsert);
-
-      if (visitsError) {
-        throw visitsError;
       }
 
-      toast.success(
-        `${visitors.length} Visitors successfully Uploaded! They will receive QR codes once approved.`
-      );
+      if (successCount === 0) {
+        throw new Error("Failed to upload any visitors. Please check the CSV format.");
+      }
+
+      toast.success(`${successCount} Visitors successfully Uploaded! They will receive QR codes once approved.`);
     } catch (error: unknown) {
-      toast.error((error as Error).message || "Failed to upload visitors.");
+      const err = error as Error;
+      toast.error(err.message || "Failed to upload visitors.");
     } finally {
       setUploading(false);
     }
@@ -356,15 +281,21 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
                 (optional, format: YYYY-MM-DD)
               </div>
               <div>
-                <span className="text-gray-600 dark:text-slate-400 font-semibold">additional_guests</span>{" "}
+                <span className="text-gray-600 dark:text-slate-400 font-semibold">
+                  additional_guests
+                </span>{" "}
                 (optional, number, default: 0)
               </div>
               <div>
-                <span className="text-gray-600 dark:text-slate-400 font-semibold">vehicle_number</span>{" "}
+                <span className="text-gray-600 dark:text-slate-400 font-semibold">
+                  vehicle_number
+                </span>{" "}
                 (optional, e.g. MH-31-AB-1234)
               </div>
               <div>
-                <span className="text-gray-600 dark:text-slate-400 font-semibold">vehicle_type</span>{" "}
+                <span className="text-gray-600 dark:text-slate-400 font-semibold">
+                  vehicle_type
+                </span>{" "}
                 (optional: Car, Bike, No Vehicle)
               </div>
               <div>

@@ -56,6 +56,8 @@ export function UnifiedVisitRegistration() {
     passType,
   } = useVisitRegistration(formMethods);
 
+  const visitDate = watch("visitDate");
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 pb-12 animate-fadeIn relative">
       {!user && (
@@ -92,7 +94,6 @@ export function UnifiedVisitRegistration() {
             )}
 
             <div className="space-y-6">
-              {/* Visitor Information Section */}
               <section>
                 <div className="flex items-center gap-2 mb-4 sm:mb-6 border-b border-gray-100 dark:border-slate-800 pb-2">
                   <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
@@ -182,8 +183,6 @@ export function UnifiedVisitRegistration() {
                   </div>
                 </div>
               </section>
-
-              {/* Security & Documents */}
               <section>
                 <div className="flex items-center gap-2 mb-4 sm:mb-6 border-b border-gray-100 dark:border-slate-800 pb-2">
                   <FileUp className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600" />
@@ -192,7 +191,6 @@ export function UnifiedVisitRegistration() {
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* Photo & ID Row */}
                   <div className="space-y-4">
                     <label className="block text-[10px] sm:text-xs font-bold text-gray-500 dark:text-slate-400 uppercase">
                       Verification Photos
@@ -242,8 +240,6 @@ export function UnifiedVisitRegistration() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Vehicle Tracking */}
                   <div className="space-y-4">
                     <label className="block text-[10px] sm:text-xs font-bold text-gray-500 dark:text-slate-400 uppercase">
                       Vehicle Information
@@ -273,8 +269,6 @@ export function UnifiedVisitRegistration() {
                   </div>
                 </div>
               </section>
-
-              {/* Visit Logistics */}
               <section>
                 <div className="flex items-center gap-2 mb-4 sm:mb-6 border-b border-gray-100 dark:border-slate-800 pb-2">
                   <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
@@ -338,7 +332,7 @@ export function UnifiedVisitRegistration() {
                       <input
                         type="date"
                         {...register("validUntil", { required: "End date is required" })}
-                        min={watch("visitDate")}
+                        min={visitDate}
                         className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2.5 sm:py-3 px-4 text-xs sm:text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all dark:text-white"
                       />
                     </div>
@@ -371,7 +365,9 @@ export function UnifiedVisitRegistration() {
                   <>
                     <QrCode className="h-4 w-4 sm:h-5 sm:w-5" />
                     <span className="truncate">
-                      {isVisitor ? "Submit Request & Generate Pass" : "Register Visit & Generate Pass"}
+                      {isVisitor
+                        ? "Submit Request & Generate Pass"
+                        : "Register Visit & Generate Pass"}
                     </span>
                   </>
                 )}
@@ -387,17 +383,17 @@ export function UnifiedVisitRegistration() {
           </form>
 
           {qrImageUrl && (
-            <div id="generated-pass" className="px-3 xs:px-4 sm:px-5 pb-6 sm:pb-8 animate-scaleIn print:m-0">
-              <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-200 dark:via-slate-700 to-transparent mb-6 sm:mb-8" />
+            <div
+              id="generated-pass"
+              className="px-3 xs:px-4 sm:px-5 pb-6 sm:pb-8 animate-scaleIn print:m-0"
+            >
+              <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-200 dark:via-slate-700 to-transparent mb-6 sm:mb-8 print-hide" />
               <div className="flex justify-center">
                 <div className="w-full max-w-sm relative">
-                  {/* Premium card */}
                   <div className="bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800/80 rounded-[2rem] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] overflow-hidden border border-gray-200/80 dark:border-slate-700/60 ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
-                    {/* Gradient accent top bar */}
                     <div className="h-1 w-full bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600" />
 
                     <div className="p-6 sm:p-8 flex flex-col items-center">
-                      {/* Header row */}
                       <div className="w-full flex items-start justify-between mb-5 sm:mb-7">
                         <div>
                           <h4 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
@@ -407,23 +403,11 @@ export function UnifiedVisitRegistration() {
                             IIIT Nagpur Campus
                           </p>
                         </div>
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] sm:text-[10px] font-black tracking-widest uppercase shadow-sm ${isVisitor
-                              ? "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50"
-                              : "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50"
-                            }`}
-                        >
-                          <ShieldCheck className="w-3 h-3" />
-                          {isVisitor ? "Pending" : "Approved"}
-                        </span>
-                      </div>
 
-                      {/* QR Code */}
+                      </div>
                       <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-5 shadow-md border border-gray-100 dark:border-slate-700 mb-5 sm:mb-7 ring-1 ring-black/[0.04]">
                         <img src={qrImageUrl} alt="QR Code" className="w-44 h-44 sm:w-52 sm:h-52" />
                       </div>
-
-                      {/* Details card */}
                       <div className="w-full bg-gray-50/80 dark:bg-slate-800/50 rounded-2xl p-4 sm:p-5 mb-5 sm:mb-7 border border-gray-100 dark:border-slate-700/50 space-y-3">
                         <div>
                           <p className="text-[9px] sm:text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-1">
@@ -442,10 +426,10 @@ export function UnifiedVisitRegistration() {
                             <p className="text-xs sm:text-sm font-bold text-gray-800 dark:text-slate-200">
                               {watch("visitDate")
                                 ? new Date(watch("visitDate")).toLocaleDateString("en-US", {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                })
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  })
                                 : "---"}
                             </p>
                           </div>
@@ -473,8 +457,6 @@ export function UnifiedVisitRegistration() {
                           )}
                         </div>
                       </div>
-
-                      {/* Action buttons */}
                       <div className="w-full grid grid-cols-2 gap-3">
                         <a
                           href={qrImageUrl}
@@ -492,8 +474,6 @@ export function UnifiedVisitRegistration() {
                         </button>
                       </div>
                     </div>
-
-                    {/* Footer */}
                     <div className="px-6 pb-4 flex items-center justify-center gap-2">
                       <ShieldCheck className="w-3 h-3 text-emerald-500" />
                       <span className="text-[8px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">

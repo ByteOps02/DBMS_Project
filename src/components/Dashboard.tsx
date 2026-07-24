@@ -1,22 +1,14 @@
 import { useState, useEffect, useCallback, memo } from "react";
-import { supabase } from "../lib/supabase";
+import { api } from "../lib/api";
 import { useAuthStore } from "../store/auth";
-import {
-  AlertCircle,
-  Hourglass,
-  Users,
-  CalendarDays,
-  RefreshCw,
-  ArrowRight,
-} from "lucide-react";
+import { AlertCircle, Hourglass, Users, CalendarDays, RefreshCw, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useVisitStats } from "../hooks/useVisitStats";
 import { StatsGrid } from "./StatsGrid";
 import { formatDistanceToNow } from "date-fns";
 import { formatISTTime, getISTTodayRange } from "../lib/dateIST";
-import { STATUS_CONFIG, getStatusConfig } from "../lib/statusConfig";
+import { getStatusConfig } from "../lib/statusConfig";
 import { readCache, writeCache } from "../lib/cache";
-import { getSafeVisitorIds } from "../lib/visitorIds";
 import { SEOMeta } from "./SEOMeta";
 
 function getInitials(name: string) {
@@ -34,20 +26,18 @@ type RecentVisit = {
   purpose: string;
   status: string;
   created_at: string;
-  visitors: { name: string; email: string } | null;
+  visitor: { name: string; email: string } | null;
 };
 
 type ActiveVisitor = {
   id: string;
   purpose: string;
   check_in_time: string;
-  visitors: { name: string; email: string } | null;
+  visitor: { name: string; email: string } | null;
 };
-
-// Cache configuration
 const RECENT_VISITS_CACHE_KEY = "vms_recent_visits";
 const ACTIVE_VISITORS_CACHE_KEY = "vms_active_visitors";
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 function useLiveDuration(checkInTime: string | null) {
   const [duration, setDuration] = useState("");
@@ -69,7 +59,7 @@ function useLiveDuration(checkInTime: string | null) {
 
 const ActiveVisitorRow = memo(({ visitor }: { visitor: ActiveVisitor }) => {
   const duration = useLiveDuration(visitor.check_in_time);
-  const name = visitor.visitors?.name ?? "Unknown";
+  const name = visitor.visitor?.name ?? "Unknown";
   const initials = name
     .split(" ")
     .map((n: string) => n[0])
@@ -101,16 +91,12 @@ export function Dashboard() {
   const { user } = useAuthStore();
   const { stats, loading, error: statsError, fetchStats } = useVisitStats(user);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
-
-  // ── Stale-while-revalidate for recent visits ────────────────────────────
   const [recentVisits, setRecentVisits] = useState<RecentVisit[]>(
     () => readCache<RecentVisit[]>(RECENT_VISITS_CACHE_KEY, CACHE_TTL_MS) ?? []
   );
   const [recentLoading, setRecentLoading] = useState(
     () => readCache(RECENT_VISITS_CACHE_KEY, CACHE_TTL_MS) === null
   );
-
-  // ── Stale-while-revalidate for active visitors ──────────────────────────
   const [activeVisitors, setActiveVisitors] = useState<ActiveVisitor[]>(
     () => readCache<ActiveVisitor[]>(ACTIVE_VISITORS_CACHE_KEY, CACHE_TTL_MS) ?? []
   );
@@ -131,70 +117,54 @@ export function Dashboard() {
     [navigate]
   );
 
-  const prefetchVisits = useCallback(async (status: string) => {
-    if (status === "total_users" || !user) return;
+  const prefetchVisits = useCallback(
+    async (status: string) => {
+      if (status === "total_users" || !user) return;
 
-    // Only prefetch if not already in cache or cache is old
-    const cacheKey = `vms_filtered_${status}`;
-    if (localStorage.getItem(cacheKey)) return;
+      const cacheKey = `vms_filtered_${status}`;
+      if (localStorage.getItem(cacheKey)) return;
 
-    try {
-      let query = supabase.from("visits").select(`*, visitor:visitors(*)`);
-      if (status === "cancelled_denied") {
-        query = query.in("status", ["cancelled", "denied"]);
-      } else {
-        query = query.eq("status", status);
+      try {
+        const statuses = status === "cancelled_denied" ? ["cancelled", "denied"] : undefined;
+        const [utcTodayStart, utcTomorrowStart] = getISTTodayRange();
+
+        const data = await api.visits.list({
+          ...(statuses ? { statuses } : { status }),
+          ...(user?.role === "host" ? { host_id: user.id } : {}),
+          ...(status === "approved"
+            ? { approved_from: utcTodayStart, approved_to: utcTomorrowStart }
+            : {}),
+          ...(status === "completed"
+            ? { checkout_from: utcTodayStart, checkout_to: utcTomorrowStart }
+            : {}),
+          ...(status === "cancelled_denied"
+            ? { created_from: utcTodayStart, created_to: utcTomorrowStart }
+            : {}),
+          limit: 50,
+        });
+        if (data) localStorage.setItem(cacheKey, JSON.stringify(data));
+      } catch {
+        // Ignore prefetch errors
       }
-
-      if (user?.role === "host") query = query.eq("host_id", user.id);
-      else if (user?.role === "visitor" && user.email) {
-        const { data: vProfiles } = await supabase.from("visitors").select("id").eq("email", user.email.trim());
-        const visitorIds = vProfiles?.map(v => v.id) || [];
-        if (visitorIds.length > 0) query = query.in("visitor_id", visitorIds);
-        else query = query.eq("visitor_id", "00000000-0000-0000-0000-000000000000");
-      }
-
-      const [utcTodayStart, utcTomorrowStart] = getISTTodayRange();
-      if (status === "approved") {
-        query = query.gte("approved_at", utcTodayStart).lt("approved_at", utcTomorrowStart);
-      } else if (status === "completed") {
-        query = query.gte("check_out_time", utcTodayStart).lt("check_out_time", utcTomorrowStart);
-      } else if (status === "cancelled_denied") {
-        query = query.gte("created_at", utcTodayStart).lt("created_at", utcTomorrowStart);
-      }
-
-      const { data } = await query.order("created_at", { ascending: false }).limit(50);
-      if (data) {
-        localStorage.setItem(cacheKey, JSON.stringify(data));
-      }
-    } catch { /* ignore prefetch errors */ }
-  }, [user]);
+    },
+    [user]
+  );
 
   const fetchRecentVisits = useCallback(async () => {
     try {
-      let query = supabase
-        .from("visits")
-        .select("id, purpose, status, created_at, visitors(name, email)")
-        .order("created_at", { ascending: false });
-
-      if (user?.role === "host") {
-        query = query.eq("host_id", user.id);
-      } else if (user?.role === "visitor" && user.email) {
-        // Use shared memoized helper — no extra round-trip if already fetched
-        const visitorIds = await getSafeVisitorIds(user.email);
-        query = query.in("visitor_id", visitorIds);
-      }
-
-      const { data } = await query.limit(5);
+      const data = await api.visits.list({
+        ...(user?.role === "host" ? { host_id: user.id } : {}),
+        limit: 5,
+      });
       const visits = (data as unknown as RecentVisit[]) || [];
       setRecentVisits(visits);
       writeCache(RECENT_VISITS_CACHE_KEY, visits);
     } catch {
-      // Silence fetch errors for stale-while-revalidate pattern
+      // Ignore fetch errors
     } finally {
       setRecentLoading(false);
     }
-  }, [user?.role, user?.id, user?.email]);
+  }, [user?.role, user?.id]);
 
   const fetchActiveVisitors = useCallback(async () => {
     if (user?.role !== "admin" && user?.role !== "guard" && user?.role !== "host") {
@@ -203,23 +173,15 @@ export function Dashboard() {
     }
 
     try {
-      let query = supabase
-        .from("visits")
-        // Only select columns actually rendered — avoids fetching the full row
-        .select("id, purpose, check_in_time, visitors(name, email)")
-        .eq("status", "checked-in")
-        .order("check_in_time", { ascending: true });
-
-      if (user?.role === "host") {
-        query = query.eq("host_id", user.id);
-      }
-
-      const { data } = await query;
+      const data = await api.visits.list({
+        status: "checked_in",
+        ...(user?.role === "host" ? { host_id: user.id } : {}),
+      });
       const visitors = (data as unknown as ActiveVisitor[]) || [];
       setActiveVisitors(visitors);
       writeCache(ACTIVE_VISITORS_CACHE_KEY, visitors);
     } catch {
-      // Silence fetch errors for stale-while-revalidate pattern
+      // Ignore fetch errors
     } finally {
       setActiveLoading(false);
     }
@@ -227,54 +189,22 @@ export function Dashboard() {
 
   useEffect(() => {
     if (!user?.role) return;
-
-    // Fire all 3 fetches in parallel — no sequential waterfall on page load
     Promise.all([fetchStats(), fetchRecentVisits(), fetchActiveVisitors()]);
     setLastRefresh(new Date());
-
-    // Poll every 60s as a fallback — realtime subscription handles live changes
     const refreshInterval = setInterval(() => {
-      Promise.all([fetchStats(), fetchRecentVisits(), fetchActiveVisitors()]);
-      setLastRefresh(new Date());
-    }, 60000);
-
-    // Helper: refresh all data, bypassing cache (used by realtime events)
-    const refreshAll = () => {
       Promise.all([fetchStats(true), fetchRecentVisits(), fetchActiveVisitors()]);
       setLastRefresh(new Date());
-    };
-
-    const channel = supabase
-      .channel("visits_realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "visits" }, (payload) => {
-        const newVisit = payload.new as { host_id: string };
-        if (user?.role === "host" && newVisit.host_id === user.id) {
-          refreshAll();
-        } else if (user?.role === "admin" || user?.role === "guard" || user?.role === "visitor") {
-          refreshAll();
-        }
-      })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "visits" }, (payload) => {
-        const updatedVisit = payload.new as { host_id: string };
-        if (user?.role === "host" && updatedVisit.host_id === user.id) {
-          refreshAll();
-        } else if (user?.role === "admin" || user?.role === "guard" || user?.role === "visitor") {
-          refreshAll();
-        }
-      })
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "visits" }, refreshAll)
-      .subscribe();
+    }, 30000);
 
     return () => {
       clearInterval(refreshInterval);
-      supabase.removeChannel(channel);
     };
   }, [user?.role, user?.id, fetchStats, fetchRecentVisits, fetchActiveVisitors]);
 
   return (
     <div className="animate-fadeIn pb-8">
       <SEOMeta title="Dashboard" />
-      {/* ── Welcome Header ── */}
+      
       <div className="mb-6 animate-fadeInUp flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3 sm:gap-5">
           <div className="hidden xs:flex w-14 h-14 sm:w-[72px] sm:h-[72px] rounded-[2.2rem] bg-[#3b82f6] shadow-[0_8px_30px_rgb(59,130,246,0.3)] text-white items-center justify-center text-xl sm:text-3xl font-extrabold border-[3px] border-white dark:border-slate-800 shrink-0">
@@ -283,7 +213,9 @@ export function Dashboard() {
           <div className="flex flex-col justify-center min-w-0">
             <h1 className="text-2xl sm:text-3xl lg:text-[42px] font-black text-[#1e293b] dark:text-white tracking-tighter leading-none truncate">
               Welcome back,{" "}
-              <span className="text-[#3b82f6] underline decoration-blue-500/20 underline-offset-4">{user?.name?.split(" ")[0] || "Guest"}</span>
+              <span className="text-[#3b82f6] underline decoration-blue-500/20 underline-offset-4">
+                {user?.name?.split(" ")[0] || "Guest"}
+              </span>
             </h1>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-3">
               <div className="flex items-center gap-1.5">
@@ -291,7 +223,9 @@ export function Dashboard() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <p className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest">Live updates</p>
+                <p className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                  Live updates
+                </p>
               </div>
               <span className="hidden xs:block text-slate-300 dark:text-slate-700">|</span>
 
@@ -300,7 +234,7 @@ export function Dashboard() {
                 <span className="hidden xxs:inline">Sync:</span> {formatISTTime(lastRefresh)}
               </div>
               <span className="hidden xs:block text-slate-300 dark:text-slate-700">|</span>
-              {/* Today's date in IST */}
+              
               <div className="flex items-center gap-1.5 text-[11px] sm:text-sm font-medium text-slate-500">
                 <CalendarDays className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 {new Date().toLocaleDateString("en-IN", {
@@ -322,7 +256,6 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* ── Statistics Overview ── */}
       <div className="animate-fadeInUp mb-8" style={{ animationDelay: "0.2s" }}>
         <h2 className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4">
           Overview
@@ -345,7 +278,6 @@ export function Dashboard() {
         )}
       </div>
 
-      {/* ── Active Visitors (guard/admin/host) ── */}
       {(isGuardOrAdmin || user?.role === "host") && (
         <div className="animate-fadeInUp mb-8" style={{ animationDelay: "0.25s" }}>
           <div className="flex items-center justify-between mb-4">
@@ -386,7 +318,9 @@ export function Dashboard() {
                 <div className="w-16 h-16 bg-teal-50 dark:bg-teal-900/20 rounded-full flex items-center justify-center mb-4 ring-8 ring-teal-50/50 dark:ring-teal-900/10">
                   <Users className="w-8 h-8 text-teal-400 dark:text-teal-500 opacity-80" />
                 </div>
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">No Active Visitors</h3>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">
+                  No Active Visitors
+                </h3>
                 <p className="text-xs font-medium text-gray-500 dark:text-slate-400 max-w-[200px]">
                   There are no visitors currently checked-in on campus.
                 </p>
@@ -402,7 +336,6 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* ── Recent Visits Feed ── */}
       <div className="animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">
@@ -436,7 +369,9 @@ export function Dashboard() {
               <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 ring-8 ring-gray-50/50 dark:ring-slate-800/50">
                 <Hourglass className="w-8 h-8 text-gray-400 dark:text-slate-500 opacity-80" />
               </div>
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">No Visits Yet</h3>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">
+                No Visits Yet
+              </h3>
               <p className="text-xs font-medium text-gray-500 dark:text-slate-400 max-w-[200px]">
                 There are no recently recorded visits to display.
               </p>
@@ -446,7 +381,7 @@ export function Dashboard() {
               {recentVisits.map((visit, i) => {
                 const cfg = getStatusConfig(visit.status);
                 const StatusIcon = cfg.icon;
-                const visitorName = visit.visitors?.name ?? "Unknown";
+                const visitorName = visit.visitor?.name ?? "Unknown";
                 const initials = visitorName
                   .split(" ")
                   .map((n: string) => n[0])

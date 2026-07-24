@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Shield, Eye, EyeOff, ArrowRight, ArrowLeft, Building2, CheckCircle2 } from "lucide-react";
 import { useAuthStore } from "../store/auth";
-import { supabase } from "../lib/supabase";
 import { ThemeSwitcher } from "./ThemeSwitcher";
+import { api } from "../lib/api";
 import { validatePasswordStrength } from "../lib/sanitize";
 import log from "../lib/logger";
 
@@ -28,19 +28,19 @@ export function Signup() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    loadDepartments();
-  }, []);
-
   const loadDepartments = async () => {
     try {
-      const { data, error } = await supabase.from("departments").select("id, name").order("name");
-      if (error) throw error;
+      const data = await api.departments.list();
       setDepartments(data || []);
     } catch (err) {
       console.error("Error loading departments:", err);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadDepartments();
+  }, []);
 
   const calculatePasswordStrength = (pass: string) => {
     let score = 0;
@@ -65,8 +65,6 @@ export function Signup() {
       setError("Passwords do not match");
       return;
     }
-
-    // Validate password strength
     const passwordValidation = validatePasswordStrength(password);
     if (!passwordValidation.valid) {
       setError(passwordValidation.message);
@@ -85,8 +83,6 @@ export function Signup() {
     } catch (err: unknown) {
       const errorMsg = (err as Error).message || "Failed to create account";
       setError(errorMsg);
-
-      // If the error is about user already being registered, highlight the login link
       if (errorMsg.includes("already registered") || errorMsg.includes("already exists")) {
         log.warn("[Signup] User already exists, directing to login");
       }
@@ -98,7 +94,6 @@ export function Signup() {
       <div className="fixed top-6 right-6 z-50">
         <ThemeSwitcher />
       </div>
-      {/* ── Left Panel (Branding) ── */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-1/2 relative overflow-hidden bg-gradient-to-br from-indigo-800 to-sky-900 border-r border-indigo-900">
         <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGRlZnM+PHBhdHRlcm4gaWQ9InBhdHRlcm4iIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTAgMGg0MHY0MEgweiIgZmlsbD0ibm9uZSIvPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjEiIGZpbGw9IiNmZmYiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjcGF0dGVybikiLz48L3N2Zz4=')]"></div>
         <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-purple-500/30 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-spin-slow"></div>
@@ -145,8 +140,6 @@ export function Signup() {
           </div>
         </div>
       </div>
-
-      {/* Right Panel (Form) */}
       <div className="w-full lg:w-[55%] xl:w-1/2 flex flex-col justify-center pt-12 pb-8 sm:pt-16 sm:pb-10 px-4 sm:px-8 lg:px-12 xl:px-24 min-h-[100dvh] lg:h-screen lg:overflow-y-auto">
         <div className="w-full max-w-md sm:max-w-lg mx-auto relative z-10 sm:py-8">
           <div className="mb-6 animate-fadeInUp">
@@ -293,8 +286,9 @@ export function Signup() {
                         {[1, 2, 3, 4].map((point) => (
                           <div
                             key={point}
-                            className={`h-full w-1/4 transition-colors duration-300 ${strength >= point ? strengthColors[strength - 1] : "bg-transparent"
-                              }`}
+                            className={`h-full w-1/4 transition-colors duration-300 ${
+                              strength >= point ? strengthColors[strength - 1] : "bg-transparent"
+                            }`}
                           />
                         ))}
                       </div>

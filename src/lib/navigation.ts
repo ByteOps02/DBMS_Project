@@ -1,4 +1,12 @@
-import { Home, UserRoundPlus, ScanLine, UploadCloud, Lock, ScrollText, UserMinus } from "lucide-react";
+import {
+  Home,
+  UserRoundPlus,
+  ScanLine,
+  UploadCloud,
+  Lock,
+  ScrollText,
+  UserMinus,
+} from "lucide-react";
 
 export const navLinks = [
   {

@@ -5,7 +5,7 @@ export type Visit = {
   visitor_id: string;
   host_id: string;
   purpose: string;
-  status: "pending" | "approved" | "denied" | "completed" | "cancelled" | "checked-in";
+  status: "pending" | "approved" | "denied" | "completed" | "cancelled" | "checked_in";
   check_in_time: string | null;
   check_out_time: string | null;
   created_at: string;
@@ -116,7 +116,7 @@ export type Database = {
           visitor_id: string;
           host_id: string;
           purpose: string;
-          status: "pending" | "approved" | "denied" | "completed" | "cancelled" | "checked-in";
+          status: "pending" | "approved" | "denied" | "completed" | "cancelled" | "checked_in";
           check_in_time: string | null;
           check_out_time: string | null;
           valid_until: string | null;
@@ -137,7 +137,7 @@ export type Database = {
           visitor_id: string;
           host_id: string;
           purpose: string;
-          status?: "pending" | "approved" | "denied" | "completed" | "cancelled" | "checked-in";
+          status?: "pending" | "approved" | "denied" | "completed" | "cancelled" | "checked_in";
           check_in_time?: string | null;
           check_out_time?: string | null;
           valid_until?: string | null;
@@ -158,7 +158,7 @@ export type Database = {
           visitor_id?: string;
           host_id?: string;
           purpose?: string;
-          status?: "pending" | "approved" | "denied" | "completed" | "cancelled" | "checked-in";
+          status?: "pending" | "approved" | "denied" | "completed" | "cancelled" | "checked_in";
           check_in_time?: string | null;
           check_out_time?: string | null;
           valid_until?: string | null;
@@ -184,7 +184,7 @@ export type Database = {
     };
     Enums: {
       user_role: "admin" | "guard" | "host" | "visitor";
-      visit_status: "pending" | "approved" | "denied" | "completed" | "cancelled" | "checked-in";
+      visit_status: "pending" | "approved" | "denied" | "completed" | "cancelled" | "checked_in";
       pass_type: "single_day" | "multi_day";
     };
   };

@@ -1,10 +1,13 @@
 import { useState, useCallback } from "react";
-import { supabase } from "../lib/supabase";
 import { UsersRound, CalendarCheck2, Hourglass, Trophy, ShieldX, Activity } from "lucide-react";
 import { User } from "../store/auth";
 import { getISTTodayRange } from "../lib/dateIST";
-import { readCache as readCacheUtil, writeCache as writeCacheUtil, getCacheTTL } from "../lib/cache";
-import { getSafeVisitorIds } from "../lib/visitorIds";
+import {
+  readCache as readCacheUtil,
+  writeCache as writeCacheUtil,
+  getCacheTTL,
+} from "../lib/cache";
+import { api } from "../lib/api";
 
 export type StatItem = {
   name: string;
@@ -22,8 +25,6 @@ const VISIT_STATUS = {
   CANCELLED: "cancelled",
   DENIED: "denied",
 };
-
-// Icons are functions and can't be JSON-stringified, so we store a key instead.
 const ICON_MAP: Record<string, React.ElementType> = {
   UsersRound,
   CalendarCheck2,
@@ -52,7 +53,7 @@ function deserializeStats(raw: SerializedStat[]): StatItem[] {
   }));
 }
 
-const STATS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const STATS_CACHE_TTL = 5 * 60 * 1000; 
 
 function cacheKey(role: string) {
   return `vms_stats_cache_${role}`;
@@ -81,175 +82,137 @@ export const useVisitStats = (user: User | null) => {
 
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStats = useCallback(async (force = false) => {
-    if (!user?.role) return;
-
-    // ── Cache short-circuit ──────────────────────────────────────────────────
-    // If the cache is still valid and we're not forcing a refresh,
-    // skip all 7 Supabase queries entirely. The stale data is already in state.
-    if (!force) {
-      const remainingTTL = getCacheTTL(cacheKey(user.role), STATS_CACHE_TTL);
-      if (remainingTTL > 0) {
-        // Cache is fresh — nothing to do
-        setLoading(false);
-        return;
-      }
-    }
-    // ────────────────────────────────────────────────────────────────────────
-
-    const cached = readCache(user.role);
-    if (!cached) setLoading(true);
-    setError(null);
-
-    try {
-      let statsData: StatItem[] = [];
-      const role = user.role;
-      const [todayStart, todayEnd] = getISTTodayRange();
-
-      // ── Pre-fetch visitor profile IDs once (shared memoized helper) ──────
-      // Uses the in-memory cache from visitorIds.ts — no extra DB call if
-      // another component already fetched this on the same page load.
-      let visitorProfileIds: string[] = [];
-      if (role === "visitor" && user?.email) {
-        visitorProfileIds = await getSafeVisitorIds(user.email);
+  const fetchStats = useCallback(
+    async (force = false) => {
+      if (!user?.role) return;
+      if (!force) {
+        const remainingTTL = getCacheTTL(cacheKey(user.role), STATS_CACHE_TTL);
+        if (remainingTTL > 0) {
+          setLoading(false);
+          return;
+        }
       }
 
-      // Returns a query scoped to the current user's role
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const withRoleFilter = (q: any) => {
-        if (role === "host") return q.eq("host_id", user.id);
-        if (role === "visitor") return q.in("visitor_id", visitorProfileIds);
-        return q;
-      };
+      const cached = readCache(user.role);
+      if (!cached) setLoading(true);
+      setError(null);
 
-      // Base count builder
-      const countQuery = (status: string) =>
-        withRoleFilter(
-          supabase.from("visits").select("*", { count: "exact", head: true }).eq("status", status)
-        );
+      try {
+        let statsData: StatItem[] = [];
+        const role = user.role;
+        const [todayStart, todayEnd] = getISTTodayRange();
+        const start = new Date(todayStart).getTime();
+        const end = new Date(todayEnd).getTime();
 
-      // ── 7 parallel count queries ─────────────────────────────────────────
-      const [
-        { count: ongoingCount },
-        { count: approvedToday },
-        { count: pendingCount },
-        { count: completedToday },
-        { count: cancelledCount },
-        { count: deniedCount },
-        usersResult,
-      ] = await Promise.all([
-        countQuery("checked-in"),
-        withRoleFilter(
-          supabase
-            .from("visits")
-            .select("*", { count: "exact", head: true })
-            .eq("status", VISIT_STATUS.APPROVED)
-            .gte("approved_at", todayStart)
-            .lt("approved_at", todayEnd)
-        ),
-        withRoleFilter(
-          supabase
-            .from("visits")
-            .select("*", { count: "exact", head: true })
-            .eq("status", VISIT_STATUS.PENDING)
-            .gte("created_at", todayStart)
-            .lt("created_at", todayEnd)
-        ),
-        withRoleFilter(
-          supabase
-            .from("visits")
-            .select("*", { count: "exact", head: true })
-            .eq("status", VISIT_STATUS.COMPLETED)
-            .gte("check_out_time", todayStart)
-            .lt("check_out_time", todayEnd)
-        ),
-        withRoleFilter(
-          supabase
-            .from("visits")
-            .select("*", { count: "exact", head: true })
-            .eq("status", VISIT_STATUS.CANCELLED)
-            .gte("updated_at", todayStart)
-            .lt("updated_at", todayEnd)
-        ),
-        withRoleFilter(
-          supabase
-            .from("visits")
-            .select("*", { count: "exact", head: true })
-            .eq("status", VISIT_STATUS.DENIED)
-            .gte("updated_at", todayStart)
-            .lt("updated_at", todayEnd)
-        ),
-        // Fetch total user count in parallel only for admin
-        role === "admin"
-          ? supabase.from("hosts").select("*", { count: "exact", head: true })
-          : Promise.resolve({ count: null }),
-      ]);
+        const allVisits = await api.visits.list(role === "host" ? { host_id: user.id } : {});
 
-      const totalUsers = usersResult.count ?? 0;
+        let ongoingCount = 0;
+        let approvedToday = 0;
+        let pendingCount = 0;
+        let completedToday = 0;
+        let cancelledCount = 0;
+        let deniedCount = 0;
 
-      // ── Assemble Stats Array ─────────────────────────────────────────────
-      statsData = [
-        {
-          name: "Ongoing Visits",
-          value: ongoingCount ?? 0,
-          icon: Activity,
-          color: "text-teal-500",
-          bgColor: "bg-teal-50",
-          status: "checked-in",
-        },
-        {
-          name: "Approved Visits",
-          value: approvedToday ?? 0,
-          icon: CalendarCheck2,
-          color: "text-green-500",
-          bgColor: "bg-green-50",
-          status: VISIT_STATUS.APPROVED,
-        },
-        {
-          name: "Pending Approvals",
-          value: pendingCount ?? 0,
-          icon: Hourglass,
-          color: "text-yellow-500",
-          bgColor: "bg-yellow-50",
-          status: VISIT_STATUS.PENDING,
-        },
-        {
-          name: "Completed Visits",
-          value: completedToday ?? 0,
-          icon: Trophy,
-          color: "text-indigo-500",
-          bgColor: "bg-indigo-50",
-          status: VISIT_STATUS.COMPLETED,
-        },
-        {
-          name: "Cancelled/Denied",
-          value: (cancelledCount ?? 0) + (deniedCount ?? 0),
-          icon: ShieldX,
-          color: "text-rose-500",
-          bgColor: "bg-rose-50",
-          status: "cancelled_denied",
-        },
-      ];
+        allVisits.forEach(v => {
+          if (role === "visitor" && v.visitor?.email !== user.email) return;
 
-      if (role === "admin") {
-        statsData.unshift({
-          name: "Total Users",
-          value: totalUsers,
-          icon: UsersRound,
-          color: "text-blue-500",
-          bgColor: "bg-blue-50",
-          status: "total_users",
+          if (v.status === "checked_in") ongoingCount++;
+          
+          if (v.status === VISIT_STATUS.APPROVED && (v as { approved_at?: string }).approved_at) {
+             const t = new Date((v as { approved_at?: string }).approved_at!).getTime();
+             if (t >= start && t < end) approvedToday++;
+          }
+          
+          if (v.status === VISIT_STATUS.PENDING) {
+             const t = new Date(v.created_at).getTime();
+             if (t >= start && t < end) pendingCount++;
+          }
+          
+          if (v.status === VISIT_STATUS.COMPLETED && v.check_out_time) {
+             const t = new Date(v.check_out_time).getTime();
+             if (t >= start && t < end) completedToday++;
+          }
+          
+          if (v.status === VISIT_STATUS.CANCELLED && v.updated_at) {
+             const t = new Date(v.updated_at).getTime();
+             if (t >= start && t < end) cancelledCount++;
+          }
+          
+          if (v.status === VISIT_STATUS.DENIED && v.updated_at) {
+             const t = new Date(v.updated_at).getTime();
+             if (t >= start && t < end) deniedCount++;
+          }
         });
-      }
 
-      setStats(statsData);
-      writeCache(role, statsData);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to fetch statistics.");
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
+        let totalUsers = 0;
+        if (role === "admin") {
+           const hosts = await api.hosts.list();
+           totalUsers = hosts.length;
+        }
+        statsData = [
+          {
+            name: "Ongoing Visits",
+            value: ongoingCount ?? 0,
+            icon: Activity,
+            color: "text-teal-500",
+            bgColor: "bg-teal-50",
+            status: "checked_in",
+          },
+          {
+            name: "Approved Visits",
+            value: approvedToday ?? 0,
+            icon: CalendarCheck2,
+            color: "text-green-500",
+            bgColor: "bg-green-50",
+            status: VISIT_STATUS.APPROVED,
+          },
+          {
+            name: "Pending Approvals",
+            value: pendingCount ?? 0,
+            icon: Hourglass,
+            color: "text-yellow-500",
+            bgColor: "bg-yellow-50",
+            status: VISIT_STATUS.PENDING,
+          },
+          {
+            name: "Completed Visits",
+            value: completedToday ?? 0,
+            icon: Trophy,
+            color: "text-indigo-500",
+            bgColor: "bg-indigo-50",
+            status: VISIT_STATUS.COMPLETED,
+          },
+          {
+            name: "Cancelled/Denied",
+            value: (cancelledCount ?? 0) + (deniedCount ?? 0),
+            icon: ShieldX,
+            color: "text-rose-500",
+            bgColor: "bg-rose-50",
+            status: "cancelled_denied",
+          },
+        ];
+
+        if (role === "admin") {
+          statsData.unshift({
+            name: "Total Users",
+            value: totalUsers,
+            icon: UsersRound,
+            color: "text-blue-500",
+            bgColor: "bg-blue-50",
+            status: "total_users",
+          });
+        }
+
+        setStats(statsData);
+        writeCache(role, statsData);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to fetch statistics.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user]
+  );
 
   return { stats, loading, error, fetchStats };
 };

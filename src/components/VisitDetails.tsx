@@ -13,17 +13,18 @@ import {
   Car,
   Calendar,
 } from "lucide-react";
-import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../store/auth";
 import { toast } from "react-hot-toast";
 import { formatIST } from "../lib/dateIST";
 import emailjs from "@emailjs/browser";
 import QRCode from "qrcode";
+import { api } from "../lib/api";
+
 import type { Database } from "../lib/database.types";
 
 export type VisitWithDetails = Database["public"]["Tables"]["visits"]["Row"] & {
-  visitor?: Database["public"]["Tables"]["visitors"]["Row"] | null;
-  visitors?: Database["public"]["Tables"]["visitors"]["Row"] | null;
+  visitor?: Database["public"]["Tables"]["visitors"]["Row"];
+  visitors?: Database["public"]["Tables"]["visitors"]["Row"];
   host?: Database["public"]["Tables"]["hosts"]["Row"] | null;
   hosts?: Database["public"]["Tables"]["hosts"]["Row"] | null;
   approved_at?: string | null;
@@ -65,11 +66,7 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
         updateData.approved_by = user?.id;
       }
 
-      const { error } = await supabase.from("visits").update(updateData).eq("id", visit.id);
-
-      if (error) throw error;
-
-      // Send Email Notification
+      await api.visits.update(visit.id, updateData);
       const emailServiceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
       const emailPublicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
       const approvalTemplateId = import.meta.env.VITE_EMAILJS_APPROVAL_TEMPLATE_ID;
@@ -79,7 +76,6 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
 
       if (emailServiceId && templateId && emailPublicKey && visitor?.email) {
         try {
-          // Enrich QR Data with more details as requested - Shortened keys for better scannability
           const qrData = JSON.stringify({
             vId: visit.id,
             n: visitor.name,
@@ -140,22 +136,10 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from("visitors")
-        .update({
-          is_blacklisted: isBlocking,
-          blacklist_reason: reason,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", visitor.id)
-        .select("id");
-
-      if (error) throw error;
-
-      // If data is empty, it means Row Level Security blocked the UPDATE operation silently
-      if (!data || data.length === 0) {
-        throw new Error("Update blocked by database Row-Level Security (RLS) policy on the 'visitors' table.");
-      }
+      await api.visitors.update(visitor.id, {
+        is_blacklisted: isBlocking,
+        blacklist_reason: reason,
+      });
 
       setIsBlacklisted(isBlocking);
       setShowBlacklistPrompt(false);
@@ -184,17 +168,12 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
     setLoading(true);
     try {
       const now = new Date().toISOString();
-      const { error } = await supabase
-        .from("visits")
-        .update({
-          status: "completed",
-          check_out_time: now,
-          updated_at: now,
-          exit_gate: selectedExitGate,
-        })
-        .eq("id", visit.id);
-
-      if (error) throw error;
+      await api.visits.update(visit.id, {
+        status: "completed",
+        check_out_time: now,
+        updated_at: now,
+        exit_gate: selectedExitGate,
+      });
 
       toast.success(`Visit Completed via ${selectedExitGate}`);
       if (onUpdate) onUpdate();
@@ -215,9 +194,8 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
         aria-hidden="true"
       />
 
-      <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.2)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] w-full max-w-sm overflow-hidden animate-scaleIn border border-white dark:border-slate-700 flex flex-col ring-1 ring-black/5 dark:ring-white/10">
-        {/* Premium Header */}
-        <div className="px-5 py-3.5 border-b border-gray-200/50 dark:border-slate-700/50 flex items-center justify-between bg-gradient-to-b from-gray-50/50 to-transparent dark:from-slate-800/50 dark:to-transparent">
+      <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.2)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] w-full max-w-sm overflow-hidden animate-scaleIn border border-white dark:border-slate-700 flex flex-col ring-1 ring-black/5 dark:ring-white/10 max-h-full">
+        <div className="px-5 py-3.5 border-b border-gray-200/50 dark:border-slate-700/50 flex items-center justify-between bg-gradient-to-b from-gray-50/50 to-transparent dark:from-slate-800/50 dark:to-transparent shrink-0">
           <div className="flex items-center gap-2.5">
             <div
               className={`w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold shadow-lg bg-gradient-to-br ${isBlacklisted ? "from-rose-500 to-red-600 shadow-red-500/30" : "from-blue-500 to-indigo-600 shadow-blue-500/30"}`}
@@ -240,8 +218,7 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
           </button>
         </div>
 
-        <div className="p-5 space-y-4 overflow-y-auto max-h-[85vh] scrollbar-hide">
-          {/* Identity - Sleek Profile Row */}
+        <div className="p-5 space-y-4 overflow-y-auto flex-1">
           <div className="flex items-center gap-3 bg-white/50 dark:bg-slate-800/30 p-2.5 rounded-[1.5rem] border border-gray-200/50 dark:border-slate-700/50 shadow-sm backdrop-blur-md">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-xl font-black text-gray-400 overflow-hidden shrink-0 shadow-inner border border-white dark:border-slate-600">
               {visitor?.photo_url ? (
@@ -264,8 +241,6 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
               </div>
             </div>
           </div>
-
-          {/* Elevated Info Grid */}
           <div className="grid grid-cols-2 gap-2.5">
             <div className="col-span-2 sm:col-span-1 p-3.5 rounded-[1rem] bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/80 dark:to-slate-900/80 border border-gray-200/50 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-shadow">
               <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
@@ -327,8 +302,6 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
               </div>
             )}
           </div>
-
-          {/* Modern Timeline */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 px-1">
               <History className="w-3.5 h-3.5 text-gray-400" />
@@ -342,23 +315,28 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                 <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase leading-none">
                   Created
                 </p>
-                <p className="text-[10px] font-bold text-gray-500 mt-0.5">{formatIST(visit.created_at)}</p>
+                <p className="text-[10px] font-bold text-gray-500 mt-0.5">
+                  {formatIST(visit.created_at)}
+                </p>
               </div>
-
-              {/* Approved */}
               {visit.approved_at && (
                 <div className="relative">
                   <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-indigo-500 ring-4 ring-white dark:ring-slate-900" />
                   <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase leading-none">
-                    Approved {visit.approved_by ? <span className="text-indigo-600 dark:text-indigo-400 lowercase">({visit.approved_by === visit.host_id ? "by Host" : "by Admin/Guard"})</span> : ""}
+                    Approved{" "}
+                    {visit.approved_by ? (
+                      <span className="text-indigo-600 dark:text-indigo-400 lowercase">
+                        ({visit.approved_by === visit.host_id ? "by Host" : "by Admin/Guard"})
+                      </span>
+                    ) : (
+                      ""
+                    )}
                   </p>
                   <p className="text-[10px] font-bold text-gray-500 mt-0.5">
                     {formatIST(visit.approved_at)}
                   </p>
                 </div>
               )}
-
-              {/* Denied */}
               {visit.status === "denied" && (
                 <div className="relative">
                   <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-4 ring-white dark:ring-slate-900" />
@@ -370,34 +348,42 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                   </p>
                 </div>
               )}
-
-              {/* Check-in */}
               {visit.check_in_time && (
                 <div className="relative">
                   <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-slate-900" />
                   <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase leading-none">
-                    Check-in {visit.entry_gate ? <span className="text-emerald-600 dark:text-emerald-400 lowercase">({visit.entry_gate})</span> : ""}
+                    Check-in{" "}
+                    {visit.entry_gate ? (
+                      <span className="text-emerald-600 dark:text-emerald-400 lowercase">
+                        ({visit.entry_gate})
+                      </span>
+                    ) : (
+                      ""
+                    )}
                   </p>
                   <p className="text-[10px] font-bold text-gray-500 mt-0.5">
                     {formatIST(visit.check_in_time)}
                   </p>
                 </div>
               )}
-
-              {/* Check-out */}
               {visit.check_out_time && (
                 <div className="relative">
                   <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-purple-500 ring-4 ring-white dark:ring-slate-900" />
                   <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase leading-none">
-                    Check-out {visit.exit_gate ? <span className="text-purple-600 dark:text-purple-400 lowercase">({visit.exit_gate})</span> : ""}
+                    Check-out{" "}
+                    {visit.exit_gate ? (
+                      <span className="text-purple-600 dark:text-purple-400 lowercase">
+                        ({visit.exit_gate})
+                      </span>
+                    ) : (
+                      ""
+                    )}
                   </p>
                   <p className="text-[10px] font-bold text-gray-500 mt-0.5">
                     {formatIST(visit.check_out_time)}
                   </p>
                 </div>
               )}
-
-              {/* Cancelled */}
               {visit.status === "cancelled" && (
                 <div className="relative">
                   <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-orange-500 ring-4 ring-white dark:ring-slate-900" />
@@ -411,8 +397,6 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
               )}
             </div>
           </div>
-
-          {/* Admin Block - More Discreet */}
           {visit.status === "pending" && canApprove && (
             <div className="grid grid-cols-2 gap-2 pt-1">
               <button
@@ -432,7 +416,7 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
             </div>
           )}
 
-          {visit.status === "checked-in" && isGuardOrAdmin && (
+          {visit.status === "checked_in" && isGuardOrAdmin && (
             <div className="w-full space-y-3">
               {showExitGatePrompt ? (
                 <div className="bg-indigo-50 dark:bg-indigo-900/10 p-3 rounded-2xl border border-indigo-200 dark:border-indigo-900/50 animate-scaleIn">
@@ -516,10 +500,11 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                 <button
                   onClick={handleBlacklistClick}
                   disabled={loading}
-                  className={`w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${isBlacklisted
+                  className={`w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                    isBlacklisted
                       ? "bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400"
                       : "bg-red-50 border-red-100 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"
-                    }`}
+                  }`}
                 >
                   {isBlacklisted ? "Unblock Visitor" : "Blacklist"}
                 </button>
@@ -527,10 +512,8 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
             </div>
           )}
         </div>
-
-        {/* Action Footer */}
         {visitor?.id_proof_url && (
-          <div className="p-3 bg-gray-50/50 dark:bg-slate-800/30 border-t border-gray-100 dark:border-slate-800">
+          <div className="p-3 bg-gray-50/50 dark:bg-slate-800/30 border-t border-gray-100 dark:border-slate-800 shrink-0">
             <a
               href={visitor.id_proof_url}
               target="_blank"

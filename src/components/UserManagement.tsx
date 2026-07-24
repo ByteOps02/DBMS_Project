@@ -10,7 +10,7 @@ import {
   Check,
 } from "lucide-react";
 import { PageHeader } from "./PageHeader";
-import { supabase } from "../lib/supabase";
+import { api } from "../lib/api";
 import { toast } from "react-hot-toast";
 import type { Database } from "../lib/database.types";
 import { BackButton } from "./BackButton";
@@ -27,15 +27,23 @@ const useDebounce = <T,>(value: T, delay: number): T => {
 };
 
 const getRoleLabel = (role: string) => {
-  const map: Record<string, string> = { admin: "Admin", guard: "Guard", host: "Host", visitor: "Visitor" };
+  const map: Record<string, string> = {
+    admin: "Admin",
+    guard: "Guard",
+    host: "Host",
+    visitor: "Visitor",
+  };
   return map[role] ?? role;
 };
 
 export function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState<Profile[]>(() => {
-    try { return JSON.parse(localStorage.getItem("vms_users") ?? "null") ?? []; }
-    catch { return []; }
+    try {
+      return JSON.parse(localStorage.getItem("vms_users") ?? "null") ?? [];
+    } catch {
+      return [];
+    }
   });
   const [loading, setLoading] = useState(() => localStorage.getItem("vms_users") === null);
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
@@ -45,34 +53,34 @@ export function UserManagement() {
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const fetchUsers = useCallback(async () => {
-    // Only show the full-page spinner on the very first load;
-    // subsequent calls (search, refresh) update quietly in the background.
     if (!initialLoadDone.current) setLoading(true);
 
-    let query = supabase.from("hosts").select("*");
-    if (debouncedSearchTerm)
-      query = query.or(`name.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%`);
-
-    const { data, error } = await query;
-    if (error) toast.error("Failed to fetch users");
-    else {
+    try {
+      const data = await api.hosts.list(debouncedSearchTerm || undefined);
       setUsers(data);
       if (!debouncedSearchTerm) {
-        try { localStorage.setItem("vms_users", JSON.stringify(data)); } catch { /* quota */ }
+        try {
+          localStorage.setItem("vms_users", JSON.stringify(data));
+        } catch {
+          // Ignore cache write errors
+        }
       }
+    } catch {
+      toast.error("Failed to fetch users");
     }
     initialLoadDone.current = true;
     setLoading(false);
   }, [debouncedSearchTerm]);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
-
+    if (!window.confirm("Are you sure you want to delete this user? This action cannot be undone."))
+      return;
     try {
-      const { error } = await supabase.from("hosts").delete().eq("id", userId);
-      if (error) throw error;
+      await api.hosts.delete(userId);
       toast.success("User deleted successfully");
       fetchUsers();
     } catch (err: unknown) {
@@ -85,12 +93,9 @@ export function UserManagement() {
     if (!editingUser) return;
     setIsUpdating(true);
     try {
-      const { error } = await supabase
-        .from("hosts")
-        .update({ role: newRole })
-        .eq("id", editingUser.id);
-
-      if (error) throw error;
+      await api.hosts.update(editingUser.id, {
+        role: newRole as "admin" | "guard" | "host" | "visitor",
+      });
       toast.success(`Role updated to ${getRoleLabel(newRole)}`);
       setEditingUser(null);
       fetchUsers();
@@ -114,7 +119,6 @@ export function UserManagement() {
         />
       </div>
 
-      {/* ── User Table ── */}
       <div className="max-w-7xl mx-auto mt-6">
         <div className="mb-4 relative w-full max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -131,18 +135,41 @@ export function UserManagement() {
         <div className="glass-panel rounded-[2rem] transition-all duration-300 h-full flex flex-col overflow-hidden ring-1 ring-black/5 dark:ring-white/5">
           <div className="lg:hidden px-6 py-2 bg-sky-50/50 dark:bg-sky-900/10 border-b border-gray-100 dark:border-slate-800/50">
             <p className="text-[9px] font-black text-sky-600/60 dark:text-sky-400/60 uppercase tracking-widest flex items-center gap-1.5">
-              <span className="animate-pulse">←</span> Swipe horizontally to see more details <span className="animate-pulse">→</span>
+              <span className="animate-pulse">←</span> Swipe horizontally to see more details{" "}
+              <span className="animate-pulse">→</span>
             </p>
           </div>
           <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full divide-y divide-gray-200 dark:divide-slate-700 min-w-[800px]">
               <thead>
                 <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-slate-800 dark:to-slate-800/50">
-                  <th scope="col" className="py-3.5 pl-4 pr-3 sm:pl-6 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest">Name</th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest hidden lg:table-cell">Email</th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest hidden lg:table-cell">Role</th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest hidden lg:table-cell">Status</th>
-                  <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6"><span className="sr-only">Actions</span></th>
+                  <th
+                    scope="col"
+                    className="py-3.5 pl-4 pr-3 sm:pl-6 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest"
+                  >
+                    Name
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest hidden lg:table-cell"
+                  >
+                    Email
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest hidden lg:table-cell"
+                  >
+                    Role
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest hidden lg:table-cell"
+                  >
+                    Status
+                  </th>
+                  <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
@@ -159,9 +186,15 @@ export function UserManagement() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-4 hidden lg:table-cell"><div className="skeleton h-4 w-40 rounded" /></td>
-                        <td className="px-3 py-4 hidden lg:table-cell"><div className="skeleton h-5 w-20 rounded-xl" /></td>
-                        <td className="px-3 py-4 hidden lg:table-cell"><div className="skeleton h-5 w-20 rounded-xl" /></td>
+                        <td className="px-3 py-4 hidden lg:table-cell">
+                          <div className="skeleton h-4 w-40 rounded" />
+                        </td>
+                        <td className="px-3 py-4 hidden lg:table-cell">
+                          <div className="skeleton h-5 w-20 rounded-xl" />
+                        </td>
+                        <td className="px-3 py-4 hidden lg:table-cell">
+                          <div className="skeleton h-5 w-20 rounded-xl" />
+                        </td>
                         <td className="py-4 pl-3 pr-4 sm:pr-6 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <div className="skeleton h-8 w-8 rounded-2xl" />
@@ -178,23 +211,33 @@ export function UserManagement() {
                         <div className="p-4 rounded-2xl bg-gray-50 dark:bg-slate-800 ring-1 ring-gray-200 dark:ring-slate-700">
                           <Inbox className="w-7 h-7 text-gray-300 dark:text-slate-600" />
                         </div>
-                        <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">No users found</p>
+                        <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                          No users found
+                        </p>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   users.map((user, idx) => (
-                    <tr key={user.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors animate-fadeInUp" style={{ animationDelay: `${idx * 0.02}s` }}>
+                    <tr
+                      key={user.id}
+                      className="hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors animate-fadeInUp"
+                      style={{ animationDelay: `${idx * 0.02}s` }}
+                    >
                       <td className="py-4 pl-4 pr-3 sm:pl-6">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-[1.25rem] bg-gradient-to-br from-indigo-500 to-sky-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
                             {user.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="text-sm font-black text-gray-900 dark:text-white">{user.name}</p>
+                            <p className="text-sm font-black text-gray-900 dark:text-white">
+                              {user.name}
+                            </p>
                             <div className="lg:hidden flex items-center gap-1.5 mt-0.5">
                               <Mail className="h-3 w-3 text-gray-400" />
-                              <span className="text-[11px] text-gray-400 truncate max-w-[160px]">{user.email}</span>
+                              <span className="text-[11px] text-gray-400 truncate max-w-[160px]">
+                                {user.email}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -211,8 +254,12 @@ export function UserManagement() {
                         </span>
                       </td>
                       <td className="px-3 py-4 hidden lg:table-cell">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest ${user.active ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/40" : "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/40"}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${user.active ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`} />
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest ${user.active ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/40" : "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/40"}`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${user.active ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
+                          />
                           {user.active ? "Active" : "Inactive"}
                         </span>
                       </td>
@@ -243,10 +290,12 @@ export function UserManagement() {
         </div>
       </div>
 
-      {/* ── Edit Role Modal ── */}
       {editingUser && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-8">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-xl animate-fadeIn" onClick={() => setEditingUser(null)} />
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-xl animate-fadeIn"
+            onClick={() => setEditingUser(null)}
+          />
           <div className="relative w-full max-w-sm glass-panel rounded-[2rem] shadow-2xl animate-springIn overflow-hidden border border-white/20 dark:border-slate-700/50">
             <div className="px-6 pt-6 pb-4 flex items-center justify-between border-b border-white/60 dark:border-slate-700/50">
               <div className="flex items-center gap-3">
@@ -254,27 +303,31 @@ export function UserManagement() {
                   <Shield className="h-5 w-5 text-white" strokeWidth={2.5} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Update Role</h3>
+                  <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">
+                    Update Role
+                  </h3>
                   <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-tight truncate max-w-[180px]">
                     {editingUser.name}
                   </p>
                 </div>
               </div>
-
             </div>
 
             <div className="p-6 space-y-4">
-              <p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest ml-1">Select New Role</p>
+              <p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest ml-1">
+                Select New Role
+              </p>
               <div className="grid grid-cols-1 gap-2">
                 {["admin", "host", "guard", "visitor"].map((role) => (
                   <button
                     key={role}
                     onClick={() => handleUpdateRole(role)}
                     disabled={isUpdating}
-                    className={`flex items-center justify-between px-4 py-3 rounded-2xl border transition-all ${editingUser.role === role
+                    className={`flex items-center justify-between px-4 py-3 rounded-2xl border transition-all ${
+                      editingUser.role === role
                         ? "bg-sky-50 dark:bg-sky-900/20 border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-400 font-black"
                         : "bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800 text-gray-600 dark:text-slate-400 hover:border-gray-200 dark:hover:border-slate-700 font-bold"
-                      }`}
+                    }`}
                   >
                     <span className="text-xs uppercase tracking-widest">{getRoleLabel(role)}</span>
                     {editingUser.role === role && <Check className="w-4 h-4" />}

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "../lib/supabase";
 import { toast } from "react-hot-toast";
 import { useAuthStore } from "../store/auth";
 import {
@@ -15,31 +14,33 @@ import {
   ChevronRight,
   ChevronDown,
 } from "lucide-react";
-import type { Database } from "../lib/database.types";
+import { api } from "../lib/api";
 import logger from "../lib/logger";
 import { BackButton } from "./BackButton";
 import { PageHeader } from "./PageHeader";
 import { formatIST } from "../lib/dateIST";
 import { useDebounce } from "../hooks/useDebounce";
-import { STATUS_CONFIG, getStatusConfig } from "../lib/statusConfig";
+import { getStatusConfig } from "../lib/statusConfig";
 import { readCache, writeCache } from "../lib/cache";
-import { getSafeVisitorIds } from "../lib/visitorIds";
 import { SEOMeta } from "./SEOMeta";
 import { VisitDetails } from "./VisitDetails";
 
-type VisitLog = Database["public"]["Tables"]["visits"]["Row"] & {
-  visitor: Database["public"]["Tables"]["visitors"]["Row"] | null;
-  host: Database["public"]["Tables"]["hosts"]["Row"] | null;
-};
+import type { Database } from "../lib/database.types";
 
-// ─── Cache configuration ────────────────────────────────────────────────────
+export type VisitLog = Database["public"]["Tables"]["visits"]["Row"] & {
+  visitor?: Database["public"]["Tables"]["visitors"]["Row"];
+  visitors?: Database["public"]["Tables"]["visitors"]["Row"];
+  host?: Database["public"]["Tables"]["hosts"]["Row"] | null;
+  hosts?: Database["public"]["Tables"]["hosts"]["Row"] | null;
+};
 const LOGS_CACHE_KEY = "vms_visit_logs_cache";
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-// ─────────────────────────────────────────────────────────────────────────────
+const CACHE_TTL_MS = 5 * 60 * 1000; 
 
 export function VisitLogs() {
   const { user } = useAuthStore();
-  const [logs, setLogs] = useState<VisitLog[]>(() => readCache<VisitLog[]>(LOGS_CACHE_KEY, CACHE_TTL_MS) ?? []);
+  const [logs, setLogs] = useState<VisitLog[]>(
+    () => readCache<VisitLog[]>(LOGS_CACHE_KEY, CACHE_TTL_MS) ?? []
+  );
   const [loading, setLoading] = useState(() => readCache(LOGS_CACHE_KEY, CACHE_TTL_MS) === null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
@@ -52,98 +53,71 @@ export function VisitLogs() {
   const PAGE_SIZE = 50; // Fetch 50 rows at a time — fast first load, load-more for the rest
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const fetchVisits = useCallback(async (isLoadMore = false) => {
-    if (!user) return;
+  const fetchVisits = useCallback(
+    async (isLoadMore = false) => {
+      if (!user) return;
 
-    const currentPage = isLoadMore ? page + 1 : 1;
-    if (!isLoadMore && readCache(LOGS_CACHE_KEY, CACHE_TTL_MS) === null) setLoading(true);
-    if (isLoadMore) setLoadingMore(true);
+      const currentPage = isLoadMore ? page + 1 : 1;
+      if (!isLoadMore && readCache(LOGS_CACHE_KEY, CACHE_TTL_MS) === null) setLoading(true);
+      if (isLoadMore) setLoadingMore(true);
 
-    try {
-      // Narrow the select to exactly the columns rendered in the table.
-      // Fetching visitor.* and host.* (full rows) was the biggest data transfer
-      // waste. We now only fetch what is displayed.
-      let query = supabase.from("visits").select(`
-        id,
-        purpose,
-        status,
-        created_at,
-        check_in_time,
-        check_out_time,
-        vehicle_number,
-        additional_guests,
-        entry_gate,
-        exit_gate,
-        host_id,
-        visitor:visitors(id, name, email, phone, photo_url),
-        host:hosts!visits_host_id_fkey(id, name, email, department_id)
-      `);
+      try {
+        const params: Record<string, unknown> = {
+          limit: PAGE_SIZE,
+          offset: (currentPage - 1) * PAGE_SIZE,
+        };
 
-      if (debouncedSearchTerm) {
-        query = query.or(
-          `purpose.ilike.%${debouncedSearchTerm}%,visitor:visitors(name.ilike.%${debouncedSearchTerm}%)`
-        );
-      }
-
-      if (statusFilter) {
-        query = query.eq("status", statusFilter);
-      }
-
-      if (dateFilter) {
-        const startOfDay = new Date(dateFilter);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(dateFilter);
-        endOfDay.setHours(23, 59, 59, 999);
-        query = query
-          .gte("created_at", startOfDay.toISOString())
-          .lte("created_at", endOfDay.toISOString());
-      }
-
-      if (user?.role === "host") {
-        query = query.eq("host_id", user.id);
-      } else if (user?.role === "visitor" && user?.email) {
-        // Use shared memoized helper — no extra sequential round-trip
-        const visitorIds = await getSafeVisitorIds(user.email);
-        query = query.in("visitor_id", visitorIds);
-      }
-
-      const from = (currentPage - 1) * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
-
-      const { data, error } = await query
-        .order("created_at", { ascending: false })
-        .range(from, to);
-
-      if (error) throw error;
-
-      const result = (data as unknown as VisitLog[]) || [];
-      // If we got a full page back, there may be more rows
-      setHasMore(result.length === PAGE_SIZE);
-
-      if (isLoadMore) {
-        setLogs(prev => [...prev, ...result]);
-        setStatusPage(currentPage);
-      } else {
-        setLogs(result);
-        setStatusPage(1);
-        // Only cache unfiltered results
-        if (!debouncedSearchTerm && !statusFilter && !dateFilter) {
-          writeCache(LOGS_CACHE_KEY, result.slice(0, 50));
+        if (debouncedSearchTerm) {
+          params.search = debouncedSearchTerm;
         }
-      }
 
-    } catch (err) {
-      logger.error("[VisitLogs] Fetch error:", err);
-      toast.error("Failed to load visit logs");
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [user, debouncedSearchTerm, statusFilter, dateFilter, page]);
+        if (statusFilter) {
+          params.status = statusFilter;
+        }
+
+        if (dateFilter) {
+          const startOfDay = new Date(dateFilter);
+          startOfDay.setHours(0, 0, 0, 0);
+          const endOfDay = new Date(dateFilter);
+          endOfDay.setHours(23, 59, 59, 999);
+          params.created_from = startOfDay.toISOString();
+          params.created_to = endOfDay.toISOString();
+        }
+
+        const data = await api.visits.list(params);
+        
+        // Map backend's 'visitor' and 'host' to 'visitors' and 'hosts' for compatibility with UI
+        const result = (data as unknown as VisitLog[]).map(v => ({
+          ...v,
+          visitors: v.visitor,
+          hosts: v.host,
+        }));
+        setHasMore(result.length === PAGE_SIZE);
+
+        if (isLoadMore) {
+          setLogs((prev) => [...prev, ...result]);
+          setStatusPage(currentPage);
+        } else {
+          setLogs(result);
+          setStatusPage(1);
+          if (!debouncedSearchTerm && !statusFilter && !dateFilter) {
+            writeCache(LOGS_CACHE_KEY, result.slice(0, 50));
+          }
+        }
+      } catch (err) {
+        logger.error("[VisitLogs] Fetch error:", err);
+        toast.error("Failed to load visit logs");
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [user, debouncedSearchTerm, statusFilter, dateFilter, page]
+  );
 
   useEffect(() => {
     fetchVisits();
-  }, [fetchVisits]); // fetchVisits handles internal filtering logic
+  }, [fetchVisits]); 
 
   const handleExport = async () => {
     if (logs.length === 0) {
@@ -152,23 +126,24 @@ export function VisitLogs() {
     }
     setExporting(true);
     try {
-      // For export, fetch ALL matching rows (ignoring PAGE_SIZE limit)
-      let exportQuery = supabase.from("visits").select(`
-        id, purpose, status, created_at, check_in_time, check_out_time,
-        vehicle_number, additional_guests, entry_gate, exit_gate,
-        visitor:visitors(name, phone, email),
-        host:hosts!visits_host_id_fkey(name)
-      `);
-
-      if (statusFilter) exportQuery = exportQuery.eq("status", statusFilter);
+      const params: Record<string, unknown> = {};
+      if (statusFilter) params.status = statusFilter;
       if (dateFilter) {
-        const startOfDay = new Date(dateFilter); startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(dateFilter); endOfDay.setHours(23, 59, 59, 999);
-        exportQuery = exportQuery.gte("created_at", startOfDay.toISOString()).lte("created_at", endOfDay.toISOString());
+        const startOfDay = new Date(dateFilter);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(dateFilter);
+        endOfDay.setHours(23, 59, 59, 999);
+        params.created_from = startOfDay.toISOString();
+        params.created_to = endOfDay.toISOString();
       }
-      if (user?.role === "host") exportQuery = exportQuery.eq("host_id", user.id);
 
-      const { data: exportData } = await exportQuery.order("created_at", { ascending: false });
+      const data = await api.visits.list(params);
+      
+      const exportData = (data as unknown as VisitLog[]).map(v => ({
+        ...v,
+        visitors: v.visitor,
+        hosts: v.host,
+      }));
       const rows = (exportData as unknown as VisitLog[]) || [];
 
       const csvData = rows.map((logItem) => ({
@@ -275,7 +250,7 @@ export function VisitLogs() {
               <option value="">All Status</option>
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
-              <option value="checked-in">Active</option>
+              <option value="checked_in">Active</option>
               <option value="completed">Completed</option>
               <option value="denied">Denied</option>
               <option value="cancelled">Cancelled</option>
@@ -289,7 +264,8 @@ export function VisitLogs() {
               <div className="glass-panel rounded-[2rem] overflow-hidden transition-all duration-300 h-full flex flex-col">
                 <div className="lg:hidden px-6 py-2 bg-emerald-50/50 dark:bg-emerald-900/10 border-b border-gray-100 dark:border-slate-800/50">
                   <p className="text-[9px] font-black text-emerald-600/60 dark:text-emerald-400/60 uppercase tracking-widest flex items-center gap-1.5">
-                    <span className="animate-pulse">←</span> Swipe horizontally to see more details <span className="animate-pulse">→</span>
+                    <span className="animate-pulse">←</span> Swipe horizontally to see more details{" "}
+                    <span className="animate-pulse">→</span>
                   </p>
                 </div>
                 <div className="flex-1 overflow-x-auto scrollbar-hide">
@@ -339,15 +315,33 @@ export function VisitLogs() {
                                   <div className="skeleton h-4 w-24 rounded" />
                                 </div>
                               </td>
-                              <td className="px-3 py-4"><div className="skeleton h-4 w-12 rounded" /></td>
-                              <td className="px-3 py-4"><div className="skeleton h-4 w-16 rounded" /></td>
-                              <td className="px-3 py-4"><div className="skeleton h-4 w-20 rounded" /></td>
-                              <td className="px-3 py-4"><div className="skeleton h-4 w-16 rounded" /></td>
-                              <td className="px-3 py-4"><div className="skeleton h-4 w-16 rounded" /></td>
-                              <td className="px-3 py-4"><div className="skeleton h-4 w-16 rounded" /></td>
-                              <td className="px-3 py-4"><div className="skeleton h-4 w-16 rounded" /></td>
-                              <td className="px-3 py-4"><div className="skeleton h-5 w-16 rounded-xl" /></td>
-                              <td className="py-4 pl-3 pr-4 sm:pr-6 text-right"><div className="skeleton h-4 w-4 rounded inline-block ml-2" /></td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-4 w-12 rounded" />
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-4 w-16 rounded" />
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-4 w-20 rounded" />
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-4 w-16 rounded" />
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-4 w-16 rounded" />
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-4 w-16 rounded" />
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-4 w-16 rounded" />
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-5 w-16 rounded-xl" />
+                              </td>
+                              <td className="py-4 pl-3 pr-4 sm:pr-6 text-right">
+                                <div className="skeleton h-4 w-4 rounded inline-block ml-2" />
+                              </td>
                             </tr>
                           ))}
                         </>
@@ -416,7 +410,9 @@ export function VisitLogs() {
                                 )}
                               </td>
                               <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 dark:text-slate-400">
-                                <span className="text-xs font-medium">{logItem.visitor?.phone || "—"}</span>
+                                <span className="text-xs font-medium">
+                                  {logItem.visitor?.phone || "—"}
+                                </span>
                               </td>
                               <td className="px-3 py-4 text-sm text-gray-500 dark:text-slate-400">
                                 {logItem.check_in_time ? (
@@ -459,7 +455,7 @@ export function VisitLogs() {
                                   className={`inline-flex items-center gap-1.5 rounded-xl px-2 py-1 text-[10px] font-black uppercase tracking-widest ${cfg.className}`}
                                 >
                                   <StatusIcon
-                                    className={`w-3 h-3 ${logItem.status === "checked-in" ? "animate-pulse" : ""}`}
+                                    className={`w-3 h-3 ${logItem.status === "checked_in" ? "animate-pulse" : ""}`}
                                   />
                                   {cfg.label}
                                 </span>
@@ -474,8 +470,6 @@ export function VisitLogs() {
                     </tbody>
                   </table>
                 </div>
-
-                {/* Load More Button removed as per user request */}
               </div>
             </div>
           </div>
@@ -489,8 +483,6 @@ export function VisitLogs() {
           onUpdate={fetchVisits}
         />
       )}
-
-      {/* Load More — only shown when there are more rows to fetch */}
       {hasMore && !loading && (
         <div className="flex justify-center py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <button

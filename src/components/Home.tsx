@@ -51,12 +51,10 @@ const Home = () => {
   return (
     <div className="min-h-screen flex flex-col scroll-smooth bg-gray-50 dark:bg-slate-950">
       <SEOMeta title="IIIT Nagpur VMS Home" />
-
-      {/* ── Navbar ── */}
       <nav
         className={`w-full flex items-center justify-between px-4 sm:px-6 lg:px-10 py-3 fixed top-0 z-50 transition-all duration-500 ${scrolled
-          ? "bg-white/95 dark:bg-slate-950/95 shadow-lg dark:shadow-slate-800/50 backdrop-blur-md border-b border-gray-200/60 dark:border-slate-800/60"
-          : "bg-white/70 dark:bg-slate-950/70 backdrop-blur-lg"
+            ? "bg-white/95 dark:bg-slate-950/95 shadow-lg dark:shadow-slate-800/50 backdrop-blur-md border-b border-gray-200/60 dark:border-slate-800/60"
+            : "bg-white/70 dark:bg-slate-950/70 backdrop-blur-lg"
           }`}
       >
         <div
@@ -110,8 +108,8 @@ const Home = () => {
 
       <div
         className={`md:hidden fixed top-[68px] left-0 right-0 z-40 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-xl transition-all duration-300 ${mobileMenuOpen
-          ? "opacity-100 translate-y-0"
-          : "opacity-0 -translate-y-3 pointer-events-none"
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 -translate-y-3 pointer-events-none"
           }`}
       >
         <div className="px-4 py-3 space-y-1.5">
@@ -133,13 +131,10 @@ const Home = () => {
           ))}
         </div>
       </div>
-
-      {/* ── Hero Section (background image preserved) ── */}
       <div
         className="min-h-[85vh] flex items-center justify-center bg-cover bg-center px-4 sm:px-6 pt-20 pb-10 relative"
         style={{ backgroundImage: "url('/c8331ead-7366-4dc7-88a9-36ade9571557.jpg')" }}
       >
-        {/* subtle dark overlay for better contrast only */}
         <div className="absolute inset-0 bg-black/20 dark:bg-black/40" />
 
         <div className="relative z-10 flex flex-col items-center gap-8 animate-scaleIn">
@@ -175,8 +170,6 @@ const Home = () => {
           </div>
         </div>
       </div>
-
-      {/* ── Features Section ── */}
       <section className="py-12 sm:py-16 bg-gray-50 dark:bg-slate-950">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12 animate-fadeInUp">
@@ -199,7 +192,6 @@ const Home = () => {
                 className="group relative bg-white dark:bg-slate-900 rounded-3xl p-7 border border-gray-200 dark:border-slate-800 hover:border-transparent shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 animate-fadeInUp overflow-hidden"
                 style={{ animationDelay: `${i * 0.12}s` }}
               >
-                {/* hover glow bg */}
                 <div
                   className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500 rounded-3xl`}
                 />
@@ -217,8 +209,6 @@ const Home = () => {
                     {description}
                   </p>
                 </div>
-
-                {/* bottom accent bar */}
                 <div
                   className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r ${gradient} scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left rounded-b-3xl`}
                 />
@@ -227,8 +217,6 @@ const Home = () => {
           </div>
         </div>
       </section>
-
-      {/* ── Extra CTA strip ── */}
       <section className="bg-gradient-to-r from-sky-600 to-blue-700 py-10 px-4">
         <div className="max-w-3xl mx-auto text-center">
           <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-3">
@@ -253,8 +241,6 @@ const Home = () => {
           </div>
         </div>
       </section>
-
-      {/* ── Footer ── */}
       <footer className="bg-gray-900 dark:bg-slate-950 text-white py-8 border-t border-gray-800 dark:border-slate-900">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">

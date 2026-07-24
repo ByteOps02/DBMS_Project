@@ -4,17 +4,23 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ═══════════════════════════════════════════════════
-   ROOT VIEWPORT LOCK — kills iOS overscroll / bounce
-   ═══════════════════════════════════════════════════ */
+
 html,
 body {
   min-height: 100%;
   scroll-behavior: smooth;
-  font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 16px;                     /* Modern base size */
-  line-height: 1.6;                    /* Improved readability */
-  letter-spacing: -0.011em;            /* Slightly tighter for that professional look */
+  font-family:
+    "Plus Jakarta Sans",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 16px;
+  /* Modern base size */
+  line-height: 1.6;
+  /* Improved readability */
+  letter-spacing: -0.011em;
+  /* Slightly tighter for that professional look */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -23,39 +29,22 @@ body {
 }
 
 @media (max-width: 640px) {
-  html, body {
-    font-size: 14px; /* Slightly smaller base for small screens */
+
+  html,
+  body {
+    font-size: 14px;
+    /* Slightly smaller base for small screens */
   }
 }
 
 #root {
-  min-height: 100dvh;                  /* dvh = dynamic viewport height (iOS Safari aware) */
+  min-height: 100dvh;
+  /* dvh = dynamic viewport height (iOS Safari aware) */
   display: flex;
   flex-direction: column;
 }
 
 @layer base {
-  * {
-    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 200ms;
-  }
-
-  /* ── Freeze all CSS transitions during View Transition to prevent stutter ── */
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    /* Ensure individual element transitions don't fight the clip-path animation */
-    animation: none !important;
-    will-change: clip-path;
-  }
-
-  html:not(.vt-active) * {
-    /* Only apply the global transition when NOT in a view transition */
-    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 200ms;
-  }
-
   body {
     @apply bg-gray-50 text-gray-900;
     background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px);
@@ -102,9 +91,6 @@ body {
 
 @layer utilities {
 
-  /* ═══════════════════════════════════════════
-     SCROLL CONTAINERS — rubber-band stays inside
-     ═══════════════════════════════════════════ */
   .scroll-ios {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -119,9 +105,7 @@ body {
     display: none;
   }
 
-  /* ═══════════════════════════════════════
-     SAFE AREA — iPhone notch / home bar
-     ═══════════════════════════════════════ */
+
   .pt-safe {
     padding-top: env(safe-area-inset-top, 0px);
   }
@@ -142,144 +126,258 @@ body {
     margin-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  /* ═══════════════════════════════════════
-     ENTRANCE ANIMATIONS
-     ═══════════════════════════════════════ */
+
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(24px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @keyframes slideInLeft {
-    from { opacity: 0; transform: translateX(-24px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from {
+      opacity: 0;
+      transform: translateX(-24px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 
   @keyframes slideInRight {
-    from { opacity: 0; transform: translateX(24px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from {
+      opacity: 0;
+      transform: translateX(24px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 
   /* iOS spring overshoot */
   @keyframes scaleIn {
-    0%   { opacity: 0; transform: scale(0.88); }
-    65%  { opacity: 1; transform: scale(1.03); }
-    100% { opacity: 1; transform: scale(1); }
+    0% {
+      opacity: 0;
+      transform: scale(0.88);
+    }
+
+    65% {
+      opacity: 1;
+      transform: scale(1.03);
+    }
+
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 
   /* Apple bounce spring */
   @keyframes springIn {
-    0%   { opacity: 0; transform: scale(0.82) translateY(24px); }
-    55%  { opacity: 1; transform: scale(1.04) translateY(-4px); }
-    75%  { transform: scale(0.98) translateY(2px); }
-    100% { transform: scale(1) translateY(0); }
+    0% {
+      opacity: 0;
+      transform: scale(0.82) translateY(24px);
+    }
+
+    55% {
+      opacity: 1;
+      transform: scale(1.04) translateY(-4px);
+    }
+
+    75% {
+      transform: scale(0.98) translateY(2px);
+    }
+
+    100% {
+      transform: scale(1) translateY(0);
+    }
   }
 
   /* Tab indicator slide */
   @keyframes tabPop {
-    0%   { transform: scale(0.7); opacity: 0; }
-    60%  { transform: scale(1.12); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
+    0% {
+      transform: scale(0.7);
+      opacity: 0;
+    }
+
+    60% {
+      transform: scale(1.12);
+      opacity: 1;
+    }
+
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
 
   /* ── Looping ── */
   @keyframes pulse-slow {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.7; }
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.7;
+    }
   }
 
   @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50%       { transform: translateY(-9px); }
+
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+
+    50% {
+      transform: translateY(-9px);
+    }
   }
 
   @keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   @keyframes shimmer {
-    0%   { background-position: -200% 0; }
-    100% { background-position:  200% 0; }
+    0% {
+      background-position: -200% 0;
+    }
+
+    100% {
+      background-position: 200% 0;
+    }
   }
 
   @keyframes glow-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
-    50%       { box-shadow: 0 0 20px 6px rgba(14, 165, 233, 0.3); }
+
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(14, 165, 233, 0);
+    }
+
+    50% {
+      box-shadow: 0 0 20px 6px rgba(14, 165, 233, 0.3);
+    }
   }
 
   @keyframes countUp {
-    from { opacity: 0; transform: scale(0.8); }
-    to   { opacity: 1; transform: scale(1); }
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 
   @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
-    20%, 40%, 60%, 80% { transform: translateX(4px); }
+
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+      transform: translateX(-4px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+      transform: translateX(4px);
+    }
   }
 
   /* ── Utility classes ── */
-  .animate-fadeIn      { animation: fadeIn   0.5s cubic-bezier(0.22,1,0.36,1) both; }
-  .animate-fadeInUp    { animation: fadeInUp 0.6s cubic-bezier(0.22,1,0.36,1) both; }
-  .animate-slideInLeft { animation: slideInLeft 0.5s cubic-bezier(0.22,1,0.36,1) both; }
-  .animate-slideInRight{ animation: slideInRight 0.5s cubic-bezier(0.22,1,0.36,1) both; }
-  .animate-scaleIn     { animation: scaleIn  0.5s cubic-bezier(0.22,1,0.36,1) both; }
-  .animate-springIn    { animation: springIn 0.65s cubic-bezier(0.22,1,0.36,1) both; }
-  .animate-tabPop      { animation: tabPop   0.4s cubic-bezier(0.22,1,0.36,1) both; }
-  .animate-pulse-slow  { animation: pulse-slow 3s ease-in-out infinite; }
-  .animate-float       { animation: float    4s ease-in-out infinite; }
-  .animate-spin-slow   { animation: spin-slow 8s linear infinite; }
-  .animate-glow-pulse  { animation: glow-pulse 2.5s ease-in-out infinite; }
-  .animate-countUp     { animation: countUp  0.5s ease-out both; }
-  .animate-shake       { animation: shake    0.5s cubic-bezier(.36,.07,.19,.97) both; }
-
-  /* ═══════════════════════════════════════════
-     VIEW TRANSITION API — Theme Switcher
-     ═══════════════════════════════════════════
-
-     Strategy: Always clip the NEW (destination) snapshot over the OLD.
-     The clip-path circle expands FROM the click point.
-     For dark→light, we animate the new (light) snapshot expanding.
-     For light→dark, we animate the new (dark) snapshot expanding.
-     This gives a clean, jank-free ripple in both directions.
-     ═══════════════════════════════════════════ */
-
-  /* Reset both snapshot layers — no default browser animation */
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none !important;
-    mix-blend-mode: normal;
-    display: block;
-    /* GPU-promote the snapshot layer BEFORE animation begins */
-    will-change: clip-path;
-    /* Prevent any inherited transitions from causing stutter */
-    transition: none !important;
-    /* Prevent snapshot contents from having their own scroll */
-    overflow: clip;
-    height: 100%;
-    width: 100%;
-    object-fit: cover;
+  .animate-fadeIn {
+    animation: fadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  /* The group wrapper — no animation, just a positioning context */
-  ::view-transition-group(root) {
-    animation: none !important;
-    z-index: 9999;
+  .animate-fadeInUp {
+    animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  /* NEW snapshot always sits on top — JS animates its clip-path */
-  ::view-transition-old(root) {
-    z-index: 1;
+  .animate-slideInLeft {
+    animation: slideInLeft 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
-  ::view-transition-new(root) {
-    z-index: 10000;
-  }  /* ═══════════════════════════════════════
+
+  .animate-slideInRight {
+    animation: slideInRight 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-scaleIn {
+    animation: scaleIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-springIn {
+    animation: springIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-tabPop {
+    animation: tabPop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 3s ease-in-out infinite;
+  }
+
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 8s linear infinite;
+  }
+
+  .animate-glow-pulse {
+    animation: glow-pulse 2.5s ease-in-out infinite;
+  }
+
+  .animate-countUp {
+    animation: countUp 0.5s ease-out both;
+  }
+
+  .animate-shake {
+    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+
+  /* ═══════════════════════════════════════
      SKELETON SHIMMER
      ═══════════════════════════════════════ */
   .skeleton {
@@ -301,6 +399,7 @@ body {
   .hover-lift {
     @apply transition-all duration-300 ease-in-out;
   }
+
   .hover-lift:hover {
     @apply -translate-y-1.5 shadow-xl;
   }
@@ -308,6 +407,7 @@ body {
   .hover-scale {
     @apply transition-transform duration-300 ease-in-out;
   }
+
   .hover-scale:hover {
     @apply scale-105;
   }
@@ -315,6 +415,7 @@ body {
   .hover-glow {
     @apply transition-all duration-300;
   }
+
   .hover-glow:hover {
     box-shadow: 0 0 22px rgba(14, 165, 233, 0.4);
   }
@@ -326,107 +427,118 @@ body {
 
   /* Tier 1 — subtle frosted (cards, inputs) */
   .glass {
-    background: rgba(255,255,255,0.62);
+    background: rgba(255, 255, 255, 0.62);
     backdrop-filter: blur(28px) saturate(160%);
     -webkit-backdrop-filter: blur(28px) saturate(160%);
-    border: 1px solid rgba(255,255,255,0.72);
+    border: 1px solid rgba(255, 255, 255, 0.72);
     box-shadow:
-      0 2px 8px rgba(0,0,0,0.04),
-      0 8px 32px rgba(0,0,0,0.06),
-      inset 0 1px 0 rgba(255,255,255,0.9);
+      0 2px 8px rgba(0, 0, 0, 0.04),
+      0 8px 32px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
   .dark .glass {
-    background: rgba(15,23,42,0.65);
+    background: rgba(15, 23, 42, 0.65);
     backdrop-filter: blur(28px) saturate(160%);
     -webkit-backdrop-filter: blur(28px) saturate(160%);
-    border: 1px solid rgba(148,163,184,0.12);
+    border: 1px solid rgba(148, 163, 184, 0.12);
     box-shadow:
-      0 2px 8px rgba(0,0,0,0.2),
-      0 8px 32px rgba(0,0,0,0.3),
-      inset 0 1px 0 rgba(255,255,255,0.06);
+      0 2px 8px rgba(0, 0, 0, 0.2),
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
   /* Tier 2 — medium panel (modals, sidebars) */
   .glass-panel {
-    background: linear-gradient(135deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.58) 100%);
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.82) 0%,
+        rgba(255, 255, 255, 0.58) 100%);
     backdrop-filter: blur(40px) saturate(180%);
     -webkit-backdrop-filter: blur(40px) saturate(180%);
-    border: 1px solid rgba(255,255,255,0.75);
+    border: 1px solid rgba(255, 255, 255, 0.75);
     box-shadow:
-      0 4px 16px rgba(0,0,0,0.04),
-      0 16px 48px rgba(0,0,0,0.08),
-      inset 0 1px 0 rgba(255,255,255,1),
-      inset 0 -1px 0 rgba(0,0,0,0.04);
+      0 4px 16px rgba(0, 0, 0, 0.04),
+      0 16px 48px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 1),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.04);
   }
 
   .dark .glass-panel {
-    background: linear-gradient(135deg, rgba(15,23,42,0.82) 0%, rgba(15,23,42,0.65) 100%);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(15, 23, 42, 0.65) 100%);
     backdrop-filter: blur(40px) saturate(180%);
     -webkit-backdrop-filter: blur(40px) saturate(180%);
-    border: 1px solid rgba(148,163,184,0.14);
+    border: 1px solid rgba(148, 163, 184, 0.14);
     box-shadow:
-      0 4px 16px rgba(0,0,0,0.3),
-      0 16px 48px rgba(0,0,0,0.4),
-      inset 0 1px 0 rgba(255,255,255,0.08),
-      inset 0 -1px 0 rgba(0,0,0,0.2);
+      0 4px 16px rgba(0, 0, 0, 0.3),
+      0 16px 48px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2);
   }
 
   /* Tier 3 — heavy visor (nav bars, floating sheets) */
   .glass-nav {
-    background: rgba(255,255,255,0.78);
+    background: rgba(255, 255, 255, 0.78);
     backdrop-filter: blur(48px) saturate(200%) brightness(1.04);
     -webkit-backdrop-filter: blur(48px) saturate(200%) brightness(1.04);
-    border-top: 1px solid rgba(255,255,255,0.85);
+    border-top: 1px solid rgba(255, 255, 255, 0.85);
     box-shadow:
-      0 -1px 0 rgba(0,0,0,0.06),
-      0 -4px 24px rgba(0,0,0,0.05),
-      0 -16px 48px rgba(0,0,0,0.03);
+      0 -1px 0 rgba(0, 0, 0, 0.06),
+      0 -4px 24px rgba(0, 0, 0, 0.05),
+      0 -16px 48px rgba(0, 0, 0, 0.03);
   }
 
   .dark .glass-nav {
-    background: rgba(9,14,26,0.82);
+    background: rgba(9, 14, 26, 0.82);
     backdrop-filter: blur(48px) saturate(200%) brightness(0.96);
     -webkit-backdrop-filter: blur(48px) saturate(200%) brightness(0.96);
-    border-top: 1px solid rgba(148,163,184,0.1);
+    border-top: 1px solid rgba(148, 163, 184, 0.1);
     box-shadow:
-      0 -1px 0 rgba(255,255,255,0.04),
-      0 -4px 24px rgba(0,0,0,0.3),
-      0 -16px 48px rgba(0,0,0,0.2);
+      0 -1px 0 rgba(255, 255, 255, 0.04),
+      0 -4px 24px rgba(0, 0, 0, 0.3),
+      0 -16px 48px rgba(0, 0, 0, 0.2);
   }
 
   /* Sidebar glass */
   .glass-sidebar {
-    background: rgba(255,255,255,0.82);
+    background: rgba(255, 255, 255, 0.82);
     backdrop-filter: blur(48px) saturate(180%);
     -webkit-backdrop-filter: blur(48px) saturate(180%);
-    border-right: 1px solid rgba(255,255,255,0.7);
+    border-right: 1px solid rgba(255, 255, 255, 0.7);
     box-shadow:
-      4px 0 24px rgba(0,0,0,0.03),
-      4px 0 8px rgba(0,0,0,0.02);
+      4px 0 24px rgba(0, 0, 0, 0.03),
+      4px 0 8px rgba(0, 0, 0, 0.02);
   }
 
   .dark .glass-sidebar {
-    background: rgba(9,14,26,0.88);
+    background: rgba(9, 14, 26, 0.88);
     backdrop-filter: blur(48px) saturate(180%);
     -webkit-backdrop-filter: blur(48px) saturate(180%);
-    border-right: 1px solid rgba(148,163,184,0.1);
+    border-right: 1px solid rgba(148, 163, 184, 0.1);
     box-shadow:
-      4px 0 24px rgba(0,0,0,0.4),
-      4px 0 8px rgba(0,0,0,0.3);
+      4px 0 24px rgba(0, 0, 0, 0.4),
+      4px 0 8px rgba(0, 0, 0, 0.3);
   }
 
   /* ── Legacy alias ── */
   .glass-dark {
-    @apply bg-slate-950/60 backdrop-blur-2xl border border-slate-800/50 shadow-[0_8px_30px_rgb(0,0,0,0.2)];
+    @apply bg-slate-950/60 backdrop-blur-2xl border border-slate-800/50;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
   }
 
   /* ═══════════════════════════════════════
      GRADIENTS
      ═══════════════════════════════════════ */
-  .gradient-primary   { @apply bg-gradient-to-r from-sky-500 to-blue-600; }
-  .gradient-secondary { @apply bg-gradient-to-r from-emerald-500 to-teal-600; }
-  .gradient-accent    { @apply bg-gradient-to-r from-purple-500 to-pink-600; }
+  .gradient-primary {
+    @apply bg-gradient-to-r from-sky-500 to-blue-600;
+  }
+
+  .gradient-secondary {
+    @apply bg-gradient-to-r from-emerald-500 to-teal-600;
+  }
+
+  .gradient-accent {
+    @apply bg-gradient-to-r from-purple-500 to-pink-600;
+  }
 
   /* ═══════════════════════════════════════
      BUTTONS
@@ -437,9 +549,11 @@ body {
            text-white font-black tracking-widest text-[10px] uppercase
            py-3 px-6 rounded-2xl
            transition-all duration-300
-           hover:shadow-[0_8px_24px_rgba(14,165,233,0.35)]
            hover:-translate-y-0.5 active:scale-95
            border border-white/20;
+  }
+  .btn-primary:hover {
+    box-shadow: 0 8px 24px rgba(14,165,233,0.35);
   }
 
   .btn-secondary {
@@ -448,9 +562,11 @@ body {
            text-white font-black tracking-widest text-[10px] uppercase
            py-3 px-6 rounded-2xl
            transition-all duration-300
-           hover:shadow-[0_8px_24px_rgba(16,185,129,0.35)]
            hover:-translate-y-0.5 active:scale-95
            border border-white/20;
+  }
+  .btn-secondary:hover {
+    box-shadow: 0 8px 24px rgba(16,185,129,0.35);
   }
 
   /* ═══════════════════════════════════════
@@ -459,11 +575,15 @@ body {
   .card {
     @apply bg-white/70 dark:bg-slate-900/70
            backdrop-blur-md rounded-3xl
-           shadow-[0_2px_8px_rgba(0,0,0,0.04),0_8px_32px_rgba(0,0,0,0.06)]
-           dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)]
-           hover:shadow-[0_4px_16px_rgba(0,0,0,0.08),0_16px_40px_rgba(0,0,0,0.1)]
            transition-all duration-300 p-6
            border border-white/70 dark:border-slate-700/40;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.06);
+  }
+  .dark .card {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+  .card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 16px 40px rgba(0,0,0,0.1);
   }
 
   .card-hover {
@@ -482,8 +602,75 @@ body {
      ACTIVE NAV LINK
      ═══════════════════════════════════════ */
   .nav-link-active {
-    @apply bg-white/90 dark:bg-slate-800/90
-           shadow-sm border border-gray-200/50 dark:border-slate-700/50
-           text-sky-600 dark:text-sky-400 font-bold backdrop-blur-md;
+    @apply bg-white/90 dark:bg-slate-800/90 shadow-sm border border-gray-200/50 dark:border-slate-700/50 text-sky-600 dark:text-sky-400 font-bold backdrop-blur-md;
+  }
+}
+
+/* ═══════════════════════════════════════
+    PRINT STYLES
+    ═══════════════════════════════════════ */
+@media print {
+  @page {
+    margin: 0;
+    size: portrait;
+  }
+
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    height: 100vh;
+    overflow: hidden;
+    /* Prevent scrolling in print */
+  }
+
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Un-hide only the generated pass */
+  #generated-pass,
+  #generated-pass * {
+    visibility: visible;
+  }
+
+  /* Force parents to not clip */
+  * {
+    overflow: visible !important;
+  }
+
+  #generated-pass {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    transform: none !important;
+  }
+
+  /* Remove max-width restriction on the flex container so centering works */
+  #generated-pass>.flex.justify-center {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  /* Hide print/save buttons and hr during print */
+  #generated-pass button,
+  #generated-pass a,
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Ensure gradients and shadows are printed */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }

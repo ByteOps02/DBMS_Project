@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "../lib/supabase";
+import { api } from "../lib/api";
 import { toast } from "react-hot-toast";
 import {
   Inbox,
@@ -29,38 +29,38 @@ type Visit = Database["public"]["Tables"]["visits"]["Row"] & {
 };
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; className: string }> =
-{
-  pending: {
-    label: "Pending",
-    icon: Hourglass,
-    className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  },
-  approved: {
-    label: "Approved",
-    icon: CheckCircle2,
-    className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  },
-  denied: {
-    label: "Denied",
-    icon: XCircle,
-    className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  },
-  completed: {
-    label: "Completed",
-    icon: CheckCircle2,
-    className: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
-  },
-  "checked-in": {
-    label: "Active",
-    icon: LogIn,
-    className: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
-  },
-  cancelled: {
-    label: "Cancelled",
-    icon: XCircle,
-    className: "bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-400",
-  },
-};
+  {
+    pending: {
+      label: "Pending",
+      icon: Hourglass,
+      className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    },
+    approved: {
+      label: "Approved",
+      icon: CheckCircle2,
+      className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+    },
+    denied: {
+      label: "Denied",
+      icon: XCircle,
+      className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    },
+    completed: {
+      label: "Completed",
+      icon: CheckCircle2,
+      className: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
+    },
+    checked_in: {
+      label: "Active",
+      icon: LogIn,
+      className: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
+    },
+    cancelled: {
+      label: "Cancelled",
+      icon: XCircle,
+      className: "bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-400",
+    },
+  };
 
 const useDebounce = <T,>(value: T, delay: number): T => {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -83,14 +83,16 @@ export function FilteredVisits() {
       return [];
     }
   });
-  const [loading, setLoading] = useState(() => localStorage.getItem(`vms_filtered_${status}`) === null);
+  const [loading, setLoading] = useState(
+    () => localStorage.getItem(`vms_filtered_${status}`) === null
+  );
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const getStatusDetails = () => {
     switch (status) {
-      case "checked-in":
+      case "checked_in":
         return {
           title: "Ongoing Visits",
           desc: "Live monitoring of visitors currently on campus.",
@@ -169,7 +171,7 @@ export function FilteredVisits() {
 
   const getFocusRingColor = () => {
     switch (status) {
-      case "checked-in":
+      case "checked_in":
         return "focus:ring-sky-500/20";
       case "pending":
         return "focus:ring-amber-500/20";
@@ -191,46 +193,31 @@ export function FilteredVisits() {
     if (!cached && !debouncedSearchTerm) setLoading(true);
 
     try {
-      let query = supabase.from("visits").select(`*, visitor:visitors(*)`);
-
-      if (status === "cancelled_denied") {
-        query = query.in("status", ["cancelled", "denied"]);
-      } else {
-        query = query.eq("status", status);
-      }
-
-      if (debouncedSearchTerm) {
-        query = query.or(
-          `purpose.ilike.%${debouncedSearchTerm}%,visitor:visitors(name.ilike.%${debouncedSearchTerm}%)`
-        );
-      }
-
-      if (user?.role === "host") query = query.eq("host_id", user.id);
-      else if (user?.role === "visitor" && user?.email) {
-        const { data: vProfiles } = await supabase.from("visitors").select("id").eq("email", user.email.trim());
-        const visitorIds = vProfiles?.map(v => v.id) || [];
-        if (visitorIds.length > 0) query = query.in("visitor_id", visitorIds);
-        else query = query.eq("visitor_id", "00000000-0000-0000-0000-000000000000");
-      }
-
       const [utcTodayStart, utcTomorrowStart] = getISTTodayRange();
-      if (status === "approved") {
-        query = query.gte("approved_at", utcTodayStart).lt("approved_at", utcTomorrowStart);
-      } else if (status === "completed") {
-        query = query.gte("check_out_time", utcTodayStart).lt("check_out_time", utcTomorrowStart);
-      } else if (status === "cancelled_denied") {
-        query = query.gte("created_at", utcTodayStart).lt("created_at", utcTomorrowStart);
-      }
 
-      const { data, error } = await query.order("created_at", { ascending: false });
-      if (error) throw error;
+      const data = await api.visits.list({
+        ...(status === "cancelled_denied" ? { statuses: ["cancelled", "denied"] } : { status }),
+        ...(debouncedSearchTerm ? { search: debouncedSearchTerm } : {}),
+        ...(user?.role === "host" ? { host_id: user.id } : {}),
+        ...(status === "approved"
+          ? { approved_from: utcTodayStart, approved_to: utcTomorrowStart }
+          : {}),
+        ...(status === "completed"
+          ? { checkout_from: utcTodayStart, checkout_to: utcTomorrowStart }
+          : {}),
+        ...(status === "cancelled_denied"
+          ? { created_from: utcTodayStart, created_to: utcTomorrowStart }
+          : {}),
+        limit: 200,
+      });
 
-      setVisits(data as Visit[]);
-
+      setVisits(data as unknown as Visit[]);
       if (!debouncedSearchTerm) {
         try {
           localStorage.setItem(`vms_filtered_${status}`, JSON.stringify(data));
-        } catch { /* Quota */ }
+        } catch {
+          // Ignore cache write errors
+        }
       }
     } catch (err) {
       log.error(`[FilteredVisits] Fetch error for status ${status}:`, err);
@@ -276,7 +263,8 @@ export function FilteredVisits() {
               <div className="glass-panel rounded-[2rem] overflow-hidden transition-all duration-300 h-full flex flex-col">
                 <div className="lg:hidden px-6 py-2 bg-sky-50/50 dark:bg-sky-900/10 border-b border-gray-100 dark:border-slate-800/50">
                   <p className="text-[9px] font-black text-sky-600/60 dark:text-sky-400/60 uppercase tracking-widest flex items-center gap-1.5">
-                    <span className="animate-pulse">←</span> Swipe horizontally to see more details <span className="animate-pulse">→</span>
+                    <span className="animate-pulse">←</span> Swipe horizontally to see more details{" "}
+                    <span className="animate-pulse">→</span>
                   </p>
                 </div>
                 <div className="flex-1 overflow-x-auto scrollbar-hide">
@@ -326,15 +314,33 @@ export function FilteredVisits() {
                                   <div className="skeleton h-4 w-24 rounded" />
                                 </div>
                               </td>
-                              <td className="px-3 py-4"><div className="skeleton h-4 w-12 rounded" /></td>
-                              <td className="px-3 py-4"><div className="skeleton h-4 w-16 rounded" /></td>
-                              <td className="px-3 py-4"><div className="skeleton h-4 w-20 rounded" /></td>
-                              <td className="px-3 py-4"><div className="skeleton h-4 w-16 rounded" /></td>
-                              <td className="px-3 py-4"><div className="skeleton h-4 w-16 rounded" /></td>
-                              <td className="px-3 py-4"><div className="skeleton h-4 w-16 rounded" /></td>
-                              <td className="px-3 py-4"><div className="skeleton h-4 w-16 rounded" /></td>
-                              <td className="px-3 py-4"><div className="skeleton h-5 w-16 rounded-xl" /></td>
-                              <td className="py-4 pl-3 pr-4 sm:pr-6 text-right"><div className="skeleton h-4 w-4 rounded inline-block ml-2" /></td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-4 w-12 rounded" />
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-4 w-16 rounded" />
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-4 w-20 rounded" />
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-4 w-16 rounded" />
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-4 w-16 rounded" />
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-4 w-16 rounded" />
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-4 w-16 rounded" />
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="skeleton h-5 w-16 rounded-xl" />
+                              </td>
+                              <td className="py-4 pl-3 pr-4 sm:pr-6 text-right">
+                                <div className="skeleton h-4 w-4 rounded inline-block ml-2" />
+                              </td>
                             </tr>
                           ))}
                         </>
@@ -359,7 +365,7 @@ export function FilteredVisits() {
                       ) : (
                         visits.map((visit, idx) => {
                           const isOverstay =
-                            status === "checked-in" &&
+                            status === "checked_in" &&
                             visit.expected_out_time &&
                             new Date(visit.expected_out_time) < new Date();
                           const cfg = statusConfig[visit.status] || statusConfig["pending"];
@@ -369,8 +375,9 @@ export function FilteredVisits() {
                             <tr
                               key={visit.id}
                               onClick={() => setSelectedVisit(visit)}
-                              className={`cursor-pointer hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors animate-fadeInUp ${isOverstay ? "bg-red-50/10 dark:bg-red-900/10" : ""
-                                }`}
+                              className={`cursor-pointer hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors animate-fadeInUp ${
+                                isOverstay ? "bg-red-50/10 dark:bg-red-900/10" : ""
+                              }`}
                               style={{ animationDelay: `${idx * 0.02}s` }}
                             >
                               <td className="py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-6">
@@ -414,7 +421,9 @@ export function FilteredVisits() {
                                 )}
                               </td>
                               <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 dark:text-slate-400">
-                                <span className="text-xs font-medium">{visit.visitor?.phone || "—"}</span>
+                                <span className="text-xs font-medium">
+                                  {visit.visitor?.phone || "—"}
+                                </span>
                               </td>
                               <td className="px-3 py-4 text-sm text-gray-500 dark:text-slate-400">
                                 {visit.check_in_time ? (
@@ -457,7 +466,7 @@ export function FilteredVisits() {
                                   className={`inline-flex items-center gap-1.5 rounded-xl px-2 py-1 text-[10px] font-black uppercase tracking-widest ${cfg.className}`}
                                 >
                                   <StatusIcon
-                                    className={`w-3 h-3 ${visit.status === "checked-in" ? "animate-pulse" : ""}`}
+                                    className={`w-3 h-3 ${visit.status === "checked_in" ? "animate-pulse" : ""}`}
                                   />
                                   {cfg.label}
                                 </span>

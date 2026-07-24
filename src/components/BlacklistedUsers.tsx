@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { UserMinus, Search, Mail, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "./PageHeader";
-import { supabase } from "../lib/supabase";
+import { api } from "../lib/api";
 import { toast } from "react-hot-toast";
 import type { Database } from "../lib/database.types";
 import { BackButton } from "./BackButton";
@@ -9,7 +9,6 @@ import { format } from "date-fns";
 
 type Visitor = Database["public"]["Tables"]["visitors"]["Row"];
 
-// ─── Stale-while-revalidate cache key for blacklist ────────────────────────
 const BLACKLIST_CACHE_KEY = "vms_blacklist_cache";
 
 function readBlacklistCache(): Visitor[] | null {
@@ -24,9 +23,10 @@ function readBlacklistCache(): Visitor[] | null {
 function writeBlacklistCache(logs: Visitor[]) {
   try {
     localStorage.setItem(BLACKLIST_CACHE_KEY, JSON.stringify(logs.slice(0, 50)));
-  } catch {/* quota */ }
+  } catch {
+    // Ignore cache write errors
+  }
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
 export function BlacklistedUsers() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,31 +34,24 @@ export function BlacklistedUsers() {
   const [loading, setLoading] = useState(() => readBlacklistCache() === null);
 
   const fetchBlacklisted = useCallback(async () => {
-    // Only show loading spinner if cache is empty or active search
     if (readBlacklistCache() === null || searchTerm) {
       setLoading(true);
     }
 
-    let query = supabase.from("visitors").select("*").eq("is_blacklisted", true).order("updated_at", { ascending: false });
-
-    if (searchTerm) {
-      query = query.or(`name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      toast.error("Failed to fetch blacklisted visitors");
-    } else {
+    try {
+      const data = await api.visitors.list({
+        blacklisted: true,
+        search: searchTerm || undefined,
+      });
       setVisitors(data || []);
-      if (!searchTerm) {
-        writeBlacklistCache(data || []);
-      }
+      if (!searchTerm) writeBlacklistCache(data || []);
+    } catch {
+      toast.error("Failed to fetch blacklisted visitors");
     }
     setLoading(false);
   }, [searchTerm]);
 
   useEffect(() => {
-    // No delay on initial load or empty search, 300ms debounce on typing
     const delay = searchTerm ? 300 : 0;
     const delayDebounceFn = setTimeout(() => {
       fetchBlacklisted();
@@ -68,15 +61,7 @@ export function BlacklistedUsers() {
 
   const handleUnblacklist = async (visitorId: string) => {
     try {
-      const { error } = await supabase
-        .from("visitors")
-        .update({
-          is_blacklisted: false,
-          blacklist_reason: null
-        })
-        .eq("id", visitorId);
-
-      if (error) throw error;
+      await api.visitors.update(visitorId, { is_blacklisted: false, blacklist_reason: null });
       toast.success("Visitor unblocked successfully");
       fetchBlacklisted();
     } catch (err: unknown) {
@@ -113,18 +98,41 @@ export function BlacklistedUsers() {
         <div className="glass-panel rounded-[2rem] transition-all duration-300 h-full flex flex-col overflow-hidden ring-1 ring-black/5 dark:ring-white/5 bg-white dark:bg-slate-900">
           <div className="lg:hidden px-6 py-2 bg-red-50/50 dark:bg-red-900/10 border-b border-gray-100 dark:border-slate-800/50">
             <p className="text-[9px] font-black text-red-600/60 dark:text-red-400/60 uppercase tracking-widest flex items-center gap-1.5">
-              <span className="animate-pulse">←</span> Swipe horizontally to see more details <span className="animate-pulse">→</span>
+              <span className="animate-pulse">←</span> Swipe horizontally to see more details{" "}
+              <span className="animate-pulse">→</span>
             </p>
           </div>
           <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full divide-y divide-gray-200 dark:divide-slate-700 min-w-[800px]">
               <thead>
                 <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-slate-800 dark:to-slate-800/50">
-                  <th scope="col" className="py-3.5 pl-4 pr-3 sm:pl-6 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest">Visitor</th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest">Contact</th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest">Reason</th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest">Date Blocked</th>
-                  <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6"><span className="sr-only">Actions</span></th>
+                  <th
+                    scope="col"
+                    className="py-3.5 pl-4 pr-3 sm:pl-6 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest"
+                  >
+                    Visitor
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest"
+                  >
+                    Contact
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest"
+                  >
+                    Reason
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest"
+                  >
+                    Date Blocked
+                  </th>
+                  <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
@@ -141,10 +149,18 @@ export function BlacklistedUsers() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-4"><div className="skeleton h-4 w-40 rounded" /></td>
-                        <td className="px-3 py-4"><div className="skeleton h-4 w-32 rounded" /></td>
-                        <td className="px-3 py-4"><div className="skeleton h-4 w-24 rounded" /></td>
-                        <td className="py-4 pl-3 pr-4 sm:pr-6 text-right"><div className="skeleton h-8 w-24 rounded-2xl ml-auto" /></td>
+                        <td className="px-3 py-4">
+                          <div className="skeleton h-4 w-40 rounded" />
+                        </td>
+                        <td className="px-3 py-4">
+                          <div className="skeleton h-4 w-32 rounded" />
+                        </td>
+                        <td className="px-3 py-4">
+                          <div className="skeleton h-4 w-24 rounded" />
+                        </td>
+                        <td className="py-4 pl-3 pr-4 sm:pr-6 text-right">
+                          <div className="skeleton h-8 w-24 rounded-2xl ml-auto" />
+                        </td>
                       </tr>
                     ))}
                   </>
@@ -155,24 +171,34 @@ export function BlacklistedUsers() {
                         <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 ring-1 ring-emerald-200 dark:ring-emerald-800 border border-emerald-100 dark:border-emerald-700/50">
                           <ShieldAlert className="w-7 h-7 text-emerald-500 dark:text-emerald-400" />
                         </div>
-                        <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">No Blacklisted Visitors</p>
+                        <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                          No Blacklisted Visitors
+                        </p>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   visitors.map((visitor, idx) => (
-                    <tr key={visitor.id} className="hover:bg-red-50/30 dark:hover:bg-red-900/10 transition-colors animate-fadeInUp" style={{ animationDelay: `${idx * 0.02}s` }}>
+                    <tr
+                      key={visitor.id}
+                      className="hover:bg-red-50/30 dark:hover:bg-red-900/10 transition-colors animate-fadeInUp"
+                      style={{ animationDelay: `${idx * 0.02}s` }}
+                    >
                       <td className="py-4 pl-4 pr-3 sm:pl-6">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-[1.25rem] bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm shadow-red-500/20">
                             {visitor.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="text-sm font-black text-gray-900 dark:text-white">{visitor.name}</p>
+                            <p className="text-sm font-black text-gray-900 dark:text-white">
+                              {visitor.name}
+                            </p>
                             <div className="lg:hidden flex flex-col gap-1 mt-1">
                               <div className="flex items-center gap-1.5">
                                 <Mail className="h-3 w-3 text-gray-400" />
-                                <span className="text-[11px] text-gray-400 truncate max-w-[160px]">{visitor.email}</span>
+                                <span className="text-[11px] text-gray-400 truncate max-w-[160px]">
+                                  {visitor.email}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -188,13 +214,18 @@ export function BlacklistedUsers() {
                       <td className="px-3 py-4">
                         <span className="flex items-center gap-1.5 text-xs font-bold text-red-600 dark:text-red-400">
                           <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate max-w-[200px]" title={visitor.blacklist_reason || "Not specified"}>
+                          <span
+                            className="truncate max-w-[200px]"
+                            title={visitor.blacklist_reason || "Not specified"}
+                          >
                             {visitor.blacklist_reason || "Not specified"}
                           </span>
                         </span>
                       </td>
                       <td className="px-3 py-4 text-xs font-bold text-gray-500 dark:text-slate-400">
-                        {visitor.updated_at ? format(new Date(visitor.updated_at), "MMM d, yyyy") : "N/A"}
+                        {visitor.updated_at
+                          ? format(new Date(visitor.updated_at), "MMM d, yyyy")
+                          : "N/A"}
                       </td>
                       <td className="py-4 pl-3 pr-4 sm:pr-6 text-right">
                         <button

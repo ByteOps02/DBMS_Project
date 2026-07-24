@@ -7,7 +7,11 @@ type StatsGridProps = {
   handlePrefetch: (status: string) => void;
 };
 
-export const StatsGrid: React.FC<StatsGridProps> = ({ stats, handleStatCardClick, handlePrefetch }) => {
+export const StatsGrid: React.FC<StatsGridProps> = ({
+  stats,
+  handleStatCardClick,
+  handlePrefetch,
+}) => {
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
       {stats.map((stat, index) => (

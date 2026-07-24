@@ -1,0 +1,139 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["public"]
+}
+
+
+
+enum UserRole {
+  admin
+  guard
+  host
+  visitor
+
+  @@schema("public")
+  @@map("user_role")
+}
+
+enum VisitStatus {
+  pending
+  approved
+  denied
+  completed
+  cancelled
+  checked_in @map("checked-in")
+
+  @@schema("public")
+  @@map("visit_status")
+}
+
+enum PassType {
+  single_day
+  multi_day
+
+  @@schema("public")
+  @@map("pass_type")
+}
+
+
+
+model Department {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String   @unique
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+
+  hosts Host[]
+
+  @@map("departments")
+  @@schema("public")
+}
+
+model Host {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  auth_id       String?    @unique @db.Uuid
+  name          String
+  email         String     @unique
+  password_hash String?
+  department_id String?    @db.Uuid
+  role          UserRole   @default(visitor)
+  active        Boolean    @default(true)
+  created_at    DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
+
+  department Department? @relation(fields: [department_id], references: [id], onDelete: SetNull)
+
+
+  hosted_visits Visit[] @relation("HostedVisits")
+
+
+  approved_visits Visit[] @relation("ApprovedVisits")
+
+  @@index([email], name: "idx_hosts_email")
+  @@map("hosts")
+  @@schema("public")
+}
+
+model Visitor {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  email            String
+  phone            String
+  photo_url        String?
+  id_proof_url     String?
+  is_blacklisted   Boolean  @default(false)
+  blacklist_reason String?
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  visits Visit[]
+
+  @@index([email, phone], name: "idx_visitors_email_phone")
+  @@index([email], name: "idx_visitors_email")
+  @@map("visitors")
+  @@schema("public")
+}
+
+model Visit {
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  visitor_id       String      @db.Uuid
+  host_id          String?     @db.Uuid
+  purpose          String
+  status           VisitStatus @default(pending)
+  approved_at      DateTime?   @db.Timestamptz(6)
+  approved_by      String?     @db.Uuid
+  check_in_time    DateTime?   @db.Timestamptz(6)
+  check_out_time   DateTime?   @db.Timestamptz(6)
+  scheduled_time   DateTime    @default(now()) @db.Timestamptz(6)
+  valid_from       DateTime    @default(now()) @db.Timestamptz(6)
+  valid_until      DateTime?   @db.Timestamptz(6)
+  expected_out_time DateTime?  @db.Timestamptz(6)
+  notes            String?
+  vehicle_number   String?
+  vehicle_type     String?
+  entry_gate       String?
+  exit_gate        String?
+  additional_guests Int        @default(0)
+  pass_type        PassType    @default(single_day)
+  entity_id        String?     @db.Uuid
+  created_at       DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
+
+  visitor     Visitor @relation(fields: [visitor_id], references: [id], onDelete: Cascade)
+  host        Host?   @relation("HostedVisits", fields: [host_id], references: [id], onDelete: Restrict)
+  approved_by_host Host? @relation("ApprovedVisits", fields: [approved_by], references: [id], onDelete: SetNull)
+
+  @@index([status], name: "idx_visits_status")
+  @@index([created_at], name: "idx_visits_created_at")
+  @@index([host_id], name: "idx_visits_host_id")
+  @@index([visitor_id], name: "idx_visits_visitor_id")
+  @@map("visits")
+  @@schema("public")
+}

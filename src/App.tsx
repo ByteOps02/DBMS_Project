@@ -8,8 +8,6 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Layout } from "./components/Layout";
 import { useAuthStore } from "./store/auth";
 import log from "./lib/logger";
-
-// Create sleek loading fallback for chunk loading
 function PageSuspenseFallback() {
   return (
     <div className="flex items-center justify-center min-h-[100dvh] w-full animate-fadeIn bg-gray-50 dark:bg-slate-950">
@@ -25,8 +23,6 @@ function PageSuspenseFallback() {
     </div>
   );
 }
-
-// Lazy Load Heavy Components for massive bundle parsing reduction
 const Home = lazy(() => import("./components/Home"));
 const Login = lazy(() => import("./components/Login").then((m) => ({ default: m.Login })));
 const Signup = lazy(() => import("./components/Signup").then((m) => ({ default: m.Signup })));
@@ -107,7 +103,6 @@ function App() {
     return (
       <div className="flex items-center justify-center min-h-[100dvh] bg-gray-50 dark:bg-slate-950">
         <div className="flex flex-col items-center gap-5 animate-springIn">
-          {/* iOS-style app icon loader */}
           <div className="relative">
             <div className="w-16 h-16 rounded-[22px] bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-sky-500/30 animate-pulse-slow">
               <img src="/visitor-management.png" alt="VMS" className="w-9 h-9" />
@@ -122,7 +117,6 @@ function App() {
               Initializing...
             </p>
           </div>
-          {/* Progress dots */}
           <div className="flex gap-1.5">
             {[0, 1, 2].map((i) => (
               <div
