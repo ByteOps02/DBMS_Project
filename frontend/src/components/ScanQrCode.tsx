@@ -213,7 +213,7 @@ export function ScanQrCode() {
     );
 
   return (
-    <div className="px-3 xs:px-4 sm:px-6 lg:px-8 pb-12 animate-fadeIn">
+    <div className="px-3 xs:px-4 sm:px-6 lg:px-8 pb-12">
       <div className="max-w-7xl mx-auto">
         <BackButton />
         <PageHeader
@@ -226,7 +226,7 @@ export function ScanQrCode() {
 
       <div className="mt-4 sm:mt-8 max-w-2xl mx-auto space-y-4 sm:space-y-6">
         {!visit && !optimisticVisit && (
-          <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-gray-200 dark:border-slate-800 shadow-sm flex items-center gap-3 sm:gap-4 transition-all duration-300">
+          <div className="bg-white dark:bg-[#0f172a] p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-3 sm:gap-4 transition-all duration-300">
             <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-600 dark:text-slate-400">
               <MapPin className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
@@ -250,7 +250,7 @@ export function ScanQrCode() {
         )}
 
         {!visit && !optimisticVisit && (
-          <div className="bg-slate-950 rounded-[2rem] sm:rounded-3xl shadow-2xl overflow-hidden relative aspect-square">
+          <div className="bg-slate-950 rounded-2xl overflow-hidden relative aspect-square border border-slate-100 dark:border-slate-800">
             <div id="qr-reader" className="w-full h-full"></div>
             {!scannerReady && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-white gap-4">
@@ -274,7 +274,7 @@ export function ScanQrCode() {
         )}
 
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/10 border-2 border-red-100 dark:border-red-900/30 p-6 rounded-3xl flex items-start gap-4 animate-shake">
+          <div className="bg-red-50 dark:bg-red-900/10 border-2 border-red-100 dark:border-red-900/30 p-6 rounded-3xl flex items-start gap-4">
             <AlertTriangle className="w-8 h-8 text-red-600 shrink-0" />
             <div>
               <h3 className="font-black text-red-900 dark:text-red-400 uppercase tracking-tight">
@@ -295,7 +295,7 @@ export function ScanQrCode() {
 
         {(visit || optimisticVisit) && !error && (
           <div id="generated-pass" className="print:m-0 w-full flex justify-center">
-            <div className="bg-white dark:bg-slate-900 shadow-2xl rounded-[2.5rem] overflow-hidden border border-gray-100 dark:border-slate-800 animate-scaleIn w-full">
+            <div className="bg-white dark:bg-[#0f172a] rounded-2xl sm:rounded-[1.5rem] overflow-hidden border border-slate-100 dark:border-slate-800 w-full">
             <div
               className={`p-6 ${visit ? (visit.status === "checked_in" ? "bg-emerald-500" : "bg-indigo-600") : "bg-slate-700"} text-white flex items-center justify-between`}
             >
@@ -402,13 +402,13 @@ export function ScanQrCode() {
               <div className="flex flex-col sm:flex-row gap-4 pt-4 print-hide">
                 <button
                   onClick={handleScanAnother}
-                  className="flex-1 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-slate-900/10"
+                  className="flex-1 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold uppercase tracking-wider text-[11px] sm:text-xs active:scale-95 transition-all shadow-sm hover:bg-slate-800 dark:hover:bg-slate-100"
                 >
                   Clear & Scan Next
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="p-5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 transition-colors shadow-inner"
+                  className="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 transition-colors shadow-sm flex items-center justify-center"
                 >
                   <Printer className="w-5 h-5" />
                 </button>

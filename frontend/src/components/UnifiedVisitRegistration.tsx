@@ -5,7 +5,6 @@ import { useVisitRegistration, type UnifiedVisitFormData } from "../hooks/useVis
 import {
   Camera,
   UserRoundPlus,
-  CalendarPlus,
   Calendar,
   FileText,
   User,
@@ -58,7 +57,7 @@ export function UnifiedVisitRegistration() {
   const visitDate = watch("visitDate");
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 pb-12 animate-fadeIn relative">
+    <div className="pt-6 px-4 sm:px-6 lg:px-8 pb-12 relative">
       {!user && (
         <div className="absolute top-6 right-6 z-50 sm:right-8 lg:right-10">
           <ThemeSwitcher />
@@ -69,11 +68,11 @@ export function UnifiedVisitRegistration() {
         <BackButton to={user ? "/app/dashboard" : "/"} />
 
         <PageHeader
-          icon={isVisitor ? CalendarPlus : UserRoundPlus}
-          gradient={isVisitor ? "from-purple-500 to-indigo-600" : "from-cyan-500 to-blue-600"}
-          title="Register Visit"
+          icon={UserRoundPlus}
+          gradient="from-cyan-500 to-blue-600"
+          title={isVisitor || !user ? "Request Visit" : "Register Visit"}
           description={
-            isVisitor
+            isVisitor || !user
               ? "Submit your visit details for campus entry."
               : "Register visitors with ID verification."
           }
@@ -81,7 +80,7 @@ export function UnifiedVisitRegistration() {
       </div>
 
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white dark:bg-slate-900 shadow-xl rounded-[2rem] overflow-hidden border border-gray-200 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900 shadow-sm dark:shadow-none rounded-[1.5rem] overflow-hidden border border-slate-200 dark:border-slate-800">
           <form onSubmit={handleSubmit(onSubmit)} className="p-3 xs:p-4 sm:p-5">
             {errorMessage && (
               <div
@@ -120,7 +119,7 @@ export function UnifiedVisitRegistration() {
                         },
                       })}
                       disabled={isVisitor}
-                      className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-3 sm:py-3 px-4 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white"
+                      className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white"
                       placeholder="John Doe"
                     />
                   </div>
@@ -135,7 +134,7 @@ export function UnifiedVisitRegistration() {
                       autoComplete="email"
                       {...register("email", { required: "Email is required" })}
                       disabled={isVisitor}
-                      className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-3 sm:py-3 px-4 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white"
+                      className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white"
                       placeholder="john@example.com"
                     />
                   </div>
@@ -156,7 +155,7 @@ export function UnifiedVisitRegistration() {
                           e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10);
                         },
                       })}
-                      className={`block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-3 sm:py-3 px-4 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white ${errors.phone ? "border-red-500 ring-1 ring-red-500" : ""}`}
+                      className={`block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white ${errors.phone ? "border-red-500 ring-1 ring-red-500" : ""}`}
                       placeholder="1234567890"
                     />
                     {errors.phone && (
@@ -175,7 +174,7 @@ export function UnifiedVisitRegistration() {
                       <input
                         type="number"
                         {...register("additionalGuests", { min: 0, max: 10 })}
-                        className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2.5 sm:py-3 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white font-bold"
+                        className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white font-bold"
                         placeholder="0"
                       />
                     </div>
@@ -196,7 +195,7 @@ export function UnifiedVisitRegistration() {
                     </label>
                     <div className="flex gap-3 sm:gap-4">
                       <div className="flex-1">
-                        <label className="group relative flex flex-col items-center justify-center h-24 sm:h-32 rounded-3xl border-2 border-dashed border-gray-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-400 transition-all cursor-pointer overflow-hidden bg-gray-50/30 dark:bg-slate-800/20">
+                        <label className="group relative flex flex-col items-center justify-center h-24 sm:h-32 rounded-2xl border-2 border-dashed border-gray-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-400 transition-all cursor-pointer overflow-hidden bg-gray-50/30 dark:bg-slate-800/20">
                           {previewPhoto ? (
                             <img src={previewPhoto} className="w-full h-full object-cover" />
                           ) : (
@@ -217,7 +216,7 @@ export function UnifiedVisitRegistration() {
                         </label>
                       </div>
                       <div className="flex-1">
-                        <label className="group relative flex flex-col items-center justify-center h-24 sm:h-32 rounded-3xl border-2 border-dashed border-gray-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-400 transition-all cursor-pointer overflow-hidden bg-gray-50/30 dark:bg-slate-800/20">
+                        <label className="group relative flex flex-col items-center justify-center h-24 sm:h-32 rounded-2xl border-2 border-dashed border-gray-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-400 transition-all cursor-pointer overflow-hidden bg-gray-50/30 dark:bg-slate-800/20">
                           {previewIdProof ? (
                             <img src={previewIdProof} className="w-full h-full object-cover" />
                           ) : (
@@ -250,14 +249,14 @@ export function UnifiedVisitRegistration() {
                           <input
                             type="text"
                             {...register("vehicleNumber")}
-                            className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2.5 sm:py-3 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white font-bold uppercase"
+                            className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white font-bold uppercase"
                             placeholder="Vehicle Number (e.g. MH-31...)"
                           />
                         </div>
                       </div>
                       <select
                         {...register("vehicleType")}
-                        className="col-span-2 block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2.5 sm:py-3 px-4 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white font-bold"
+                        className="col-span-2 block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white font-bold"
                       >
                         <option value="">No Vehicle</option>
                         <option value="2-wheeler">2-Wheeler</option>
@@ -307,7 +306,7 @@ export function UnifiedVisitRegistration() {
                       {...register("hostEmail")}
                       disabled
                       placeholder={isVisitor ? "Campus Administration" : "Assigned to You"}
-                      className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 py-2.5 sm:py-3 px-4 text-xs sm:text-sm dark:text-slate-400 italic cursor-not-allowed opacity-70"
+                      className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 py-2 px-3 text-xs sm:text-sm dark:text-slate-400 italic cursor-not-allowed opacity-70"
                     />
                   </div>
 
@@ -319,12 +318,12 @@ export function UnifiedVisitRegistration() {
                       type="date"
                       {...register("visitDate", { required: "Date is required" })}
                       min={new Date().toISOString().split("T")[0]}
-                      className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2.5 sm:py-3 px-4 text-xs sm:text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all dark:text-white"
+                      className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2 px-3 text-xs sm:text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all dark:text-white"
                     />
                   </div>
 
                   {passType === "multi_day" && (
-                    <div className="animate-fadeIn">
+                    <div>
                       <label className="block text-[10px] sm:text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1 sm:mb-2">
                         Valid Until *
                       </label>
@@ -332,7 +331,7 @@ export function UnifiedVisitRegistration() {
                         type="date"
                         {...register("validUntil", { required: "End date is required" })}
                         min={visitDate}
-                        className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2.5 sm:py-3 px-4 text-xs sm:text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all dark:text-white"
+                        className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2 px-3 text-xs sm:text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all dark:text-white"
                       />
                     </div>
                   )}
@@ -344,7 +343,7 @@ export function UnifiedVisitRegistration() {
                     <input
                       type="text"
                       {...register("purpose", { required: "Purpose is required" })}
-                      className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2.5 sm:py-3 px-4 text-xs sm:text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all dark:text-white"
+                      className="block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2 px-3 text-xs sm:text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all dark:text-white"
                       placeholder="Meeting, Maintenance, Guest Lecture..."
                     />
                   </div>
@@ -356,7 +355,7 @@ export function UnifiedVisitRegistration() {
               <button
                 type="submit"
                 disabled={isSubmitting || loading}
-                className="btn-primary flex-1 flex items-center justify-center gap-2 py-2 sm:py-2 text-sm"
+                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 font-bold uppercase tracking-wider text-[11px] sm:text-xs active:scale-95 transition-colors shadow-sm"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -364,7 +363,7 @@ export function UnifiedVisitRegistration() {
                   <>
                     <QrCode className="h-4 w-4 sm:h-5 sm:w-5" />
                     <span className="truncate">
-                      {isVisitor
+                      {isVisitor || !user
                         ? "Submit Request & Generate Pass"
                         : "Register Visit & Generate Pass"}
                     </span>
@@ -374,7 +373,7 @@ export function UnifiedVisitRegistration() {
               <button
                 type="button"
                 onClick={handleReset}
-                className="px-4 sm:px-4 py-2 sm:py-2 border-2 border-gray-200 dark:border-slate-700 rounded-2xl text-[10px] sm:text-sm font-black uppercase tracking-widest text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all active:scale-[0.98]"
+                className="px-6 py-3 border border-gray-200 dark:border-slate-700 rounded-xl text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all active:scale-95"
               >
                 Reset
               </button>
@@ -384,12 +383,12 @@ export function UnifiedVisitRegistration() {
           {qrImageUrl && (
             <div
               id="generated-pass"
-              className="px-3 xs:px-4 sm:px-5 pb-6 sm:pb-8 animate-scaleIn print:m-0"
+              className="px-3 xs:px-4 sm:px-5 pb-6 sm:pb-8 print:m-0"
             >
               <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-200 dark:via-slate-700 to-transparent mb-6 sm:mb-8 print-hide" />
               <div className="flex justify-center">
                 <div className="w-full max-w-sm relative">
-                  <div className="bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800/80 rounded-[2rem] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] overflow-hidden border border-gray-200/80 dark:border-slate-700/60 ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
+                  <div className="bg-white dark:bg-[#0f172a] rounded-[1.5rem] shadow-sm dark:shadow-none overflow-hidden border border-slate-200 dark:border-slate-800">
                     <div className="h-1 w-full bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600" />
 
                     <div className="p-6 sm:p-8 flex flex-col items-center">
@@ -460,14 +459,14 @@ export function UnifiedVisitRegistration() {
                         <a
                           href={qrImageUrl}
                           download={`iiitn-pass-${watch("name")?.replace(/\s+/g, "-").toLowerCase()}.png`}
-                          className="flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest transition-all shadow-md shadow-blue-500/20 active:scale-95 hover:-translate-y-0.5"
+                          className="flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[10px] sm:text-[11px] uppercase tracking-wider transition-colors active:scale-95 shadow-sm"
                         >
                           <Download className="w-4 h-4" /> Save
                         </a>
                         <button
                           type="button"
                           onClick={() => window.print()}
-                          className="flex items-center justify-center gap-2 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest transition-all border border-gray-200 dark:border-slate-700 active:scale-95"
+                          className="flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-[10px] sm:text-[11px] uppercase tracking-wider transition-colors border border-transparent dark:border-slate-700 active:scale-95"
                         >
                           <Printer className="w-4 h-4" /> Print
                         </button>

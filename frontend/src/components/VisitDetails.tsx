@@ -189,12 +189,12 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
       <div
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-fadeIn"
+        className="absolute inset-0 bg-slate-900/60"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.2)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] w-full max-w-sm overflow-hidden animate-scaleIn border border-white dark:border-slate-700 flex flex-col ring-1 ring-black/5 dark:ring-white/10 max-h-full">
+      <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-gray-200 dark:border-slate-700 flex flex-col max-h-full">
         <div className="px-5 py-3.5 border-b border-gray-200/50 dark:border-slate-700/50 flex items-center justify-between bg-gradient-to-b from-gray-50/50 to-transparent dark:from-slate-800/50 dark:to-transparent shrink-0">
           <div className="flex items-center gap-2.5">
             <div
@@ -219,7 +219,7 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
         </div>
 
         <div className="p-5 space-y-4 overflow-y-auto flex-1">
-          <div className="flex items-center gap-3 bg-white/50 dark:bg-slate-800/30 p-2.5 rounded-[1.5rem] border border-gray-200/50 dark:border-slate-700/50 shadow-sm backdrop-blur-md">
+          <div className="flex items-center gap-3 bg-gray-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-xl font-black text-gray-400 overflow-hidden shrink-0 shadow-inner border border-white dark:border-slate-600">
               {visitor?.photo_url ? (
                 <img src={visitor.photo_url} className="w-full h-full object-cover" />
@@ -402,7 +402,7 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
               <button
                 onClick={() => handleStatusUpdate("approved")}
                 disabled={loading}
-                className="flex items-center justify-center gap-2 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                className="flex items-center justify-center gap-2 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all active:scale-95 disabled:opacity-50"
               >
                 Approve
               </button>
@@ -419,14 +419,14 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
           {visit.status === "checked_in" && isGuardOrAdmin && (
             <div className="w-full space-y-3">
               {showExitGatePrompt ? (
-                <div className="bg-indigo-50 dark:bg-indigo-900/10 p-3 rounded-2xl border border-indigo-200 dark:border-indigo-900/50 animate-scaleIn">
+                <div className="bg-indigo-50 dark:bg-indigo-900/10 p-3 rounded-2xl border border-indigo-200 dark:border-indigo-900/50">
                   <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2 px-1">
                     Select Exit Gate
                   </p>
                   <select
                     value={selectedExitGate}
                     onChange={(e) => setSelectedExitGate(e.target.value)}
-                    className="w-full text-xs font-bold p-3 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 shadow-sm appearance-none cursor-pointer"
+                    className="w-full text-xs font-bold py-2 px-3 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 shadow-sm appearance-none cursor-pointer"
                   >
                     {CAMPUS_GATES.map((gate) => (
                       <option key={gate} value={gate}>
@@ -454,7 +454,7 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                 <button
                   onClick={() => setShowExitGatePrompt(true)}
                   disabled={loading}
-                  className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+                  className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-indigo-700 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
                 >
                   <CheckCircle2 className="w-4 h-4" /> Complete Visit
                 </button>
@@ -465,7 +465,7 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
           {isGuardOrAdmin && (
             <div className="w-full">
               {showBlacklistPrompt ? (
-                <div className="w-full bg-red-50 dark:bg-red-900/10 p-3 rounded-2xl border border-red-200 dark:border-red-900/50 animate-scaleIn">
+                <div className="w-full bg-red-50 dark:bg-red-900/10 p-3 rounded-2xl border border-red-200 dark:border-red-900/50">
                   <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mb-2 px-1">
                     Block Reason Required
                   </p>
@@ -474,7 +474,7 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                     value={blacklistReason}
                     onChange={(e) => setBlacklistReason(e.target.value)}
                     placeholder="Why is this visitor being blocked?"
-                    className="w-full text-xs font-bold p-3 rounded-xl border border-red-200 dark:border-red-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white mb-2 focus:outline-none focus:ring-2 focus:ring-red-500/30 shadow-sm"
+                    className="w-full text-xs font-bold py-2 px-3 rounded-xl border border-red-200 dark:border-red-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white mb-2 focus:outline-none focus:ring-2 focus:ring-red-500/30 shadow-sm"
                     autoFocus
                   />
                   <div className="flex items-center gap-2">

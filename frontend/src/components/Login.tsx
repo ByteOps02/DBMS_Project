@@ -96,17 +96,17 @@ export function Login() {
       </div>
       <div className="w-full lg:w-1/2 flex flex-col justify-center py-12 px-4 sm:px-8 lg:px-12 xl:px-24">
         <div className="w-full max-w-md mx-auto relative z-10">
-          <div className="mb-6 animate-fadeInUp">
+          <div className="mb-6">
             <button
               onClick={() => navigate("/")}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-95"
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full shadow-sm transition-all duration-200 active:scale-95"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to Home
             </button>
           </div>
 
-          <div className="text-center lg:text-left mb-10 animate-fadeInUp">
+          <div className="text-center lg:text-left mb-10">
             <div className="lg:hidden flex justify-center mb-6">
               <div className="p-3 bg-sky-100 dark:bg-sky-900/40 rounded-3xl shadow-sm border border-sky-200 dark:border-sky-800/50">
                 <Shield className="h-10 w-10 text-sky-600 dark:text-sky-400" />
@@ -120,12 +120,9 @@ export function Login() {
             </p>
           </div>
 
-          <div
-            className="glass p-8 rounded-[2rem] shadow-xl hover:shadow-2xl transition-all duration-500 border border-gray-100/50 dark:border-slate-800 animate-fadeInUp"
-            style={{ animationDelay: "0.1s" }}
-          >
+          <div className="card">
             <form className="space-y-5" onSubmit={handleSubmit}>
-              <div className="animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
+              <div>
                 <label
                   htmlFor="email"
                   className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1"
@@ -140,12 +137,12 @@ export function Login() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 dark:hover:border-slate-600"
+                  className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 dark:hover:border-slate-600"
                   placeholder="name@campus.edu"
                 />
               </div>
 
-              <div className="animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
+              <div>
                 <label
                   htmlFor="password"
                   className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1"
@@ -161,7 +158,7 @@ export function Login() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 dark:hover:border-slate-600 pr-12"
+                    className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 dark:hover:border-slate-600 pr-12"
                     placeholder="••••••••"
                   />
                   <button
@@ -183,11 +180,11 @@ export function Login() {
                 </div>
               )}
 
-              <div className="pt-2 animate-fadeInUp" style={{ animationDelay: "0.4s" }}>
+              <div className="pt-2">
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full flex justify-center items-center py-2 px-4 rounded-2xl text-sm font-semibold text-white bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 focus:ring-offset-white dark:focus:ring-offset-slate-950 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/30 hover:scale-[1.02] active:scale-95 group"
+                  className="btn-primary w-full flex justify-center items-center py-3"
                 >
                   {isLoading ? <span className="loading-spinner w-5 h-5 mr-2"></span> : "Sign in"}
                   {!isLoading && (
@@ -197,7 +194,7 @@ export function Login() {
               </div>
             </form>
 
-            <div className="mt-8 animate-fadeInUp" style={{ animationDelay: "0.5s" }}>
+            <div className="mt-8">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-200 dark:border-slate-700" />

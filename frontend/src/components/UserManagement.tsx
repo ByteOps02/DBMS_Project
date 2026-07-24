@@ -108,7 +108,7 @@ export function UserManagement() {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 pb-8 animate-fadeIn">
+    <div className="px-4 sm:px-6 lg:px-8 pb-8">
       <div className="max-w-7xl mx-auto">
         <BackButton />
         <PageHeader
@@ -124,7 +124,7 @@ export function UserManagement() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
           <input
             id="user-search"
-            className="block w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2.5 pl-10 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
+            className="block w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2 pl-9 pr-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
             placeholder="Search users..."
             type="search"
             value={searchTerm}
@@ -132,7 +132,7 @@ export function UserManagement() {
           />
         </div>
 
-        <div className="glass-panel rounded-[2rem] transition-all duration-300 h-full flex flex-col overflow-hidden ring-1 ring-black/5 dark:ring-white/5">
+        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl transition-all duration-300 h-full flex flex-col overflow-hidden">
           <div className="lg:hidden px-6 py-2 bg-sky-50/50 dark:bg-sky-900/10 border-b border-gray-100 dark:border-slate-800/50">
             <p className="text-[9px] font-black text-sky-600/60 dark:text-sky-400/60 uppercase tracking-widest flex items-center gap-1.5">
               <span className="animate-pulse">←</span> Swipe horizontally to see more details{" "}
@@ -221,7 +221,7 @@ export function UserManagement() {
                   users.map((user, idx) => (
                     <tr
                       key={user.id}
-                      className="hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors animate-fadeInUp"
+                      className="hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors"
                       style={{ animationDelay: `${idx * 0.02}s` }}
                     >
                       <td className="py-4 pl-4 pr-3 sm:pl-6">
@@ -258,7 +258,7 @@ export function UserManagement() {
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest ${user.active ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/40" : "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/40"}`}
                         >
                           <span
-                            className={`w-1.5 h-1.5 rounded-full ${user.active ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
+                            className={`w-1.5 h-1.5 rounded-full ${user.active ? "bg-emerald-500" : "bg-red-500"}`}
                           />
                           {user.active ? "Active" : "Inactive"}
                         </span>
@@ -293,10 +293,10 @@ export function UserManagement() {
       {editingUser && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-8">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-xl animate-fadeIn"
+            className="absolute inset-0 bg-black/60"
             onClick={() => setEditingUser(null)}
           />
-          <div className="relative w-full max-w-sm glass-panel rounded-[2rem] shadow-2xl animate-springIn overflow-hidden border border-white/20 dark:border-slate-700/50">
+          <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-slate-700">
             <div className="px-6 pt-6 pb-4 flex items-center justify-between border-b border-white/60 dark:border-slate-700/50">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/25">
@@ -323,7 +323,7 @@ export function UserManagement() {
                     key={role}
                     onClick={() => handleUpdateRole(role)}
                     disabled={isUpdating}
-                    className={`flex items-center justify-between px-4 py-3 rounded-2xl border transition-all ${
+                    className={`flex items-center justify-between px-3 py-2 rounded-2xl border transition-all ${
                       editingUser.role === role
                         ? "bg-sky-50 dark:bg-sky-900/20 border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-400 font-black"
                         : "bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800 text-gray-600 dark:text-slate-400 hover:border-gray-200 dark:hover:border-slate-700 font-bold"

@@ -21,7 +21,6 @@ import { PageHeader } from "./PageHeader";
 import { formatIST } from "../lib/dateIST";
 import { useDebounce } from "../hooks/useDebounce";
 import { getStatusConfig } from "../lib/statusConfig";
-import { readCache, writeCache } from "../lib/cache";
 import { SEOMeta } from "./SEOMeta";
 import { VisitDetails } from "./VisitDetails";
 
@@ -33,15 +32,10 @@ export type VisitLog = Database["public"]["Tables"]["visits"]["Row"] & {
   host?: Database["public"]["Tables"]["hosts"]["Row"] | null;
   hosts?: Database["public"]["Tables"]["hosts"]["Row"] | null;
 };
-const LOGS_CACHE_KEY = "vms_visit_logs_cache";
-const CACHE_TTL_MS = 5 * 60 * 1000; 
-
 export function VisitLogs() {
   const { user } = useAuthStore();
-  const [logs, setLogs] = useState<VisitLog[]>(
-    () => readCache<VisitLog[]>(LOGS_CACHE_KEY, CACHE_TTL_MS) ?? []
-  );
-  const [loading, setLoading] = useState(() => readCache(LOGS_CACHE_KEY, CACHE_TTL_MS) === null);
+  const [logs, setLogs] = useState<VisitLog[]>(() => api.uiCache.get("vms_all_logs") || []);
+  const [loading, setLoading] = useState(!api.uiCache.has("vms_all_logs"));
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,7 +52,7 @@ export function VisitLogs() {
       if (!user) return;
 
       const currentPage = isLoadMore ? page + 1 : 1;
-      if (!isLoadMore && readCache(LOGS_CACHE_KEY, CACHE_TTL_MS) === null) setLoading(true);
+      if (!isLoadMore && logs.length === 0 && !api.uiCache.has("vms_all_logs")) setLoading(true);
       if (isLoadMore) setLoadingMore(true);
 
       try {
@@ -101,7 +95,7 @@ export function VisitLogs() {
           setLogs(result);
           setStatusPage(1);
           if (!debouncedSearchTerm && !statusFilter && !dateFilter) {
-            writeCache(LOGS_CACHE_KEY, result.slice(0, 50));
+            api.uiCache.set("vms_all_logs", result);
           }
         }
       } catch (err) {
@@ -177,7 +171,7 @@ export function VisitLogs() {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 pb-8 animate-fadeIn">
+    <div className="px-4 sm:px-6 lg:px-8 pb-8">
       <SEOMeta title="Visit Logs" />
       <div className="max-w-7xl mx-auto">
         <BackButton />
@@ -194,7 +188,7 @@ export function VisitLogs() {
                 </div>
                 <input
                   type="text"
-                  className="w-full sm:w-64 py-2.5 pl-10 pr-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white text-xs"
+                  className="w-full sm:w-64 py-2 pl-9 pr-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white text-xs"
                   placeholder="Quick search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -203,7 +197,7 @@ export function VisitLogs() {
               <button
                 onClick={handleExport}
                 disabled={exporting}
-                className="flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl py-2 px-4 font-black uppercase tracking-widest text-[9px] hover:scale-[1.02] active:scale-95 transition-all shadow-lg disabled:opacity-50 shrink-0"
+                className="flex items-center justify-center gap-2 bg-slate-900 dark:bg-slate-800 text-white border border-transparent dark:border-slate-700 rounded-xl py-2 px-4 font-bold uppercase tracking-wider text-[10px] sm:text-xs active:scale-95 transition-all shadow-sm hover:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-50 shrink-0"
               >
                 {exporting ? (
                   <Circle className="animate-spin w-3 h-3" />
@@ -225,7 +219,7 @@ export function VisitLogs() {
             </div>
             <input
               type="date"
-              className="py-2.5 pl-10 pr-10 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white text-xs"
+              className="py-2 pl-9 pr-9 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white text-xs"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
             />
@@ -243,7 +237,7 @@ export function VisitLogs() {
               <Filter className="w-4 h-4 text-gray-400" />
             </div>
             <select
-              className="py-2.5 pl-10 pr-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white text-xs font-bold"
+              className="py-2 pl-9 pr-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white text-xs font-bold"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -261,7 +255,7 @@ export function VisitLogs() {
         <div className="mt-4 flex flex-col min-h-[400px]">
           <div className="-my-2 sm:-mx-6 lg:-mx-8 flex-1">
             <div className="inline-block w-full py-2 align-middle md:px-6 lg:px-8 h-full">
-              <div className="glass-panel rounded-[2rem] overflow-hidden transition-all duration-300 h-full flex flex-col">
+              <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl sm:rounded-[1.5rem] overflow-hidden transition-all duration-300 h-full flex flex-col shadow-sm dark:shadow-none">
                 <div className="lg:hidden px-6 py-2 bg-emerald-50/50 dark:bg-emerald-900/10 border-b border-gray-100 dark:border-slate-800/50">
                   <p className="text-[9px] font-black text-emerald-600/60 dark:text-emerald-400/60 uppercase tracking-widest flex items-center gap-1.5">
                     <span className="animate-pulse">←</span> Swipe horizontally to see more details{" "}
@@ -364,7 +358,7 @@ export function VisitLogs() {
                           </td>
                         </tr>
                       ) : (
-                        logs.map((logItem, idx) => {
+                        logs.map((logItem) => {
                           const cfg = getStatusConfig(logItem.status);
                           const StatusIcon = cfg.icon;
                           const visitorName = logItem.visitor?.name || "Unknown";
@@ -373,8 +367,7 @@ export function VisitLogs() {
                             <tr
                               key={logItem.id}
                               onClick={() => setSelectedVisit(logItem)}
-                              className="cursor-pointer hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors animate-fadeInUp"
-                              style={{ animationDelay: `${idx * 0.02}s` }}
+                              className="cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors"
                             >
                               <td className="py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-6">
                                 <div className="flex items-center gap-3">

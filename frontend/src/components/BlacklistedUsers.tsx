@@ -9,32 +9,14 @@ import { format } from "date-fns";
 
 type Visitor = Database["public"]["Tables"]["visitors"]["Row"];
 
-const BLACKLIST_CACHE_KEY = "vms_blacklist_cache";
-
-function readBlacklistCache(): Visitor[] | null {
-  try {
-    const raw = localStorage.getItem(BLACKLIST_CACHE_KEY);
-    return raw ? (JSON.parse(raw) as Visitor[]) : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeBlacklistCache(logs: Visitor[]) {
-  try {
-    localStorage.setItem(BLACKLIST_CACHE_KEY, JSON.stringify(logs.slice(0, 50)));
-  } catch {
-    // Ignore cache write errors
-  }
-}
 
 export function BlacklistedUsers() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [visitors, setVisitors] = useState<Visitor[]>(() => readBlacklistCache() ?? []);
-  const [loading, setLoading] = useState(() => readBlacklistCache() === null);
+  const [visitors, setVisitors] = useState<Visitor[]>(() => api.uiCache.get("vms_blacklisted") || []);
+  const [loading, setLoading] = useState(!api.uiCache.has("vms_blacklisted"));
 
   const fetchBlacklisted = useCallback(async () => {
-    if (readBlacklistCache() === null || searchTerm) {
+    if ((visitors.length === 0 && !api.uiCache.has("vms_blacklisted")) || searchTerm) {
       setLoading(true);
     }
 
@@ -44,7 +26,10 @@ export function BlacklistedUsers() {
         search: searchTerm || undefined,
       });
       setVisitors(data || []);
-      if (!searchTerm) writeBlacklistCache(data || []);
+      if (!searchTerm) {
+        api.uiCache.set("vms_blacklisted", data || []);
+      }
+
     } catch {
       toast.error("Failed to fetch blacklisted visitors");
     }
@@ -71,7 +56,7 @@ export function BlacklistedUsers() {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 pb-8 animate-fadeIn">
+    <div className="px-4 sm:px-6 lg:px-8 pb-8">
       <div className="max-w-7xl mx-auto">
         <BackButton />
         <PageHeader
@@ -87,7 +72,7 @@ export function BlacklistedUsers() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
           <input
             id="user-search"
-            className="block w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2.5 pl-10 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
+            className="block w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2 pl-9 pr-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
             placeholder="Search by name or email..."
             type="search"
             value={searchTerm}
@@ -95,7 +80,7 @@ export function BlacklistedUsers() {
           />
         </div>
 
-        <div className="glass-panel rounded-[2rem] transition-all duration-300 h-full flex flex-col overflow-hidden ring-1 ring-black/5 dark:ring-white/5 bg-white dark:bg-slate-900">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[1.5rem] shadow-sm dark:shadow-none transition-all duration-300 h-full flex flex-col overflow-hidden">
           <div className="lg:hidden px-6 py-2 bg-red-50/50 dark:bg-red-900/10 border-b border-gray-100 dark:border-slate-800/50">
             <p className="text-[9px] font-black text-red-600/60 dark:text-red-400/60 uppercase tracking-widest flex items-center gap-1.5">
               <span className="animate-pulse">←</span> Swipe horizontally to see more details{" "}
@@ -181,12 +166,12 @@ export function BlacklistedUsers() {
                   visitors.map((visitor, idx) => (
                     <tr
                       key={visitor.id}
-                      className="hover:bg-red-50/30 dark:hover:bg-red-900/10 transition-colors animate-fadeInUp"
+                      className="hover:bg-red-50/30 dark:hover:bg-red-900/10 transition-colors"
                       style={{ animationDelay: `${idx * 0.02}s` }}
                     >
                       <td className="py-4 pl-4 pr-3 sm:pl-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-[1.25rem] bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm shadow-red-500/20">
+                          <div className="w-9 h-9 rounded-2xl bg-red-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
                             {visitor.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
@@ -230,7 +215,7 @@ export function BlacklistedUsers() {
                       <td className="py-4 pl-3 pr-4 sm:pr-6 text-right">
                         <button
                           onClick={() => handleUnblacklist(visitor.id)}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 transition-all border border-emerald-200 dark:border-emerald-800"
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 transition-all border border-emerald-200 dark:border-emerald-800 active:scale-95 shadow-sm"
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.5} /> Unblock
                         </button>

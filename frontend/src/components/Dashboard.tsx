@@ -8,7 +8,6 @@ import { StatsGrid } from "./StatsGrid";
 import { formatDistanceToNow } from "date-fns";
 import { formatISTTime, getISTTodayRange } from "../lib/dateIST";
 import { getStatusConfig } from "../lib/statusConfig";
-import { readCache, writeCache } from "../lib/cache";
 import { SEOMeta } from "./SEOMeta";
 
 function getInitials(name: string) {
@@ -35,9 +34,6 @@ type ActiveVisitor = {
   check_in_time: string;
   visitor: { name: string; email: string } | null;
 };
-const RECENT_VISITS_CACHE_KEY = "vms_recent_visits";
-const ACTIVE_VISITORS_CACHE_KEY = "vms_active_visitors";
-const CACHE_TTL_MS = 5 * 60 * 1000;
 
 function useLiveDuration(checkInTime: string | null) {
   const [duration, setDuration] = useState("");
@@ -91,19 +87,10 @@ export function Dashboard() {
   const { user } = useAuthStore();
   const { stats, loading, error: statsError, fetchStats } = useVisitStats(user);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
-  const [recentVisits, setRecentVisits] = useState<RecentVisit[]>(
-    () => readCache<RecentVisit[]>(RECENT_VISITS_CACHE_KEY, CACHE_TTL_MS) ?? []
-  );
-  const [recentLoading, setRecentLoading] = useState(
-    () => readCache(RECENT_VISITS_CACHE_KEY, CACHE_TTL_MS) === null
-  );
-  const [activeVisitors, setActiveVisitors] = useState<ActiveVisitor[]>(
-    () => readCache<ActiveVisitor[]>(ACTIVE_VISITORS_CACHE_KEY, CACHE_TTL_MS) ?? []
-  );
-  const [activeLoading, setActiveLoading] = useState(
-    () => readCache(ACTIVE_VISITORS_CACHE_KEY, CACHE_TTL_MS) === null
-  );
-
+  const [recentVisits, setRecentVisits] = useState<RecentVisit[]>(() => api.uiCache.get("vms_dash_recent") || []);
+  const [recentLoading, setRecentLoading] = useState(!api.uiCache.has("vms_dash_recent"));
+  const [activeVisitors, setActiveVisitors] = useState<ActiveVisitor[]>(() => api.uiCache.get("vms_dash_active") || []);
+  const [activeLoading, setActiveLoading] = useState(!api.uiCache.has("vms_dash_active"));
   const isGuardOrAdmin = user?.role === "admin" || user?.role === "guard";
 
   const handleStatCardClick = useCallback(
@@ -121,14 +108,11 @@ export function Dashboard() {
     async (status: string) => {
       if (status === "total_users" || !user) return;
 
-      const cacheKey = `vms_filtered_${status}`;
-      if (localStorage.getItem(cacheKey)) return;
-
       try {
         const statuses = status === "cancelled_denied" ? ["cancelled", "denied"] : undefined;
         const [utcTodayStart, utcTomorrowStart] = getISTTodayRange();
 
-        const data = await api.visits.list({
+        await api.visits.list({
           ...(statuses ? { statuses } : { status }),
           ...(user?.role === "host" ? { host_id: user.id } : {}),
           ...(status === "approved"
@@ -142,7 +126,6 @@ export function Dashboard() {
             : {}),
           limit: 50,
         });
-        if (data) localStorage.setItem(cacheKey, JSON.stringify(data));
       } catch {
         // Ignore prefetch errors
       }
@@ -158,7 +141,7 @@ export function Dashboard() {
       });
       const visits = (data as unknown as RecentVisit[]) || [];
       setRecentVisits(visits);
-      writeCache(RECENT_VISITS_CACHE_KEY, visits);
+      api.uiCache.set("vms_dash_recent", visits);
     } catch {
       // Ignore fetch errors
     } finally {
@@ -179,7 +162,7 @@ export function Dashboard() {
       });
       const visitors = (data as unknown as ActiveVisitor[]) || [];
       setActiveVisitors(visitors);
-      writeCache(ACTIVE_VISITORS_CACHE_KEY, visitors);
+      api.uiCache.set("vms_dash_active", visitors);
     } catch {
       // Ignore fetch errors
     } finally {
@@ -202,10 +185,10 @@ export function Dashboard() {
   }, [user?.role, user?.id, fetchStats, fetchRecentVisits, fetchActiveVisitors]);
 
   return (
-    <div className="animate-fadeIn pb-8">
+    <div className="pb-8">
       <SEOMeta title="Dashboard" />
       
-      <div className="mb-6 animate-fadeInUp flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3 sm:gap-5">
           <div className="hidden xs:flex w-14 h-14 sm:w-[72px] sm:h-[72px] rounded-[2.2rem] bg-[#3b82f6] shadow-[0_8px_30px_rgb(59,130,246,0.3)] text-white items-center justify-center text-xl sm:text-3xl font-extrabold border-[3px] border-white dark:border-slate-800 shrink-0">
             {getInitials(user?.name || "")}
@@ -250,13 +233,13 @@ export function Dashboard() {
       </div>
 
       {statsError && (
-        <div className="mb-8 p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-700 dark:text-red-300 rounded-2xl flex items-center animate-fadeIn shadow-sm">
+        <div className="mb-8 p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-700 dark:text-red-300 rounded-2xl flex items-center shadow-sm">
           <AlertCircle className="h-6 w-6 mr-3 text-red-500" />
           <span className="font-medium">{statsError}</span>
         </div>
       )}
 
-      <div className="animate-fadeInUp mb-8" style={{ animationDelay: "0.2s" }}>
+      <div className="mb-8">
         <h2 className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4">
           Overview
         </h2>
@@ -279,7 +262,7 @@ export function Dashboard() {
       </div>
 
       {(isGuardOrAdmin || user?.role === "host") && (
-        <div className="animate-fadeInUp mb-8" style={{ animationDelay: "0.25s" }}>
+        <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <h2 className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">
@@ -299,7 +282,7 @@ export function Dashboard() {
               Live
             </span>
           </div>
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] border border-white/50 dark:border-slate-700/50 shadow-lg hover:shadow-xl overflow-hidden transition-all duration-300">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden">
             {activeLoading ? (
               <div className="divide-y divide-gray-100 dark:divide-slate-800">
                 {[...Array(2)].map((_, i) => (
@@ -336,21 +319,20 @@ export function Dashboard() {
         </div>
       )}
 
-      <div className="animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
+      <div>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">
             Recent Visits
           </h2>
           <button
-            onClick={() => navigate("/app/logs")}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/20 hover:bg-sky-100 dark:hover:bg-sky-900/40 border border-sky-100 dark:border-sky-800/40 transition-all duration-200 hover:scale-[1.03] active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/20 hover:bg-sky-100 dark:hover:bg-sky-900/40 border border-sky-100 dark:border-sky-800/40 transition-all duration-200 active:scale-95"
           >
             View All
             <ArrowRight className="w-3 h-3" />
           </button>
         </div>
 
-        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] border border-white/50 dark:border-slate-700/50 shadow-lg hover:shadow-xl overflow-hidden transition-all duration-300">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden">
           {recentLoading ? (
             <div className="divide-y divide-gray-100 dark:divide-slate-800">
               {[...Array(4)].map((_, i) => (
@@ -378,7 +360,7 @@ export function Dashboard() {
             </div>
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-slate-800">
-              {recentVisits.map((visit, i) => {
+              {recentVisits.map((visit) => {
                 const cfg = getStatusConfig(visit.status);
                 const StatusIcon = cfg.icon;
                 const visitorName = visit.visitor?.name ?? "Unknown";
@@ -391,8 +373,7 @@ export function Dashboard() {
                 return (
                   <div
                     key={visit.id}
-                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors duration-150 animate-fadeInUp"
-                    style={{ animationDelay: `${i * 0.05}s` }}
+                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors duration-150"
                   >
                     <div className="w-9 h-9 rounded-[1.25rem] bg-gradient-to-br from-indigo-500 to-sky-500 text-white flex items-center justify-center font-bold text-sm shadow-inner shrink-0">
                       {initials}

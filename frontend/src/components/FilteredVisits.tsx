@@ -75,17 +75,8 @@ export function FilteredVisits() {
   const { status } = useParams<{ status: string }>();
   const { user } = useAuthStore();
 
-  const [visits, setVisits] = useState<Visit[]>(() => {
-    try {
-      const cached = localStorage.getItem(`vms_filtered_${status}`);
-      return cached ? JSON.parse(cached) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [loading, setLoading] = useState(
-    () => localStorage.getItem(`vms_filtered_${status}`) === null
-  );
+  const [visits, setVisits] = useState<Visit[]>(() => api.uiCache.get(`vms_filtered_${status}`) || []);
+  const [loading, setLoading] = useState(!api.uiCache.has(`vms_filtered_${status}`));
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -142,7 +133,7 @@ export function FilteredVisits() {
         };
       case "cancelled_denied":
         return {
-          title: "Rejected Requests",
+          title: "Cancelled/Denied Visits",
           desc: "Applications that were cancelled or denied access.",
           icon: ShieldX,
           gradient: "from-rose-500 to-red-600",
@@ -189,8 +180,8 @@ export function FilteredVisits() {
   const fetchVisits = useCallback(async () => {
     if (!status || !user) return;
 
-    const cached = localStorage.getItem(`vms_filtered_${status}`);
-    if (!cached && !debouncedSearchTerm) setLoading(true);
+    const isCached = api.uiCache.has(`vms_filtered_${status}`);
+    if (!isCached && !debouncedSearchTerm) setLoading(true);
 
     try {
       const [utcTodayStart, utcTomorrowStart] = getISTTodayRange();
@@ -213,11 +204,7 @@ export function FilteredVisits() {
 
       setVisits(data as unknown as Visit[]);
       if (!debouncedSearchTerm) {
-        try {
-          localStorage.setItem(`vms_filtered_${status}`, JSON.stringify(data));
-        } catch {
-          // Ignore cache write errors
-        }
+        api.uiCache.set(`vms_filtered_${status}`, data);
       }
     } catch (err) {
       log.error(`[FilteredVisits] Fetch error for status ${status}:`, err);

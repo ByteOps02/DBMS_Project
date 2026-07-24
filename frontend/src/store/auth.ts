@@ -57,7 +57,7 @@ function clearCaches() {
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: readProfileCache(),
   isAuthenticated: !!localStorage.getItem(TOKEN_KEY) && !!readProfileCache(),
-  isLoading: true,
+  isLoading: !!localStorage.getItem(TOKEN_KEY) && !readProfileCache(),
   error: null,
 
   refreshProfile: async () => {

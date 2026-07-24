@@ -76,19 +76,19 @@ const Home = () => {
           <ThemeSwitcher />
           <button
             onClick={() => navigate("/request-visit")}
-            className="border border-emerald-500 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold py-2 px-4 rounded-xl text-sm transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/30 hover:scale-105 active:scale-95"
+            className="border border-emerald-500 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold py-2 px-4 rounded-full text-sm transition-all duration-300 active:scale-95"
           >
             Request Visit
           </button>
           <button
             onClick={() => navigate("/signup")}
-            className="border border-sky-500 text-sky-600 dark:text-sky-400 hover:bg-sky-500 hover:text-white font-semibold py-2 px-4 rounded-xl text-sm transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/30 hover:scale-105 active:scale-95"
+            className="border border-sky-500 text-sky-600 dark:text-sky-400 hover:bg-sky-500 hover:text-white font-semibold py-2 px-4 rounded-full text-sm transition-all duration-300 active:scale-95"
           >
             Sign Up
           </button>
           <button
             onClick={() => navigate("/login")}
-            className="bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white font-semibold py-2 px-5 rounded-xl text-sm transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/30 hover:scale-105 active:scale-95"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-full text-sm transition-all duration-300 active:scale-95"
           >
             Log In
           </button>
@@ -137,32 +137,30 @@ const Home = () => {
       >
         <div className="absolute inset-0 bg-black/20 dark:bg-black/40" />
 
-        <div className="relative z-10 flex flex-col items-center gap-8 animate-scaleIn">
+        <div className="relative z-10 flex flex-col items-center gap-8">
           <div className="bg-transparent p-5 sm:p-8 max-w-2xl w-full text-center transition-all duration-500">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white drop-shadow-md mb-5 animate-fadeInUp leading-tight">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white drop-shadow-md mb-5 leading-tight">
               Welcome to Indian Institute Of Information Technology Nagpur
             </h1>
             <p
-              className="text-white/90 font-medium text-base sm:text-lg mb-8 animate-fadeInUp leading-relaxed drop-shadow-sm max-w-xl mx-auto"
-              style={{ animationDelay: "0.15s" }}
+              className="text-white/90 font-medium text-base sm:text-lg mb-8 leading-relaxed drop-shadow-sm max-w-xl mx-auto"
             >
               The official IIIT Nagpur VMS
               Nagpur. Enhance campus security and visitor efficiency seamlessly.
             </p>
             <div
-              className="flex flex-col sm:flex-row gap-3 justify-center animate-fadeInUp"
-              style={{ animationDelay: "0.3s" }}
+              className="flex flex-col sm:flex-row gap-3 justify-center"
             >
               <button
                 onClick={() => navigate("/login")}
-                className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white font-bold py-3 px-8 rounded-2xl text-base transition-all duration-300 hover:shadow-xl hover:shadow-sky-500/40 hover:scale-105 active:scale-95 shadow-lg"
+                className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full text-base transition-all duration-300 active:scale-95"
               >
                 Get Started
                 <ArrowRight size={18} />
               </button>
               <button
                 onClick={() => navigate("/request-visit")}
-                className="inline-flex items-center justify-center gap-2 border-2 border-white bg-white/10 backdrop-blur-sm text-white hover:bg-white hover:text-sky-700 font-semibold py-3 px-7 rounded-2xl text-base transition-all duration-300 hover:scale-105 active:scale-95 shadow-md"
+                className="inline-flex items-center justify-center gap-2 border-2 border-white bg-white/10 backdrop-blur-sm text-white hover:bg-white hover:text-sky-700 font-semibold py-3 px-7 rounded-full text-base transition-all duration-300 active:scale-95"
               >
                 Request a Visit
               </button>
@@ -172,7 +170,7 @@ const Home = () => {
       </div>
       <section className="py-12 sm:py-16 bg-gray-50 dark:bg-slate-950">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-12 animate-fadeInUp">
+          <div className="text-center mb-12">
             <span className="inline-block text-xs font-semibold tracking-widest uppercase text-sky-600 dark:text-sky-400 mb-3 bg-sky-50 dark:bg-sky-900/20 px-4 py-1.5 rounded-full border border-sky-200 dark:border-sky-800/50">
               Why Choose Us
             </span>
@@ -186,11 +184,10 @@ const Home = () => {
           </div>
 
           <div className="grid gap-5 grid-cols-1 sm:grid-cols-3">
-            {features.map(({ icon: Icon, title, description, gradient, shadow }, i) => (
+            {features.map(({ icon: Icon, title, description, gradient }) => (
               <div
                 key={title}
-                className="group relative bg-white dark:bg-slate-900 rounded-3xl p-7 border border-gray-200 dark:border-slate-800 hover:border-transparent shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 animate-fadeInUp overflow-hidden"
-                style={{ animationDelay: `${i * 0.12}s` }}
+                className="group relative card overflow-hidden"
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500 rounded-3xl`}
@@ -198,7 +195,7 @@ const Home = () => {
 
                 <div className="relative">
                   <div
-                    className={`inline-flex p-4 bg-gradient-to-br ${gradient} rounded-2xl shadow-lg ${shadow} mb-5 transition-transform duration-300 group-hover:scale-110`}
+                    className={`inline-flex p-4 bg-gradient-to-br ${gradient} rounded-2xl mb-5`}
                   >
                     <Icon size={36} className="text-white" strokeWidth={2} />
                   </div>
@@ -228,13 +225,13 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={() => navigate("/signup")}
-              className="inline-flex items-center justify-center gap-2 bg-white text-sky-700 font-bold py-3 px-8 rounded-2xl hover:bg-sky-50 transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg"
+              className="inline-flex items-center justify-center gap-2 bg-white text-sky-700 font-bold py-3 px-8 rounded-full hover:bg-sky-50 transition-all duration-300 active:scale-95"
             >
               Create Free Account <ArrowRight size={18} />
             </button>
             <button
               onClick={() => navigate("/request-visit")}
-              className="inline-flex items-center justify-center border-2 border-white/60 text-white font-semibold py-3 px-7 rounded-2xl hover:bg-white/10 transition-all duration-300 hover:scale-105 active:scale-95"
+              className="inline-flex items-center justify-center border-2 border-white/60 text-white font-semibold py-3 px-7 rounded-full hover:bg-white/10 transition-all duration-300 active:scale-95"
             >
               Request a Visit
             </button>

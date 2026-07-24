@@ -75,7 +75,7 @@ export function ChangePassword() {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 pb-12 animate-fadeIn">
+    <div className="px-4 sm:px-6 lg:px-8 pb-12">
       <div className="max-w-7xl mx-auto">
         <BackButton />
 
@@ -88,10 +88,10 @@ export function ChangePassword() {
       </div>
 
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white dark:bg-slate-900 shadow-xl rounded-2xl overflow-hidden border border-gray-200 dark:border-slate-800 animate-fadeInUp">
+        <div className="bg-white dark:bg-slate-900 shadow-sm border border-gray-200 dark:border-slate-800 rounded-2xl overflow-hidden">
           <form onSubmit={handleSubmit(onSubmit)} className="p-6 sm:p-8">
             {errorMessage && (
-              <div className="mb-6 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 flex items-center gap-3 animate-fadeIn">
+              <div className="mb-6 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 flex items-center gap-3">
                 <AlertCircle className="h-5 w-5 text-red-500" />
                 <p className="text-sm font-medium text-red-800 dark:text-red-300">{errorMessage}</p>
               </div>
@@ -204,7 +204,7 @@ export function ChangePassword() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                  className="btn-primary w-full flex items-center justify-center gap-2 py-3"
                 >
                   {isSubmitting ? (
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />

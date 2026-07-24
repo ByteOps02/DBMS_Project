@@ -30,7 +30,7 @@ export function PageHeader({
     >
       <div className="flex items-center gap-3 min-w-0">
         <div
-          className={`p-2.5 bg-gradient-to-br ${gradient} rounded-2xl shadow-lg shrink-0 transition-transform duration-300 hover:scale-110 hover:rotate-3`}
+          className={`p-2.5 bg-gradient-to-br ${gradient} rounded-2xl shrink-0`}
         >
           <Icon className="h-6 w-6 text-white" strokeWidth={2.5} aria-hidden="true" />
         </div>

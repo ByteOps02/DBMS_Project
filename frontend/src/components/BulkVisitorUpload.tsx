@@ -149,7 +149,7 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
 
   if (!user || !["admin", "guard", "host"].includes(user.role || "")) {
     return (
-      <div className="px-4 sm:px-6 lg:px-8 py-12">
+      <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 py-12">
         <BackButton />
 
         <div className="max-w-2xl mx-auto text-center">
@@ -168,7 +168,7 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 pb-12 animate-fadeIn">
+    <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-12">
       <div className="max-w-7xl mx-auto">
         <BackButton />
 
@@ -181,7 +181,7 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
       </div>
 
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white dark:bg-slate-900 shadow-xl rounded-2xl overflow-hidden border border-gray-200 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900 shadow-sm dark:shadow-none rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
           <form onSubmit={handleSubmit(onSubmit)} className="p-6 sm:p-8 space-y-6">
             <div>
               <label
@@ -195,7 +195,7 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
                 id="approverEmail"
                 {...register("approverEmail", { required: "Faculty/Staff email is required" })}
                 disabled={user?.role === "host"}
-                className="block w-full rounded-lg border-gray-300 dark:border-slate-600 shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-slate-800 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-700"
+                className="block w-full py-2 px-3 rounded-lg border-gray-300 dark:border-slate-600 shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-slate-800 dark:text-white disabled:bg-gray-100 dark:disabled:bg-slate-700"
                 placeholder="staff@example.com"
               />
               {errors.approverEmail && (
@@ -215,7 +215,7 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
                 id="file"
                 accept=".csv"
                 {...register("file", { required: "Please select a CSV file" })}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 dark:text-slate-400 dark:file:bg-orange-900/30 dark:file:text-orange-300 dark:hover:file:bg-orange-900/50 cursor-pointer"
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 dark:text-slate-400 dark:file:bg-orange-900/30 dark:file:text-orange-300 dark:hover:file:bg-orange-900/50 cursor-pointer"
               />
               {errors.file && <p className="mt-1 text-sm text-red-600">{errors.file.message}</p>}
             </div>
@@ -224,7 +224,7 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
               <button
                 type="submit"
                 disabled={isSubmitting || uploading}
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-orange-600 to-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 hover:from-orange-700 hover:to-amber-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 hover:bg-orange-700 py-3 font-bold uppercase tracking-wider text-[11px] sm:text-xs text-white shadow-sm transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {uploading ? (
                   <>
@@ -241,7 +241,7 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
               <button
                 type="button"
                 onClick={downloadSampleCsv}
-                className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 dark:border-slate-700 rounded-xl font-bold uppercase tracking-wider text-[10px] sm:text-[11px] text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all active:scale-95"
               >
                 <Download className="h-4 w-4" />
                 Download Template

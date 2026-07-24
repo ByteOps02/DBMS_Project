@@ -7,7 +7,27 @@ type Row<T extends keyof Tables> = Tables[T]["Row"];
 // In local dev it is left empty so the Vite dev-proxy forwards /api/* to localhost:5000.
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
 
+const cache = new Map<string, { data: unknown; timestamp: number }>();
+const inFlightRequests = new Map<string, Promise<unknown>>();
+const CACHE_TTL_MS = 60000; // 60 seconds strict cache for instant UX
+
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const method = options.method || "GET";
+  const cacheKey = `${method}:${path}`;
+
+  // 1. Return from cache if valid and it's a GET request
+  if (method === "GET") {
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return cached.data as T;
+    }
+
+    // 2. Return in-flight promise if identical request is pending
+    if (inFlightRequests.has(cacheKey)) {
+      return inFlightRequests.get(cacheKey) as Promise<T>;
+    }
+  }
+
   const token = localStorage.getItem("vms_token");
   const headers = new Headers(options.headers || {});
 
@@ -17,26 +37,66 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 
   headers.set("Content-Type", "application/json");
 
-  const res = await fetch(`${API_BASE}/api${path}`, {
+  const fetchPromise = fetch(`${API_BASE}/api${path}`, {
     ...options,
     headers,
-  });
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        let errorMessage = "API Error";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.error || res.statusText;
+        } catch {
+          errorMessage = res.statusText;
+        }
+        throw new Error(errorMessage);
+      }
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      
+      if (method === "GET") {
+        cache.set(cacheKey, { data, timestamp: Date.now() });
+      } else {
+        // Clear all GET caches for this resource path to ensure fresh data on mutations
+        // Very basic invalidation strategy: if we mutate /visits, clear all /visits caches
+        const resourcePrefix = `GET:${path.split('?')[0]}`;
+        for (const key of cache.keys()) {
+          if (key.startsWith(resourcePrefix)) {
+            cache.delete(key);
+          }
+        }
+      }
+      
+      return data as T;
+    })
+    .finally(() => {
+      if (method === "GET") {
+        inFlightRequests.delete(cacheKey);
+      }
+    });
 
-  if (!res.ok) {
-    let errorMessage = "API Error";
-    try {
-      const errorData = await res.json();
-      errorMessage = errorData.error || res.statusText;
-    } catch {
-      errorMessage = res.statusText;
-    }
-    throw new Error(errorMessage);
+  if (method === "GET") {
+    inFlightRequests.set(cacheKey, fetchPromise);
   }
-  const text = await res.text();
-  return text ? JSON.parse(text) : (null as unknown as T);
+
+  return fetchPromise;
 }
 
 export const api = {
+  // Synchronous cache reader to completely eliminate React mount flickering
+  getCachedData: <T>(path: string): T | null => {
+    const cacheKey = `GET:${path}`;
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return cached.data as T;
+    }
+    return null;
+  },
+
+  // Synchronous UI cache for components to completely eliminate mount flashes
+  uiCache: new Map<string, any>(),
+
   departments: {
     list: (): Promise<Pick<Row<"departments">, "id" | "name">[]> => apiFetch("/departments"),
   },

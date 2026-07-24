@@ -1,6 +1,6 @@
 import type React from "react";
 
-import { Suspense, lazy, useState, useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster as HotToaster } from "react-hot-toast";
 
@@ -10,7 +10,7 @@ import { useAuthStore } from "./store/auth";
 import log from "./lib/logger";
 function PageSuspenseFallback() {
   return (
-    <div className="flex items-center justify-center min-h-[100dvh] w-full animate-fadeIn bg-gray-50 dark:bg-slate-950">
+    <div className="flex items-center justify-center min-h-[100dvh] w-full bg-gray-50 dark:bg-slate-950">
       <div className="flex flex-col items-center gap-4">
         <div className="relative w-12 h-12">
           <div className="absolute inset-0 rounded-full border-4 border-sky-200 dark:border-slate-700" />
@@ -70,7 +70,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
     log.info("[PrivateRoute] Still loading authentication...");
     return (
       <div className="flex items-center justify-center min-h-[100dvh] bg-gray-50 dark:bg-slate-950">
-        <div className="flex flex-col items-center gap-4 animate-springIn">
+        <div className="flex flex-col items-center gap-4">
           <div className="relative w-14 h-14">
             <div className="absolute inset-0 rounded-full border-4 border-sky-100 dark:border-slate-800" />
             <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-sky-500 dark:border-t-sky-400 animate-spin" />
@@ -93,43 +93,12 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const initializeAuth = useAuthStore((state) => state.initialize);
-  const [authInitialized, setAuthInitialized] = useState(false);
 
   useEffect(() => {
-    initializeAuth().finally(() => setAuthInitialized(true));
+    initializeAuth();
   }, [initializeAuth]);
 
-  if (!authInitialized) {
-    return (
-      <div className="flex items-center justify-center min-h-[100dvh] bg-gray-50 dark:bg-slate-950">
-        <div className="flex flex-col items-center gap-5 animate-springIn">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-[22px] bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-sky-500/30 animate-pulse-slow">
-              <img src="/visistor-management.png" alt="VMS" className="w-9 h-9" />
-            </div>
-            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-black/10 dark:bg-black/30 rounded-full blur-sm" />
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-base font-black text-gray-900 dark:text-white tracking-tight">
-              IIIT Nagpur VMS
-            </p>
-            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400 dark:text-slate-500">
-              Initializing...
-            </p>
-          </div>
-          <div className="flex gap-1.5">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="w-1.5 h-1.5 rounded-full bg-sky-400 dark:bg-sky-500 animate-pulse"
-                style={{ animationDelay: `${i * 0.2}s` }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <ErrorBoundary>

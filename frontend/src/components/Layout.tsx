@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
-import { LogOut, X, ShieldCheck } from "lucide-react";
+import { LogOut, X } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { navLinks } from "../lib/navigation";
 
