@@ -1,7 +1,6 @@
 import path from "path"
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import mkcert from 'vite-plugin-mkcert';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
@@ -11,7 +10,6 @@ export default defineConfig({
       // Use the automatic JSX runtime (no manual React import needed)
       jsxRuntime: 'automatic',
     }),
-    mkcert(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
@@ -64,6 +62,7 @@ export default defineConfig({
   },
   server: {
     port: 5174,
+    // Dev proxy: forwards /api/* to local backend (only used in dev, not in production)
     proxy: {
       '/api': {
         target: 'http://localhost:5000',

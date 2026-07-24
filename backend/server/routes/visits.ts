@@ -19,7 +19,7 @@ router.get('/public', async (req, res) => {
       orderBy: { created_at: 'desc' }
     });
 
-    const formatted = visits.map((v) => ({
+    const formatted = visits.map((v: any) => ({
       ...v,
       visitors: v.visitor,
       hosts: v.host

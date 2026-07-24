@@ -3,6 +3,10 @@ import type { Database } from "./database.types";
 type Tables = Database["public"]["Tables"];
 type Row<T extends keyof Tables> = Tables[T]["Row"];
 
+// In production this is set to the deployed backend URL (e.g. https://vms-backend.vercel.app).
+// In local dev it is left empty so the Vite dev-proxy forwards /api/* to localhost:5000.
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
+
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem("vms_token");
   const headers = new Headers(options.headers || {});
@@ -13,7 +17,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 
   headers.set("Content-Type", "application/json");
 
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_BASE}/api${path}`, {
     ...options,
     headers,
   });
@@ -45,7 +49,7 @@ export const api = {
     const headers = new Headers();
     if (token) headers.set("Authorization", `Bearer ${token}`);
     
-    return fetch("/api/upload", {
+    return fetch(`${API_BASE}/api/upload`, {
       method: "POST",
       headers,
       body: formData,

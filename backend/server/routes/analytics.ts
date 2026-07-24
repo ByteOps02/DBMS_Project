@@ -59,8 +59,8 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
       today_visits: todayVisits,
       week_visits: weekVisits,
       month_visits: monthVisits,
-      top_purposes: topPurposes.map((p) => ({ purpose: p.purpose, count: p._count.purpose })),
-      daily_stats: dailyStats.map((d) => ({
+      top_purposes: topPurposes.map((p: any) => ({ purpose: p.purpose, count: p._count.purpose })),
+      daily_stats: dailyStats.map((d: any) => ({
         date: new Date(d.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
         count: d._count.id,
       })),

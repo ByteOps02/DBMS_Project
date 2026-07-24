@@ -1,4 +1,3 @@
-import type React from "react";
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "../store/auth";
 import { useVisitRegistration, type UnifiedVisitFormData } from "../hooks/useVisitRegistration";
