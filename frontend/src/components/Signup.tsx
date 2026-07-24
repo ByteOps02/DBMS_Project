@@ -4,7 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Shield, Eye, EyeOff, ArrowRight, ArrowLeft, Building2, CheckCircle2 } from "lucide-react";
 import { useAuthStore } from "../store/auth";
 import { ThemeSwitcher } from "./ThemeSwitcher";
-import { api } from "../lib/api";
+import { api, API_BASE } from "../lib/api";
 import { validatePasswordStrength } from "../lib/sanitize";
 import log from "../lib/logger";
 import { GoogleLogin } from "@react-oauth/google";
@@ -102,8 +102,8 @@ export function Signup() {
     try {
       const result = await signup(email, password, name, departmentId);
       setSuccess(true);
-      if (result && (result as any).requiresVerification) {
-        setTimeout(() => navigate(`/verify-otp?email=${encodeURIComponent((result as any).email)}`), 2000);
+      if (result?.requiresVerification) {
+        setTimeout(() => navigate(`/verify-otp?email=${encodeURIComponent(result.email || "")}`), 2000);
       } else {
         setTimeout(() => navigate("/login"), 2000);
       }

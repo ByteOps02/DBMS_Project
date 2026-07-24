@@ -20,7 +20,7 @@ interface AuthState {
   error: string | null;
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string, departmentId: string) => Promise<void>;
+  signup: (email: string, password: string, name: string, departmentId: string) => Promise<{ requiresVerification: boolean; email?: string }>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -181,7 +181,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (data.requiresVerification) {
         log.info("[Auth] Signup successful. Verification required.");
         set({ isLoading: false, error: null });
-        return { requiresVerification: true, email: data.email };
+        return { requiresVerification: true, email: data.email as string };
       }
 
       localStorage.setItem(TOKEN_KEY, data.token as string);
