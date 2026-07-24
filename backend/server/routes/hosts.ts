@@ -6,10 +6,7 @@ const router = Router();
 router.get('/', requireAuth, async (req: AuthRequest, res) => {
   try {
     const authUser = req.user!;
-    if (authUser.role !== 'admin' && authUser.role !== 'guard') {
-      return res.status(403).json({ error: 'Forbidden: admin or guard only' });
-    }
-
+    
     const search = req.query.search as string | undefined;
 
     const hosts = await prisma.host.findMany({

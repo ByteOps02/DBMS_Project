@@ -50,7 +50,6 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
       created_to,
     } = req.query as Record<string, string>;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     type WhereClause = Record<string, any>;
     const where: WhereClause = {};
     if (authUser.role === 'host') {

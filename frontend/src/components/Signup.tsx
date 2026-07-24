@@ -7,6 +7,7 @@ import { ThemeSwitcher } from "./ThemeSwitcher";
 import { api } from "../lib/api";
 import { validatePasswordStrength } from "../lib/sanitize";
 import log from "../lib/logger";
+import { GoogleLogin } from "@react-oauth/google";
 
 type Department = {
   id: string;
@@ -51,6 +52,29 @@ export function Signup() {
     return Math.min(score, 4); // Max 4 points for the bar
   };
 
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: credentialResponse.credential }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Google login failed");
+      
+      localStorage.setItem("vms_token", data.token);
+      localStorage.setItem("vms_user_profile", JSON.stringify(data.user));
+      useAuthStore.setState({ user: data.user, isAuthenticated: true, isLoading: false, error: null });
+      navigate("/app/dashboard");
+    } catch (err: unknown) {
+      setError((err as Error).message);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError("Google Sign-Up failed.");
+  };
+
   const strength = calculatePasswordStrength(password);
   const strengthLabels = ["Weak", "Fair", "Good", "Strong"];
   const strengthColors = ["bg-red-500", "bg-amber-500", "bg-sky-500", "bg-emerald-500"];
@@ -76,9 +100,13 @@ export function Signup() {
     }
 
     try {
-      await signup(email, password, name, departmentId);
+      const result = await signup(email, password, name, departmentId);
       setSuccess(true);
-      setTimeout(() => navigate("/login"), 2000);
+      if (result && (result as any).requiresVerification) {
+        setTimeout(() => navigate(`/verify-otp?email=${encodeURIComponent((result as any).email)}`), 2000);
+      } else {
+        setTimeout(() => navigate("/login"), 2000);
+      }
     } catch (err: unknown) {
       const errorMsg = (err as Error).message || "Failed to create account";
       setError(errorMsg);
@@ -354,6 +382,30 @@ export function Signup() {
                 </button>
               </div>
             </form>
+
+            <div className="mt-8">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200 dark:border-slate-700" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-3 bg-white/80 dark:bg-slate-900/80 text-gray-500 dark:text-slate-400 font-medium">
+                    or continue with
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  theme="outline"
+                  size="large"
+                  text="continue_with"
+                  width="100%"
+                />
+              </div>
+            </div>
 
             <div className="mt-8 text-center">
               <p className="text-sm text-gray-600 dark:text-slate-400">

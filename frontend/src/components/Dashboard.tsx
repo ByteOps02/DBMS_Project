@@ -133,10 +133,11 @@ export function Dashboard() {
     [user]
   );
 
-  const fetchRecentVisits = useCallback(async () => {
+  const fetchRecentVisits = useCallback(async (force = false) => {
     try {
       const data = await api.visits.list({
         ...(user?.role === "host" ? { host_id: user.id } : {}),
+        ...(force ? { _t: Date.now() } : {}),
         limit: 5,
       });
       const visits = (data as unknown as RecentVisit[]) || [];
@@ -149,7 +150,7 @@ export function Dashboard() {
     }
   }, [user]);
 
-  const fetchActiveVisitors = useCallback(async () => {
+  const fetchActiveVisitors = useCallback(async (force = false) => {
     if (user?.role !== "admin" && user?.role !== "guard" && user?.role !== "host") {
       setActiveLoading(false);
       return;
@@ -159,6 +160,7 @@ export function Dashboard() {
       const data = await api.visits.list({
         status: "checked_in",
         ...(user?.role === "host" ? { host_id: user.id } : {}),
+        ...(force ? { _t: Date.now() } : {}),
       });
       const visitors = (data as unknown as ActiveVisitor[]) || [];
       setActiveVisitors(visitors);
@@ -175,9 +177,9 @@ export function Dashboard() {
     Promise.all([fetchStats(), fetchRecentVisits(), fetchActiveVisitors()]);
     setLastRefresh(new Date());
     const refreshInterval = setInterval(() => {
-      Promise.all([fetchStats(true), fetchRecentVisits(), fetchActiveVisitors()]);
+      Promise.all([fetchStats(true), fetchRecentVisits(true), fetchActiveVisitors(true)]);
       setLastRefresh(new Date());
-    }, 30000);
+    }, 10000);
 
     return () => {
       clearInterval(refreshInterval);
@@ -325,6 +327,7 @@ export function Dashboard() {
             Recent Visits
           </h2>
           <button
+            onClick={() => navigate('/app/logs')}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/20 hover:bg-sky-100 dark:hover:bg-sky-900/40 border border-sky-100 dark:border-sky-800/40 transition-all duration-200 active:scale-95"
           >
             View All

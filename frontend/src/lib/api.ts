@@ -201,6 +201,7 @@ export const api = {
       checkout_to?: string;
       created_from?: string;
       created_to?: string;
+      _t?: number;
     }): Promise<
       (Row<"visits"> & {
         visitor: Row<"visitors"> | null;
@@ -221,6 +222,7 @@ export const api = {
       if (params?.checkout_to) qs.set("checkout_to", params.checkout_to);
       if (params?.created_from) qs.set("created_from", params.created_from);
       if (params?.created_to) qs.set("created_to", params.created_to);
+      if (params?._t) qs.set("_t", String(params._t));
       const q = qs.toString();
       return apiFetch(`/visits${q ? `?${q}` : ""}`);
     },

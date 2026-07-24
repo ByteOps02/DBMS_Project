@@ -3,9 +3,18 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth, AuthRequest } from '../middleware/auth.js';
+import { sendOTP } from '../lib/email.js';
+import { OAuth2Client } from 'google-auth-library';
+import crypto from 'crypto';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_development_only';
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+function generateOTP() {
+  return crypto.randomInt(100000, 999999).toString();
+}
+
 router.post('/signup', async (req, res) => {
   try {
     const { email, password, name, department_id } = req.body;
@@ -24,6 +33,9 @@ router.post('/signup', async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(password, salt);
+    
+    const otp = generateOTP();
+    const otp_expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
     const host = await prisma.host.create({
       data: {
@@ -32,14 +44,20 @@ router.post('/signup', async (req, res) => {
         password_hash,
         department_id: department_id || null,
         role: 'visitor',
+        is_verified: false,
+        otp,
+        otp_expiry
       },
     });
 
-    const token = jwt.sign({ userId: host.id, role: host.role }, JWT_SECRET, {
-      expiresIn: '7d',
-    });
+    try {
+      await sendOTP(host.email, otp);
+    } catch (err) {
+      console.error('Failed to send OTP on signup:', err);
+      // We still return 201 so they can try to resend later, or we could fail.
+    }
 
-    res.status(201).json({ token, user: { id: host.id, name: host.name, email: host.email, role: host.role, department_id: host.department_id } });
+    res.status(201).json({ message: 'Account created. Please verify your email.', requiresVerification: true, email: host.email });
   } catch (err) {
     console.error('[Auth Signup Error]', err);
     res.status(500).json({ error: 'Failed to create account', details: err instanceof Error ? err.message : String(err) });
@@ -68,6 +86,10 @@ router.post('/login', async (req, res) => {
 
     if (!host.active) {
       return res.status(403).json({ error: 'Account is deactivated' });
+    }
+
+    if (!host.is_verified) {
+      return res.status(403).json({ error: 'Account not verified. Please verify your email.', requiresVerification: true });
     }
 
     const token = jwt.sign({ userId: host.id, role: host.role }, JWT_SECRET, {
@@ -125,6 +147,127 @@ router.post('/change-password', requireAuth, async (req: AuthRequest, res) => {
   } catch (err) {
     console.error('[API POST /auth/change-password]', err);
     res.status(500).json({ error: 'Failed to update password', details: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ error: 'Email and OTP required' });
+
+    const host = await prisma.host.findUnique({ where: { email: email.trim().toLowerCase() } });
+    if (!host) return res.status(404).json({ error: 'User not found' });
+
+    if (host.is_verified) return res.status(400).json({ error: 'Already verified' });
+    if (host.otp !== otp) return res.status(400).json({ error: 'Invalid OTP' });
+    if (!host.otp_expiry || new Date() > host.otp_expiry) return res.status(400).json({ error: 'OTP expired' });
+
+    await prisma.host.update({
+      where: { id: host.id },
+      data: { is_verified: true, otp: null, otp_expiry: null },
+    });
+
+    res.status(200).json({ success: true, message: 'Email verified successfully' });
+  } catch (err) {
+    console.error('[Auth Verify OTP Error]', err);
+    res.status(500).json({ error: 'Failed to verify OTP' });
+  }
+});
+
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+
+    const host = await prisma.host.findUnique({ where: { email: email.trim().toLowerCase() } });
+    if (!host) {
+      // Don't reveal user existence, just return success
+      return res.status(200).json({ success: true, message: 'If the email exists, an OTP was sent.' });
+    }
+
+    const otp = generateOTP();
+    const otp_expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+    await prisma.host.update({
+      where: { id: host.id },
+      data: { otp, otp_expiry },
+    });
+
+    await sendOTP(host.email, otp);
+
+    res.status(200).json({ success: true, message: 'OTP sent to email' });
+  } catch (err) {
+    console.error('[Auth Forgot Password Error]', err);
+    res.status(500).json({ error: 'Failed to process request' });
+  }
+});
+
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) return res.status(400).json({ error: 'All fields required' });
+
+    const host = await prisma.host.findUnique({ where: { email: email.trim().toLowerCase() } });
+    if (!host) return res.status(404).json({ error: 'User not found' });
+
+    if (host.otp !== otp) return res.status(400).json({ error: 'Invalid OTP' });
+    if (!host.otp_expiry || new Date() > host.otp_expiry) return res.status(400).json({ error: 'OTP expired' });
+
+    const password_hash = await bcrypt.hash(newPassword, 10);
+
+    await prisma.host.update({
+      where: { id: host.id },
+      data: { password_hash, otp: null, otp_expiry: null, is_verified: true },
+    });
+
+    res.status(200).json({ success: true, message: 'Password reset successfully' });
+  } catch (err) {
+    console.error('[Auth Reset Password Error]', err);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+router.post('/google', async (req, res) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) return res.status(400).json({ error: 'Google credential required' });
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) return res.status(400).json({ error: 'Invalid Google token' });
+
+    const { email, name, sub: google_id } = payload;
+    let host = await prisma.host.findUnique({ where: { email: email.toLowerCase() } });
+
+    if (host) {
+      if (!host.google_id) {
+        host = await prisma.host.update({
+          where: { id: host.id },
+          data: { google_id, is_verified: true },
+        });
+      }
+    } else {
+      host = await prisma.host.create({
+        data: {
+          email: email.toLowerCase(),
+          name: name || 'Google User',
+          google_id,
+          role: 'visitor',
+          is_verified: true,
+        },
+      });
+    }
+
+    if (!host.active) return res.status(403).json({ error: 'Account is deactivated' });
+
+    const token = jwt.sign({ userId: host.id, role: host.role }, JWT_SECRET, { expiresIn: '7d' });
+    res.status(200).json({ token, user: { id: host.id, name: host.name, email: host.email, role: host.role, department_id: host.department_id } });
+  } catch (err) {
+    console.error('[Auth Google Error]', err);
+    res.status(500).json({ error: 'Google authentication failed' });
   }
 });
 

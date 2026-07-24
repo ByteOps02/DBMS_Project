@@ -178,12 +178,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error((data.error as string) || "Failed to create account");
       }
 
+      if (data.requiresVerification) {
+        log.info("[Auth] Signup successful. Verification required.");
+        set({ isLoading: false, error: null });
+        return { requiresVerification: true, email: data.email };
+      }
+
       localStorage.setItem(TOKEN_KEY, data.token as string);
       const user = data.user as User;
       writeProfileCache(user);
 
       log.info("[Auth] Signup successful.");
       set({ user, isAuthenticated: true, isLoading: false, error: null });
+      return { requiresVerification: false };
     } catch (error: unknown) {
       const errorMessage = (error as Error).message || "Failed to create account";
       log.error("[Auth] Signup failed:", errorMessage);

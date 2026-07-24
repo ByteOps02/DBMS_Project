@@ -62,6 +62,10 @@ model Host {
   name          String
   email         String     @unique
   password_hash String?
+  google_id     String?    @unique
+  is_verified   Boolean    @default(false)
+  otp           String?
+  otp_expiry    DateTime?
   department_id String?    @db.Uuid
   role          UserRole   @default(visitor)
   active        Boolean    @default(true)

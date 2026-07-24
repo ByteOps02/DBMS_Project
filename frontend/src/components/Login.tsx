@@ -6,6 +6,9 @@ import { useAuthStore } from "../store/auth";
 import log from "../lib/logger";
 import { SEOMeta } from "./SEOMeta";
 import { ThemeSwitcher } from "./ThemeSwitcher";
+import { GoogleLogin } from "@react-oauth/google";
+import { API_BASE } from "../lib/api";
+import { toast } from "react-hot-toast";
 
 export function Login() {
   const navigate = useNavigate();
@@ -16,6 +19,10 @@ export function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState("");
+  
+  const [view, setView] = useState<"login" | "forgot">("login");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [isForgotLoading, setIsForgotLoading] = useState(false);
 
   const error = storeError || localError;
 
@@ -39,8 +46,48 @@ export function Login() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setLocalError("Google Sign-In is not supported currently.");
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: credentialResponse.credential }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Google login failed");
+      
+      localStorage.setItem("vms_token", data.token);
+      localStorage.setItem("vms_user_profile", JSON.stringify(data.user));
+      useAuthStore.setState({ user: data.user, isAuthenticated: true, isLoading: false, error: null });
+      navigate("/app/dashboard");
+    } catch (err: unknown) {
+      setLocalError((err as Error).message);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setLocalError("Google Sign-In failed.");
+  };
+
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsForgotLoading(true);
+    setLocalError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send OTP");
+      toast.success("If the email is registered, an OTP has been sent.");
+      navigate(`/reset-password?email=${encodeURIComponent(forgotEmail)}`);
+    } catch (err: unknown) {
+      setLocalError((err as Error).message);
+    } finally {
+      setIsForgotLoading(false);
+    }
   };
 
   return (
@@ -113,15 +160,19 @@ export function Login() {
               </div>
             </div>
             <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter">
-              Welcome back
+              {view === "login" ? "Welcome back" : "Forgot Password"}
             </h2>
             <p className="mt-2 text-base text-gray-600 dark:text-slate-400">
-              Please enter your details to sign in
+              {view === "login" 
+                ? "Please enter your details to sign in" 
+                : "Enter your email to receive a password reset code"}
             </p>
           </div>
 
           <div className="card">
-            <form className="space-y-5" onSubmit={handleSubmit}>
+            {view === "login" ? (
+              <>
+                <form className="space-y-5" onSubmit={handleSubmit}>
               <div>
                 <label
                   htmlFor="email"
@@ -143,12 +194,21 @@ export function Login() {
               </div>
 
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1"
-                >
-                  Password
-                </label>
+                <div className="flex justify-between items-center mb-1.5 px-1">
+                  <label
+                    htmlFor="password"
+                    className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest"
+                  >
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => { setView("forgot"); setLocalError(""); }}
+                    className="text-[11px] font-medium text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
                 <div className="relative">
                   <input
                     id="password"
@@ -206,39 +266,15 @@ export function Login() {
                 </div>
               </div>
 
-              <div className="mt-6">
-                <button
-                  type="button"
-                  onClick={handleGoogleSignIn}
-                  disabled={isLoading}
-                  className="w-full flex justify-center items-center py-2 px-4 border border-gray-200 dark:border-slate-700 rounded-2xl text-sm font-semibold text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 dark:focus:ring-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-md hover:scale-[1.02] active:scale-95"
-                >
-                  <svg
-                    className="w-5 h-5 mr-3"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 48 48"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fill="#EA4335"
-                      d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-                    />
-                    <path
-                      fill="#4285F4"
-                      d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-                    />
-                    <path fill="none" d="M0 0h48v48H0z" />
-                  </svg>
-                  Google
-                </button>
+              <div className="mt-6 flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  theme="outline"
+                  size="large"
+                  text="continue_with"
+                  width="100%"
+                />
               </div>
             </div>
 
@@ -253,6 +289,41 @@ export function Login() {
                 </Link>
               </p>
             </div>
+            </>
+            ) : (
+              <form className="space-y-5" onSubmit={handleForgotSubmit}>
+                <div>
+                  <label htmlFor="forgot-email" className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
+                    Email address
+                  </label>
+                  <input
+                    id="forgot-email"
+                    type="email"
+                    required
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300"
+                    placeholder="name@campus.edu"
+                  />
+                </div>
+                {error && (
+                  <div className="animate-fadeIn p-3.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 rounded-2xl text-sm flex items-start gap-2.5">
+                    <Shield className="w-4 h-4 mt-0.5 shrink-0" />
+                    <p>{error}</p>
+                  </div>
+                )}
+                <div className="pt-2">
+                  <button type="submit" disabled={isForgotLoading} className="btn-primary w-full flex justify-center items-center py-3">
+                    {isForgotLoading ? <span className="loading-spinner w-5 h-5 mr-2"></span> : "Send Reset Code"}
+                  </button>
+                </div>
+                <div className="mt-6 text-center">
+                  <button type="button" onClick={() => { setView("login"); setLocalError(""); }} className="text-sm font-medium text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors inline-flex items-center">
+                    <ArrowLeft className="w-4 h-4 mr-1" /> Back to login
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </div>

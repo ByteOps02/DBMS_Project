@@ -53,7 +53,7 @@ function deserializeStats(raw: SerializedStat[]): StatItem[] {
   }));
 }
 
-const STATS_CACHE_TTL = 5 * 60 * 1000; 
+const STATS_CACHE_TTL = 10 * 1000;
 
 function cacheKey(role: string) {
   return `vms_stats_cache_${role}`;
@@ -104,7 +104,10 @@ export const useVisitStats = (user: User | null) => {
         const start = new Date(todayStart).getTime();
         const end = new Date(todayEnd).getTime();
 
-        const allVisits = await api.visits.list(role === "host" ? { host_id: user.id } : {});
+        const allVisits = await api.visits.list({
+          ...(role === "host" ? { host_id: user.id } : {}),
+          ...(force ? { _t: Date.now() } : {})
+        });
 
         let ongoingCount = 0;
         let approvedToday = 0;
@@ -114,8 +117,6 @@ export const useVisitStats = (user: User | null) => {
         let deniedCount = 0;
 
         allVisits.forEach(v => {
-          if (role === "visitor" && v.visitor?.email !== user.email) return;
-
           if (v.status === "checked_in") ongoingCount++;
           
           if (v.status === VISIT_STATUS.APPROVED && (v as { approved_at?: string }).approved_at) {
@@ -124,8 +125,7 @@ export const useVisitStats = (user: User | null) => {
           }
           
           if (v.status === VISIT_STATUS.PENDING) {
-             const t = new Date(v.created_at).getTime();
-             if (t >= start && t < end) pendingCount++;
+             pendingCount++;
           }
           
           if (v.status === VISIT_STATUS.COMPLETED && v.check_out_time) {

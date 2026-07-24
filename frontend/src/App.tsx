@@ -3,6 +3,7 @@ import type React from "react";
 import { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster as HotToaster } from "react-hot-toast";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Layout } from "./components/Layout";
@@ -26,6 +27,9 @@ function PageSuspenseFallback() {
 const Home = lazy(() => import("./components/Home"));
 const Login = lazy(() => import("./components/Login").then((m) => ({ default: m.Login })));
 const Signup = lazy(() => import("./components/Signup").then((m) => ({ default: m.Signup })));
+const VerifyOtp = lazy(() => import("./components/VerifyOtp").then((m) => ({ default: m.VerifyOtp })));
+const ForgotPassword = lazy(() => import("./components/ForgotPassword").then((m) => ({ default: m.ForgotPassword })));
+const ResetPassword = lazy(() => import("./components/ResetPassword").then((m) => ({ default: m.ResetPassword })));
 const Dashboard = lazy(() =>
   import("./components/Dashboard").then((m) => ({ default: m.Dashboard }))
 );
@@ -101,15 +105,19 @@ function App() {
 
 
   return (
-    <ErrorBoundary>
-      <Router>
-        <Suspense fallback={<PageSuspenseFallback />}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/display" element={<PublicDisplay />} />
-            <Route path="/request-visit" element={<UnifiedVisitRegistration />} />
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ""}>
+      <ErrorBoundary>
+        <Router>
+          <Suspense fallback={<PageSuspenseFallback />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/verify-otp" element={<VerifyOtp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/display" element={<PublicDisplay />} />
+              <Route path="/request-visit" element={<UnifiedVisitRegistration />} />
 
             <Route
               element={
@@ -151,7 +159,8 @@ function App() {
           }}
         />
       </Router>
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </GoogleOAuthProvider>
   );
 }
 
