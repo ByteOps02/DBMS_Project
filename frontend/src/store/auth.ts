@@ -95,7 +95,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return;
         }
 
-        const hostData = await res.json();
+        const text = await res.text();
+        const hostData = text ? JSON.parse(text) : null;
         const user = hostData as User;
 
         log.info("[Auth] Authentication successful");
@@ -130,13 +131,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Invalid credentials");
+      const text = await res.text();
+      let data: Record<string, unknown> = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { error: `Server error: ${res.status} ${res.statusText}` };
       }
 
-      localStorage.setItem(TOKEN_KEY, data.token);
+      if (!res.ok) {
+        throw new Error((data.error as string) || "Invalid credentials");
+      }
+
+      localStorage.setItem(TOKEN_KEY, data.token as string);
       const user = data.user as User;
       writeProfileCache(user);
 
@@ -159,13 +166,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         body: JSON.stringify({ email, password, name, department_id: departmentId }),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create account");
+      const text = await res.text();
+      let data: Record<string, unknown> = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { error: `Server error: ${res.status} ${res.statusText}` };
       }
 
-      localStorage.setItem(TOKEN_KEY, data.token);
+      if (!res.ok) {
+        throw new Error((data.error as string) || "Failed to create account");
+      }
+
+      localStorage.setItem(TOKEN_KEY, data.token as string);
       const user = data.user as User;
       writeProfileCache(user);
 

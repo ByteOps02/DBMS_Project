@@ -164,7 +164,7 @@ export function Dashboard() {
     } finally {
       setRecentLoading(false);
     }
-  }, [user?.role, user?.id]);
+  }, [user]);
 
   const fetchActiveVisitors = useCallback(async () => {
     if (user?.role !== "admin" && user?.role !== "guard" && user?.role !== "host") {
@@ -185,7 +185,7 @@ export function Dashboard() {
     } finally {
       setActiveLoading(false);
     }
-  }, [user?.role, user?.id]);
+  }, [user]);
 
   useEffect(() => {
     if (!user?.role) return;
