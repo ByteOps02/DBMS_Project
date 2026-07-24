@@ -356,7 +356,7 @@ export function UnifiedVisitRegistration() {
               <button
                 type="submit"
                 disabled={isSubmitting || loading}
-                className="btn-primary flex-1 flex items-center justify-center gap-2 py-3 sm:py-3.5 text-sm"
+                className="btn-primary flex-1 flex items-center justify-center gap-2 py-2 sm:py-2 text-sm"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -374,7 +374,7 @@ export function UnifiedVisitRegistration() {
               <button
                 type="button"
                 onClick={handleReset}
-                className="px-4 sm:px-8 py-3 sm:py-3.5 border-2 border-gray-200 dark:border-slate-700 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all active:scale-[0.98]"
+                className="px-4 sm:px-4 py-2 sm:py-2 border-2 border-gray-200 dark:border-slate-700 rounded-2xl text-[10px] sm:text-sm font-black uppercase tracking-widest text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all active:scale-[0.98]"
               >
                 Reset
               </button>

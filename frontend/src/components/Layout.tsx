@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
-import { LogOut, X } from "lucide-react";
+import { LogOut, X, ShieldCheck } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { navLinks } from "../lib/navigation";
 
@@ -47,7 +47,7 @@ export function Layout() {
         <div className="flex justify-between h-14 items-center px-4">
           <Link to="/app/dashboard" className="flex items-center gap-2">
             <div className="p-1.5 bg-gradient-to-br from-sky-500 to-blue-600 rounded-xl shadow-md shadow-sky-500/20">
-              <img src="/visitor-management.png" alt="Logo" className="h-5 w-5" />
+              <ShieldCheck className="h-5 w-5 text-white" strokeWidth={2.5} />
             </div>
             <span className="font-black text-lg tracking-tighter bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-400 dark:to-blue-400 bg-clip-text text-transparent">
               VMS
@@ -139,7 +139,7 @@ export function Layout() {
         <div className="h-20 flex items-center px-6 border-b border-white/50 dark:border-slate-800 shrink-0">
           <Link to="/app/dashboard" className="flex items-center gap-3 group">
             <div className="p-2 bg-gradient-to-br from-sky-500 to-blue-600 rounded-xl shadow-md shadow-sky-500/20 group-hover:shadow-sky-500/30 transition-all duration-300">
-              <img src="/visitor-management.png" alt="Logo" className="w-6 h-6" />
+              <ShieldCheck className="w-6 h-6 text-white" strokeWidth={2.5} />
             </div>
             <span className="font-black text-[22px] tracking-tighter bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-400 dark:to-blue-400 bg-clip-text text-transparent">
               IIIT Nagpur VMS

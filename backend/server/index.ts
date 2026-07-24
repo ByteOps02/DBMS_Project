@@ -11,11 +11,7 @@ import analyticsRoutes from './routes/analytics.js';
 
 const app = express();
 
-// ── CORS ─────────────────────────────────────────────────────────────────────
-// In production set FRONTEND_URL to your Vercel frontend URL, e.g.
-//   FRONTEND_URL=https://vms-frontend.vercel.app
-// Multiple origins are supported via a comma-separated list:
-//   FRONTEND_URL=https://vms-frontend.vercel.app,https://vms.example.com
+// CORS
 const rawOrigins = process.env.FRONTEND_URL ?? 'http://localhost:5174';
 const allowedOrigins = rawOrigins.split(',').map((o) => o.trim());
 
@@ -33,7 +29,7 @@ app.use(
 
 app.use(express.json());
 
-// ── Routes ───────────────────────────────────────────────────────────────────
+// Routes
 app.get('/', (req, res) => {
   res.send('Visitor Management System API is running! 🚀');
 });
@@ -46,7 +42,7 @@ app.use('/api/hosts', hostsRoutes);
 app.use('/api/departments', departmentsRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
-// ── Global error handler ─────────────────────────────────────────────────────
+// Global error handler
 app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err.stack);
   res.status(500).json({
@@ -55,12 +51,10 @@ app.use((err: Error, req: express.Request, res: express.Response, _next: express
   });
 });
 
-// ── Export for Vercel serverless ──────────────────────────────────────────────
-// Vercel's @vercel/node adapter uses the default export directly.
+// Export for Vercel
 export default app;
 
-// ── Local dev server ──────────────────────────────────────────────────────────
-// Only bind a TCP port when running locally (not on Vercel).
+// Local dev server
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {

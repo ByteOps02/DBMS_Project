@@ -70,64 +70,91 @@ The system leverages a robust custom authentication service built directly into 
 
 ```
 Visitor-Management-System/
-├── prisma/
-│   └── schema.prisma                     # Database schema definition
-├── server/
-│   ├── routes/                           # Express API endpoints
-│   ├── middleware/                       # Auth and Validation middlewares
-│   └── index.ts                          # Express server entry point
-├── src/
-│   ├── components/                       # React UI Components
-│   ├── hooks/                            # Custom React hooks
-│   ├── lib/                              # Shared utilities (API clients, logger)
-│   ├── store/                            # Global state (Zustand)
-│   └── index.css                         # Tailwind & Global Styles
-└── package.json                          # Project dependencies and scripts
+├── backend/
+│   ├── prisma/
+│   │   └── schema.prisma                 # Database schema definition
+│   ├── server/
+│   │   ├── routes/                       # Express API endpoints
+│   │   ├── middleware/                   # Auth and Validation middlewares
+│   │   └── index.ts                      # Express server entry point
+│   └── package.json                      # Backend dependencies and scripts
+└── frontend/
+    ├── src/
+    │   ├── components/                   # React UI Components
+    │   ├── hooks/                        # Custom React hooks
+    │   ├── lib/                          # Shared utilities (API clients, logger)
+    │   ├── store/                        # Global state (Zustand)
+    │   └── index.css                     # Tailwind & Global Styles
+    └── package.json                      # Frontend dependencies and scripts
 ```
 
 ## Installation & Setup
 
-1. **Clone & Install:**
+1. **Clone the repository:**
    ```bash
    git clone https://github.com/ram02krishna/Visitor-Management-System.git
    cd Visitor-Management-System
+   ```
+
+2. **Backend Setup:**
+   Open a terminal and navigate to the backend directory:
+   ```bash
+   cd backend
    npm install
    ```
-
-2. **Environment Configuration:**
-   Create a `.env` file in the root directory with the following variables:
+   Create a `.env` file in the `backend` directory based on `.env.example`:
    ```env
-   # Database Configuration
-   DATABASE_URL="postgresql://user:password@localhost:5432/vms_db"
+   # Database Configuration (Neon/PostgreSQL)
+   DATABASE_URL="postgresql://user:password@host-pooler.region.aws.neon.tech/dbname?sslmode=require"
+   DIRECT_URL="postgresql://user:password@host.region.aws.neon.tech/dbname?sslmode=require"
 
    # Authentication
-   JWT_SECRET="your-super-secret-jwt-key"
-   PORT=5000
+   JWT_SECRET="your-super-secret-jwt-key-at-least-32-chars"
 
    # Cloudinary Configuration
-   CLOUDINARY_CLOUD_NAME="..."
-   CLOUDINARY_API_KEY="..."
-   CLOUDINARY_API_SECRET="..."
+   CLOUDINARY_CLOUD_NAME="your_cloud_name"
+   CLOUDINARY_API_KEY="your_api_key"
+   CLOUDINARY_API_SECRET="your_api_secret"
 
-   # EmailJS Configuration (Frontend)
-   VITE_EMAILJS_SERVICE_ID="..."
-   VITE_EMAILJS_PUBLIC_KEY="..."
-   VITE_EMAILJS_TEMPLATE_ID="..."
+   # Server Configuration
+   PORT=5000
+   FRONTEND_URL="http://localhost:5174"
    ```
-
-3. **Database Setup:**
-   Run Prisma migrations to construct your PostgreSQL schema and apply seeds:
+   Run Database migrations and apply seeds:
    ```bash
-   npx prisma migrate dev --name init
-   npm run prisma:seed
+   npm run db:generate
+   npm run db:migrate
+   npm run db:seed
    ```
-
-4. **Run the Application:**
-   Start both the Vite frontend and Express backend concurrently:
+   Start the backend development server:
    ```bash
    npm run dev
    ```
-   The backend runs on `http://localhost:5000` and the frontend runs on the port specified by Vite.
+
+3. **Frontend Setup:**
+   Open a new terminal and navigate to the frontend directory:
+   ```bash
+   cd frontend
+   npm install
+   ```
+   Create a `.env` file in the `frontend` directory based on `.env.example`:
+   ```env
+   # API Configuration
+   VITE_API_BASE_URL="http://localhost:5000"
+   VITE_PORT=5174
+
+   # EmailJS Configuration (Frontend)
+   VITE_EMAILJS_SERVICE_ID="service_xxxxxxx"
+   VITE_EMAILJS_PUBLIC_KEY="your-public-key-here"
+   VITE_EMAILJS_TEMPLATE_ID="template_xxxxxxx"
+   VITE_EMAILJS_APPROVAL_TEMPLATE_ID="template_xxxxxxx"
+   VITE_EMAILJS_DENIAL_TEMPLATE_ID="template_xxxxxxx"
+   ```
+   Start the frontend development server:
+   ```bash
+   npm run dev
+   ```
+   The frontend will run on `http://localhost:5174` and communicate with the backend on `http://localhost:5000`.
 
 ## Author
 

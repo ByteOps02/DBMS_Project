@@ -402,7 +402,7 @@ export function ScanQrCode() {
               <div className="flex flex-col sm:flex-row gap-4 pt-4 print-hide">
                 <button
                   onClick={handleScanAnother}
-                  className="flex-1 py-5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-slate-900/10"
+                  className="flex-1 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-slate-900/10"
                 >
                   Clear & Scan Next
                 </button>

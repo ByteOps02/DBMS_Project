@@ -203,7 +203,7 @@ export function VisitLogs() {
               <button
                 onClick={handleExport}
                 disabled={exporting}
-                className="flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl py-2.5 px-4 font-black uppercase tracking-widest text-[9px] hover:scale-[1.02] active:scale-95 transition-all shadow-lg disabled:opacity-50 shrink-0"
+                className="flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl py-2 px-4 font-black uppercase tracking-widest text-[9px] hover:scale-[1.02] active:scale-95 transition-all shadow-lg disabled:opacity-50 shrink-0"
               >
                 {exporting ? (
                   <Circle className="animate-spin w-3 h-3" />

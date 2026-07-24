@@ -347,7 +347,7 @@ export function Signup() {
                 <button
                   type="submit"
                   disabled={isLoading || success}
-                  className="w-full flex justify-center items-center py-3 px-4 rounded-2xl text-base font-semibold text-white bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/30 hover:scale-[1.02] active:scale-95 group"
+                  className="w-full flex justify-center items-center py-2 px-4 rounded-2xl text-sm font-semibold text-white bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/30 hover:scale-[1.02] active:scale-95 group"
                 >
                   {isLoading ? (
                     <span className="loading-spinner w-5 h-5 mr-2"></span>

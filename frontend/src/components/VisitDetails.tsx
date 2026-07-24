@@ -438,7 +438,7 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                     <button
                       onClick={handleCompleteVisit}
                       disabled={loading}
-                      className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 active:scale-95 shadow-sm shadow-indigo-500/20"
+                      className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 active:scale-95 shadow-sm shadow-indigo-500/20"
                     >
                       Confirm Exit
                     </button>
@@ -500,7 +500,7 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                 <button
                   onClick={handleBlacklistClick}
                   disabled={loading}
-                  className={`w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                  className={`w-full py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
                     isBlacklisted
                       ? "bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400"
                       : "bg-red-50 border-red-100 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"

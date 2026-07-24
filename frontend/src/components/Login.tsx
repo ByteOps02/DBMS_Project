@@ -187,7 +187,7 @@ export function Login() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full flex justify-center items-center py-3 px-4 rounded-2xl text-base font-semibold text-white bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 focus:ring-offset-white dark:focus:ring-offset-slate-950 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/30 hover:scale-[1.02] active:scale-95 group"
+                  className="w-full flex justify-center items-center py-2 px-4 rounded-2xl text-sm font-semibold text-white bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 focus:ring-offset-white dark:focus:ring-offset-slate-950 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/30 hover:scale-[1.02] active:scale-95 group"
                 >
                   {isLoading ? <span className="loading-spinner w-5 h-5 mr-2"></span> : "Sign in"}
                   {!isLoading && (
@@ -214,7 +214,7 @@ export function Login() {
                   type="button"
                   onClick={handleGoogleSignIn}
                   disabled={isLoading}
-                  className="w-full flex justify-center items-center py-3 px-4 border border-gray-200 dark:border-slate-700 rounded-2xl text-base font-semibold text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 dark:focus:ring-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-md hover:scale-[1.02] active:scale-95"
+                  className="w-full flex justify-center items-center py-2 px-4 border border-gray-200 dark:border-slate-700 rounded-2xl text-sm font-semibold text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 dark:focus:ring-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-md hover:scale-[1.02] active:scale-95"
                 >
                   <svg
                     className="w-5 h-5 mr-3"
