@@ -1,22 +1,10 @@
-/**
- * Prisma Seed Script
- * ==================
- * Seeds the Neon database with default departments and any other
- * initial data the application requires.
- *
- * Run: npm run prisma:seed
- *      (requires DATABASE_URL or DIRECT_URL set in root .env)
- *
- * This replaces all SQL seed data that was previously in
- * supabase/migrations/full_visitor_management_schema.sql
- */
-
+import "dotenv/config";
 import { prisma } from "../server/lib/prisma.js";
+import bcrypt from "bcryptjs";
 
 async function main() {
   console.log("Seeding database...");
 
-  // Default departments
   const departments = [
     "Administration",
     "Faculty",
@@ -33,7 +21,34 @@ async function main() {
       update: {},
       create: { name },
     });
-    console.log(`  ✓ Department: ${dept.name}`);
+    console.log(`Department: ${dept.name}`);
+  }
+
+  const defaultUsers = [
+    { email: "admin@gmail.com", password: "Admin@123", role: "admin", name: "Admin User" },
+    { email: "host@gmail.com", password: "Host@123", role: "host", name: "Host User" },
+    { email: "guard@gmail.com", password: "Guard@123", role: "guard", name: "Guard User" },
+    { email: "visitor@gmail.com", password: "Visitor@123", role: "visitor", name: "Visitor User" },
+  ] as const;
+
+  for (const u of defaultUsers) {
+    const password_hash = await bcrypt.hash(u.password, 10);
+    const user = await prisma.host.upsert({
+      where: { email: u.email },
+      update: {
+        password_hash,
+        role: u.role,
+        is_verified: true,
+      },
+      create: {
+        email: u.email,
+        name: u.name,
+        password_hash,
+        role: u.role,
+        is_verified: true,
+      }
+    });
+    console.log(`User: ${user.email} (${user.role})`);
   }
 
   console.log("Seeding complete.");
