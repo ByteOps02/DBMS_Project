@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth, optionalAuth, AuthRequest } from '../middleware/auth.js';
+import { sendVisitRequestReceivedEmail, sendVisitApprovedEmail, sendVisitDeniedEmail, VisitEmailData } from '../lib/email.js';
 
 const router = Router();
 router.get('/public', async (req, res) => {
@@ -153,17 +154,40 @@ router.post('/', optionalAuth, async (req: AuthRequest, res) => {
         host_id: body.host_id ?? null,
         purpose: body.purpose,
         status: (body.status as 'pending') ?? 'pending',
-        scheduled_time: body.scheduled_time ? new Date(body.scheduled_time) : new Date(),
         valid_until: body.valid_until ? new Date(body.valid_until) : null,
         valid_from: body.valid_from ? new Date(body.valid_from) : new Date(),
         expected_out_time: body.expected_out_time ? new Date(body.expected_out_time) : null,
-        notes: body.notes ?? null,
         vehicle_number: body.vehicle_number ?? null,
         vehicle_type: body.vehicle_type ?? null,
         additional_guests: body.additional_guests ?? 0,
         pass_type: (body.pass_type as 'single_day' | 'multi_day') ?? 'single_day',
       },
+      include: { visitor: true, host: true }
     });
+
+    console.log('[DEBUG] Visit created successfully:', visit.id);
+    console.log('[DEBUG] visit.visitor exists?', !!visit.visitor);
+    console.log('[DEBUG] visit.host exists?', !!visit.host);
+
+    if (visit.visitor) {
+      console.log('[DEBUG] Triggering sendVisitRequestReceivedEmail for:', visit.visitor.email);
+      const emailData: VisitEmailData = {
+        visitorName: visit.visitor.name,
+        visitorEmail: visit.visitor.email,
+        visitId: visit.id,
+        purpose: visit.purpose,
+        passType: visit.pass_type,
+        validFrom: visit.valid_from ? visit.valid_from.toISOString().split('T')[0] : '',
+        validUntil: visit.valid_until ? visit.valid_until.toISOString().split('T')[0] : '',
+        vehicleNumber: visit.vehicle_number || 'None',
+        hostName: visit.host?.name || 'Campus Administration',
+      };
+      sendVisitRequestReceivedEmail(emailData)
+        .then(() => console.log('[DEBUG] sendVisitRequestReceivedEmail promise resolved'))
+        .catch(err => console.error('[DEBUG] Email error:', err));
+    } else {
+      console.log('[DEBUG] Skipping email because visitor is null. Visitor:', !!visit.visitor);
+    }
 
     res.status(201).json(visit);
   } catch (err) {
@@ -236,9 +260,9 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res) => {
     const body = req.body;
 
     const allowedRoles = ['admin', 'guard'];
+    const oldVisit = await prisma.visit.findUnique({ where: { id }, select: { host_id: true, status: true } });
     if (!allowedRoles.includes(authUser.role)) {
-      const visit = await prisma.visit.findUnique({ where: { id }, select: { host_id: true } });
-      if (visit?.host_id !== authUser.id) {
+      if (oldVisit?.host_id !== authUser.id) {
         return res.status(403).json({ error: 'Forbidden' });
       }
     }
@@ -253,13 +277,34 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res) => {
         ...(body.check_out_time !== undefined && { check_out_time: body.check_out_time ? new Date(body.check_out_time) : null }),
         ...(body.exit_gate !== undefined && { exit_gate: body.exit_gate }),
         ...(body.entry_gate !== undefined && { entry_gate: body.entry_gate }),
-        ...(body.notes !== undefined && { notes: body.notes }),
       },
       include: {
         visitor: true,
         host: true
       }
     });
+
+    if (body.status && oldVisit && oldVisit.status !== body.status && updated.visitor) {
+      const emailData: VisitEmailData = {
+        visitorName: updated.visitor.name,
+        visitorEmail: updated.visitor.email,
+        visitId: updated.id,
+        purpose: updated.purpose,
+        passType: updated.pass_type,
+        validFrom: updated.valid_from ? updated.valid_from.toISOString().split('T')[0] : '',
+        validUntil: updated.valid_until ? updated.valid_until.toISOString().split('T')[0] : '',
+        vehicleNumber: updated.vehicle_number || 'None',
+        hostName: updated.host?.name || 'Campus Administration',
+      };
+
+      if (body.status === 'approved') {
+        emailData.approvedBy = (authUser as any).name || authUser.email || 'Campus Administration';
+        sendVisitApprovedEmail(emailData).catch(err => console.error('Email error:', err));
+      } else if (body.status === 'denied') {
+        emailData.deniedBy = (authUser as any).name || authUser.email || 'Campus Administration';
+        sendVisitDeniedEmail(emailData).catch(err => console.error('Email error:', err));
+      }
+    }
 
     res.status(200).json({ ...updated, visitors: (updated as unknown as Record<string, unknown>).visitor, hosts: (updated as unknown as Record<string, unknown>).host });
   } catch (err: unknown) {

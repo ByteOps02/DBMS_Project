@@ -16,6 +16,7 @@ import { PageHeader } from "./PageHeader";
 import { api } from "../lib/api";
 import { formatIST } from "../lib/dateIST";
 import { useAuthStore } from "../store/auth";
+import { CustomSelect } from "./ui/CustomSelect";
 
 import type { Database } from "../lib/database.types";
 
@@ -230,21 +231,16 @@ export function ScanQrCode() {
             <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-600 dark:text-slate-400">
               <MapPin className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <label className="block text-[9px] sm:text-[10px] font-black uppercase text-gray-400 dark:text-slate-500 tracking-widest mb-0.5 sm:mb-1">
                 Current Gate Location
               </label>
-              <select
+              <CustomSelect
                 value={currentGate}
-                onChange={(e) => setCurrentGate(e.target.value)}
-                className="w-full bg-transparent font-bold text-xs sm:text-base text-gray-900 dark:text-white outline-none cursor-pointer appearance-none"
-              >
-                {CAMPUS_GATES.map((g) => (
-                  <option key={g} value={g} className="dark:bg-slate-900 text-sm">
-                    {g}
-                  </option>
-                ))}
-              </select>
+                onChange={setCurrentGate}
+                options={CAMPUS_GATES.map((g) => ({ value: g, label: g }))}
+                className="!p-0 !border-none !bg-transparent !ring-0 text-gray-900 dark:text-white font-bold text-xs sm:text-base w-full overflow-hidden"
+              />
             </div>
           </div>
         )}

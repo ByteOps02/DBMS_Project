@@ -127,11 +127,7 @@ export const api = {
 
     get: (id: string): Promise<Row<"hosts">> => apiFetch(`/hosts/${id}`),
 
-    getByAuthId: (authId: string): Promise<Row<"hosts">> =>
-      apiFetch(`/hosts/by-auth?auth_id=${authId}`),
-
     create: (data: {
-      auth_id: string;
       name: string;
       email: string;
       role?: string;
@@ -242,11 +238,9 @@ export const api = {
       host_id?: string | null;
       purpose: string;
       status?: string;
-      scheduled_time?: string;
       valid_until?: string;
       valid_from?: string;
       expected_out_time?: string;
-      notes?: string | null;
       vehicle_number?: string | null;
       vehicle_type?: string | null;
       additional_guests?: number;
@@ -264,7 +258,6 @@ export const api = {
         check_out_time: string | null;
         exit_gate: string | null;
         entry_gate: string | null;
-        notes: string | null;
         updated_at: string;
       }>
     ): Promise<Row<"visits">> =>

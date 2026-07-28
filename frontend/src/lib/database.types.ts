@@ -40,7 +40,6 @@ export type Database = {
       hosts: {
         Row: {
           id: string;
-          auth_id: string;
           name: string;
           email: string;
           department_id: string;
@@ -51,7 +50,6 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          auth_id: string;
           name: string;
           email: string;
           department_id: string;
@@ -62,7 +60,6 @@ export type Database = {
         };
         Update: {
           id?: string;
-          auth_id?: string;
           name?: string;
           email?: string;
           department_id?: string;
@@ -120,7 +117,6 @@ export type Database = {
           check_in_time: string | null;
           check_out_time: string | null;
           valid_until: string | null;
-          notes: string | null;
           vehicle_number: string | null;
           vehicle_type: string | null;
           entry_gate: string | null;
@@ -141,7 +137,6 @@ export type Database = {
           check_in_time?: string | null;
           check_out_time?: string | null;
           valid_until?: string | null;
-          notes?: string | null;
           vehicle_number?: string | null;
           vehicle_type?: string | null;
           entry_gate?: string | null;
@@ -162,7 +157,6 @@ export type Database = {
           check_in_time?: string | null;
           check_out_time?: string | null;
           valid_until?: string | null;
-          notes?: string | null;
           vehicle_number?: string | null;
           vehicle_type?: string | null;
           entry_gate?: string | null;

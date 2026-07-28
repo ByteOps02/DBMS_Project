@@ -58,7 +58,6 @@ model Department {
 model Host {
   id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  auth_id       String?    @unique @db.Uuid
   name          String
   email         String     @unique
   password_hash String?
@@ -115,18 +114,16 @@ model Visit {
   approved_by      String?     @db.Uuid
   check_in_time    DateTime?   @db.Timestamptz(6)
   check_out_time   DateTime?   @db.Timestamptz(6)
-  scheduled_time   DateTime    @default(now()) @db.Timestamptz(6)
   valid_from       DateTime    @default(now()) @db.Timestamptz(6)
   valid_until      DateTime?   @db.Timestamptz(6)
   expected_out_time DateTime?  @db.Timestamptz(6)
-  notes            String?
+
   vehicle_number   String?
   vehicle_type     String?
   entry_gate       String?
   exit_gate        String?
   additional_guests Int        @default(0)
   pass_type        PassType    @default(single_day)
-  entity_id        String?     @db.Uuid
   created_at       DateTime    @default(now()) @db.Timestamptz(6)
   updated_at       DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
 

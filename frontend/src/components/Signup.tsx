@@ -8,6 +8,7 @@ import { api, API_BASE } from "../lib/api";
 import { validatePasswordStrength } from "../lib/sanitize";
 import log from "../lib/logger";
 import { GoogleLogin } from "@react-oauth/google";
+import { CustomSelect } from "./ui/CustomSelect";
 
 type Department = {
   id: string;
@@ -28,6 +29,10 @@ export function Signup() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  const [view, setView] = useState<"signup" | "verify">("signup");
+  const [otp, setOtp] = useState("");
+  const [verifyLoading, setVerifyLoading] = useState(false);
 
   const loadDepartments = async () => {
     try {
@@ -84,6 +89,8 @@ export function Signup() {
     setError("");
     setSuccess(false);
 
+    if (view === "verify") return;
+
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -103,7 +110,10 @@ export function Signup() {
       const result = await signup(email, password, name, departmentId);
       setSuccess(true);
       if (result?.requiresVerification) {
-        setTimeout(() => navigate(`/verify-otp?email=${encodeURIComponent(result.email || "")}`), 2000);
+        setTimeout(() => {
+          setSuccess(false);
+          setView("verify");
+        }, 2000);
       } else {
         setTimeout(() => navigate("/login"), 2000);
       }
@@ -113,6 +123,27 @@ export function Signup() {
       if (errorMsg.includes("already registered") || errorMsg.includes("already exists")) {
         log.warn("[Signup] User already exists, directing to login");
       }
+    }
+  };
+
+  const handleVerifySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVerifyLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to verify OTP");
+      setSuccess(true);
+      setTimeout(() => navigate("/login"), 2000);
+    } catch (err: unknown) {
+      setError((err as Error).message);
+    } finally {
+      setVerifyLoading(false);
     }
   };
 
@@ -126,7 +157,7 @@ export function Signup() {
         <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-purple-500/30 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
 
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 py-12 w-full h-full text-white">
-          <div className="card border-white/10 p-8 max-w-lg">
+          <div className="glass-dark border border-white/10 rounded-[2rem] p-8 max-w-lg shadow-2xl animate-slideInLeft">
             <div className="inline-flex gap-2 items-center mb-8 px-4 py-2 rounded-full border border-sky-400/30 bg-sky-900/40 text-sky-200 text-sm font-medium">
               <Shield size={16} /> Indian Institute Of Information Technology Nagpur
             </div>
@@ -167,8 +198,8 @@ export function Signup() {
           </div>
         </div>
       </div>
-      <div className="w-full lg:w-[55%] xl:w-1/2 flex flex-col justify-center pt-12 pb-8 sm:pt-16 sm:pb-10 px-4 sm:px-8 lg:px-12 xl:px-24 min-h-[100dvh] lg:h-screen lg:overflow-y-auto">
-        <div className="w-full max-w-md sm:max-w-lg mx-auto relative z-10 sm:py-8">
+      <div className="w-full lg:w-[55%] xl:w-1/2 flex flex-col pt-12 pb-8 sm:pt-16 sm:pb-10 px-4 sm:px-8 lg:px-12 xl:px-24 min-h-[100dvh] lg:h-screen lg:overflow-y-auto">
+        <div className="w-full max-w-md sm:max-w-lg mx-auto relative z-10 sm:py-8 my-auto">
           <div className="mb-6">
             <button
               onClick={() => navigate("/")}
@@ -179,33 +210,37 @@ export function Signup() {
             </button>
           </div>
 
-          <div className="text-center lg:text-left mb-6 sm:mb-8">
+          <div className="text-center lg:text-left mb-10">
             <div className="lg:hidden flex justify-center mb-6">
               <div className="p-3 bg-indigo-100 dark:bg-indigo-900/40 rounded-3xl shadow-sm border border-indigo-200 dark:border-indigo-800/50">
                 <Shield className="h-10 w-10 text-indigo-600 dark:text-indigo-400" />
               </div>
             </div>
-            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-              Create account
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter">
+              {view === "signup" ? "Create account" : "Verify Your Email"}
             </h2>
             <p className="mt-2 text-base text-gray-600 dark:text-slate-400">
-              Sign up to access the IIIT Nagpur VMS
+              {view === "signup" ? "Sign up to access the IIIT Nagpur VMS" : "Enter the 6-digit code sent to your email"}
             </p>
           </div>
 
-          <div className="card px-5 sm:px-8 py-2 sm:py-8">
+          <div className="card">
             {success && (
               <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 rounded-2xl text-sm flex items-center gap-3">
                 <CheckCircle2 className="w-5 h-5 shrink-0" />
-                <span className="font-medium">Account created successfully! Redirecting...</span>
+                <span className="font-medium">
+                  {view === "signup" ? "Account created successfully! Redirecting..." : "Email verified successfully! Redirecting..."}
+                </span>
               </div>
             )}
 
-            <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit}>
+            {view === "signup" ? (
+              <>
+            <form className="space-y-5" onSubmit={handleSubmit}>
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5 ml-1"
+                  className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1"
                 >
                   Full Name
                 </label>
@@ -216,7 +251,7 @@ export function Signup() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300"
+                  className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 dark:hover:border-slate-600"
                   placeholder="John Doe"
                 />
               </div>
@@ -224,7 +259,7 @@ export function Signup() {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5 ml-1"
+                  className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1"
                 >
                   Email address
                 </label>
@@ -236,7 +271,7 @@ export function Signup() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300"
+                  className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 dark:hover:border-slate-600"
                   placeholder="name@campus.edu"
                 />
               </div>
@@ -244,31 +279,22 @@ export function Signup() {
               <div>
                 <label
                   htmlFor="department"
-                  className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5 ml-1"
+                  className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1"
                 >
                   Department
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Building2 className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <select
+                  <CustomSelect
                     id="department"
                     name="department"
                     required
                     value={departmentId}
-                    onChange={(e) => setDepartmentId(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 appearance-none"
-                  >
-                    <option value="" disabled className="text-gray-400">
-                      Select a department
-                    </option>
-                    {departments.map((dept) => (
-                      <option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setDepartmentId}
+                    options={departments.map(dept => ({ value: dept.id, label: dept.name }))}
+                    placeholder="Select a department"
+                    icon={<Building2 className="h-4 w-4" />}
+                    className="pl-2 py-2"
+                  />
                 </div>
               </div>
 
@@ -276,7 +302,7 @@ export function Signup() {
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5 ml-1"
+                    className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1"
                   >
                     Password
                   </label>
@@ -289,7 +315,7 @@ export function Signup() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 pr-10"
+                      className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 dark:hover:border-slate-600 pr-10"
                       placeholder="••••••••"
                     />
                     <button
@@ -325,7 +351,7 @@ export function Signup() {
                 <div>
                   <label
                     htmlFor="confirmPassword"
-                    className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5 ml-1"
+                    className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1"
                   >
                     Confirm Password
                   </label>
@@ -338,7 +364,7 @@ export function Signup() {
                       required
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 pr-10"
+                      className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 dark:hover:border-slate-600 pr-10"
                       placeholder="••••••••"
                     />
                     <button
@@ -418,6 +444,54 @@ export function Signup() {
                 </Link>
               </p>
             </div>
+            </>
+            ) : (
+              <form className="space-y-5" onSubmit={handleVerifySubmit}>
+                <div>
+                  <label htmlFor="verify-email" className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
+                    Email address
+                  </label>
+                  <input
+                    id="verify-email"
+                    type="email"
+                    disabled
+                    value={email}
+                    className="block w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-500 dark:text-slate-400 focus:outline-none transition-all duration-300"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="otp" className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
+                    6-Digit Code
+                  </label>
+                  <input
+                    id="otp"
+                    type="text"
+                    required
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    maxLength={6}
+                    placeholder="------"
+                    className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 text-center tracking-widest font-mono text-lg"
+                  />
+                </div>
+                {error && (
+                  <div className="p-3.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 rounded-2xl text-sm flex items-start gap-2.5">
+                    <Shield className="w-4 h-4 mt-0.5 shrink-0" />
+                    <p>{error}</p>
+                  </div>
+                )}
+                <div className="pt-2">
+                  <button type="submit" disabled={verifyLoading || success} className="btn-primary w-full flex justify-center items-center py-3">
+                    {verifyLoading ? <span className="loading-spinner w-5 h-5 mr-2"></span> : "Verify"}
+                  </button>
+                </div>
+                <div className="mt-6 text-center">
+                  <button type="button" onClick={() => { setView("signup"); setError(""); }} className="text-sm font-medium text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors inline-flex items-center">
+                    <ArrowLeft className="w-4 h-4 mr-1" /> Back to signup
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </div>

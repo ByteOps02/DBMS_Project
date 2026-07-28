@@ -41,11 +41,14 @@ The application is built with a modern tech stack featuring **React (Vite)** on 
 
 ## Authentication & Security Architecture
 
-### Custom JWT Authentication
-The system leverages a robust custom authentication service built directly into the Express backend:
-- **JWT-Based Sessions:** Authentication is handled using JSON Web Tokens (JWT). Upon login/signup, the backend issues a JWT that is securely stored and passed via Authorization headers.
-- **Stateless & Scalable:** The API maintains a stateless architecture utilizing Express middleware (`auth.ts`) to verify tokens and assign `req.user` contexts.
+### Comprehensive Authentication System
+The system leverages a robust authentication service built directly into the Express backend, supporting multiple flows:
+- **JWT-Based Sessions:** Authentication is handled using JSON Web Tokens (JWT). Upon successful login/signup, the backend issues a JWT that is securely passed via Authorization headers.
+- **Google OAuth:** Seamless sign-in and sign-up using Google Accounts (via `@react-oauth/google` and `google-auth-library`).
+- **Email Verification (OTP):** Custom email verification flow using Resend to ensure email authenticity before granting access.
+- **Password Management:** Secure password reset flows with OTP verification, and the ability to update passwords for authenticated users.
 - **Password Security:** All user credentials are cryptographically hashed and salted using `bcryptjs` before being stored in the database.
+- **Stateless & Scalable:** The API maintains a stateless architecture utilizing Express middleware to verify tokens and enforce role-based access control (RBAC).
 
 ## Tech Stack
 
@@ -60,7 +63,9 @@ The system leverages a robust custom authentication service built directly into 
 | **State Management** | Zustand | Lightweight state management (Auth store) |
 | **Form Handling** | React Hook Form + Zod | Form management with schema validation |
 | **Routing** | React Router v7 | Client-side routing with nested routes |
-| **Email Service** | EmailJS | Email delivery with custom templates |
+| **Email Service (Notifications)** | EmailJS | Email delivery for visitor status updates and QR code sending |
+| **Email Service (Auth)** | Resend | Backend OTP delivery for account verification |
+| **Authentication** | Google Auth Library | Google OAuth2 integration |
 | **File Storage** | Cloudinary & Multer | Secure cloud storage for visitor ID/Photos |
 | **QR Scanning** | html5-qrcode | Browser-based QR code scanning |
 | **CSV Processing** | PapaParse | Parse and process CSV files |
@@ -110,6 +115,11 @@ Visitor-Management-System/
 
    # Authentication
    JWT_SECRET="your-super-secret-jwt-key-at-least-32-chars"
+   GOOGLE_CLIENT_ID="your-google-oauth-client-id"
+
+   # Email Configuration (Resend for OTPs)
+   RESEND_API_KEY="re_your_api_key_here"
+   RESEND_FROM_EMAIL="VMS <onboarding@resend.dev>"
 
    # Cloudinary Configuration
    CLOUDINARY_CLOUD_NAME="your_cloud_name"
@@ -143,12 +153,9 @@ Visitor-Management-System/
    VITE_API_BASE_URL="http://localhost:5000"
    VITE_PORT=5174
 
-   # EmailJS Configuration (Frontend)
-   VITE_EMAILJS_SERVICE_ID="service_xxxxxxx"
-   VITE_EMAILJS_PUBLIC_KEY="your-public-key-here"
-   VITE_EMAILJS_TEMPLATE_ID="template_xxxxxxx"
-   VITE_EMAILJS_APPROVAL_TEMPLATE_ID="template_xxxxxxx"
-   VITE_EMAILJS_DENIAL_TEMPLATE_ID="template_xxxxxxx"
+   # Authentication Configuration
+   VITE_GOOGLE_CLIENT_ID="your-google-oauth-client-id"
+
    ```
    Start the frontend development server:
    ```bash

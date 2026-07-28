@@ -16,9 +16,8 @@ import {
 import { useAuthStore } from "../store/auth";
 import { toast } from "react-hot-toast";
 import { formatIST } from "../lib/dateIST";
-import emailjs from "@emailjs/browser";
-import QRCode from "qrcode";
 import { api } from "../lib/api";
+import { CustomSelect } from "./ui/CustomSelect";
 
 import type { Database } from "../lib/database.types";
 
@@ -67,51 +66,6 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
       }
 
       await api.visits.update(visit.id, updateData);
-      const emailServiceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-      const emailPublicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-      const approvalTemplateId = import.meta.env.VITE_EMAILJS_APPROVAL_TEMPLATE_ID;
-      const denialTemplateId = import.meta.env.VITE_EMAILJS_DENIAL_TEMPLATE_ID;
-
-      const templateId = newStatus === "approved" ? approvalTemplateId : denialTemplateId;
-
-      if (emailServiceId && templateId && emailPublicKey && visitor?.email) {
-        try {
-          const qrData = JSON.stringify({
-            vId: visit.id,
-            n: visitor.name,
-            e: visitor.email,
-            p: visit.purpose,
-            t: visit.pass_type,
-            d: visit.valid_from?.split("T")[0],
-            u: visit.valid_until?.split("T")[0],
-            v: visit.vehicle_number || "None",
-          });
-          const qrUrl = await QRCode.toDataURL(qrData, {
-            errorCorrectionLevel: "M",
-            margin: 3,
-            scale: 10,
-          });
-          await emailjs.send(
-            emailServiceId,
-            templateId,
-            {
-              to_name: visitor.name,
-              to_email: visitor.email,
-              email: visitor.email,
-              qr_code: qrUrl,
-              visit_id: visit.id,
-              visit_purpose: visit.purpose,
-              host_name: visit.host?.name || visit.hosts?.name || "Campus Administration",
-              approved_by: user?.name || "Campus Administration",
-              denied_by: user?.name || "Campus Administration",
-              status_approved: newStatus === "approved",
-            },
-            emailPublicKey
-          );
-        } catch (e) {
-          console.error("Failed to send approval/denial email:", e);
-        }
-      }
 
       toast.success(
         newStatus === "approved" ? "Visit successfully Approved" : "Visit successfully Denied"
@@ -423,17 +377,14 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                   <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2 px-1">
                     Select Exit Gate
                   </p>
-                  <select
-                    value={selectedExitGate}
-                    onChange={(e) => setSelectedExitGate(e.target.value)}
-                    className="w-full text-xs font-bold py-2 px-3 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 shadow-sm appearance-none cursor-pointer"
-                  >
-                    {CAMPUS_GATES.map((gate) => (
-                      <option key={gate} value={gate}>
-                        {gate}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="mb-3">
+                    <CustomSelect
+                      value={selectedExitGate}
+                      onChange={setSelectedExitGate}
+                      options={CAMPUS_GATES.map((gate) => ({ value: gate, label: gate }))}
+                      className="w-full text-xs font-bold py-2 px-3 border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 shadow-sm"
+                    />
+                  </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleCompleteVisit}

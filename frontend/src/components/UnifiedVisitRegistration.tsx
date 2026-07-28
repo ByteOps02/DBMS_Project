@@ -20,6 +20,7 @@ import {
 import { BackButton } from "./BackButton";
 import { PageHeader } from "./PageHeader";
 import { ThemeSwitcher } from "./ThemeSwitcher";
+import { CustomSelect } from "./ui/CustomSelect";
 
 export function UnifiedVisitRegistration() {
   const { user } = useAuthStore();
@@ -44,6 +45,7 @@ export function UnifiedVisitRegistration() {
     previewPhoto,
     previewIdProof,
     qrImageUrl,
+    lastVisitId,
     isBlacklisted,
     isVisitor,
     handleFilePreview,
@@ -191,7 +193,7 @@ export function UnifiedVisitRegistration() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="space-y-4">
                     <label className="block text-[10px] sm:text-xs font-bold text-gray-500 dark:text-slate-400 uppercase">
-                      Verification Photos
+                      Verification Photos <span className="lowercase text-gray-400 font-normal">(optional)</span>
                     </label>
                     <div className="flex gap-3 sm:gap-4">
                       <div className="flex-1">
@@ -254,15 +256,20 @@ export function UnifiedVisitRegistration() {
                           />
                         </div>
                       </div>
-                      <select
-                        {...register("vehicleType")}
-                        className="col-span-2 block w-full rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white font-bold"
-                      >
-                        <option value="">No Vehicle</option>
-                        <option value="2-wheeler">2-Wheeler</option>
-                        <option value="4-wheeler">4-Wheeler</option>
-                        <option value="other">Other</option>
-                      </select>
+                      <div className="col-span-2">
+                        <CustomSelect
+                          value={watch("vehicleType") || ""}
+                          onChange={(val) => setValue("vehicleType", val as "2-wheeler" | "4-wheeler" | "other" | "")}
+                          options={[
+                            { value: "", label: "No Vehicle" },
+                            { value: "2-wheeler", label: "2-Wheeler" },
+                            { value: "4-wheeler", label: "4-Wheeler" },
+                            { value: "other", label: "Other" }
+                          ]}
+                          placeholder="Select Vehicle Type"
+                          className="bg-gray-50/50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 py-2"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -401,21 +408,56 @@ export function UnifiedVisitRegistration() {
                             IIIT Nagpur Campus
                           </p>
                         </div>
+                      </div>
 
-                      </div>
-                      <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-5 shadow-md border border-gray-100 dark:border-slate-700 mb-5 sm:mb-7 ring-1 ring-black/[0.04]">
-                        <img src={qrImageUrl} alt="QR Code" className="w-44 h-44 sm:w-52 sm:h-52" />
-                      </div>
-                      <div className="w-full bg-gray-50/80 dark:bg-slate-800/50 rounded-2xl p-4 sm:p-5 mb-5 sm:mb-7 border border-gray-100 dark:border-slate-700/50 space-y-3">
-                        <div>
-                          <p className="text-[9px] sm:text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-1">
-                            Visitor Name
-                          </p>
-                          <p className="text-sm sm:text-base font-black text-gray-900 dark:text-white truncate">
-                            {watch("name") || "N/A"}
+                      {/* Pending Status Badge for visitor registration */}
+                      <div className="w-full mb-6">
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-xl p-3 flex items-center gap-3">
+                          <div className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse"></div>
+                          <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-500 uppercase tracking-wider">
+                            Pending Approval
                           </p>
                         </div>
+                      </div>
+
+                      <div className="bg-white dark:bg-[#0f172a] rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-5 shadow-md border border-gray-100 dark:border-slate-700 mb-5 sm:mb-7 ring-1 ring-black/[0.04] opacity-50 grayscale transition-all hover:grayscale-0 hover:opacity-100">
+                        <img src={qrImageUrl} alt="QR Code" className="w-44 h-44 sm:w-52 sm:h-52" />
+                      </div>
+                      
+                      <div className="w-full bg-gray-50/80 dark:bg-slate-800/50 rounded-2xl p-4 sm:p-5 mb-5 sm:mb-7 border border-gray-100 dark:border-slate-700/50 space-y-4">
+                        
+                        <div>
+                          <p className="text-[9px] sm:text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-1">
+                            Reference ID
+                          </p>
+                          <p className="text-xs sm:text-sm font-mono font-bold text-gray-900 dark:text-white break-all">
+                            {lastVisitId || "Pending"}
+                          </p>
+                        </div>
+
                         <div className="h-px bg-gray-100 dark:bg-slate-700/50" />
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-[9px] sm:text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-1">
+                              Visitor Name
+                            </p>
+                            <p className="text-sm sm:text-base font-black text-gray-900 dark:text-white truncate">
+                              {watch("name") || "N/A"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] sm:text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-1">
+                              Host
+                            </p>
+                            <p className="text-sm sm:text-base font-black text-gray-900 dark:text-white truncate">
+                              {isVisitor ? "Campus Administration" : watch("hostEmail")}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="h-px bg-gray-100 dark:bg-slate-700/50" />
+
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <p className="text-[9px] sm:text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-1">
@@ -435,7 +477,7 @@ export function UnifiedVisitRegistration() {
                             <p className="text-[9px] sm:text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-1">
                               Pass Type
                             </p>
-                            <p className="text-xs sm:text-sm font-bold text-indigo-600 dark:text-indigo-400 capitalize">
+                            <p className="text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 capitalize">
                               {watch("passType")?.replace("_", " ")}
                             </p>
                           </div>
@@ -453,6 +495,17 @@ export function UnifiedVisitRegistration() {
                               </p>
                             </div>
                           )}
+                        </div>
+
+                        <div className="h-px bg-gray-100 dark:bg-slate-700/50" />
+
+                        <div>
+                          <p className="text-[9px] sm:text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-1">
+                            Purpose of Visit
+                          </p>
+                          <p className="text-xs sm:text-sm font-medium text-gray-800 dark:text-slate-200 capitalize">
+                            {watch("purpose")?.replace("_", " ")}
+                          </p>
                         </div>
                       </div>
                       <div className="w-full grid grid-cols-2 gap-3">

@@ -20,10 +20,13 @@ CREATE TABLE "departments" (
 -- CreateTable
 CREATE TABLE "hosts" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "auth_id" UUID,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password_hash" TEXT,
+    "google_id" TEXT,
+    "is_verified" BOOLEAN NOT NULL DEFAULT false,
+    "otp" TEXT,
+    "otp_expiry" TIMESTAMP(3),
     "department_id" UUID,
     "role" "user_role" NOT NULL DEFAULT 'visitor',
     "active" BOOLEAN NOT NULL DEFAULT true,
@@ -60,18 +63,15 @@ CREATE TABLE "visits" (
     "approved_by" UUID,
     "check_in_time" TIMESTAMPTZ(6),
     "check_out_time" TIMESTAMPTZ(6),
-    "scheduled_time" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "valid_from" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "valid_until" TIMESTAMPTZ(6),
     "expected_out_time" TIMESTAMPTZ(6),
-    "notes" TEXT,
     "vehicle_number" TEXT,
     "vehicle_type" TEXT,
     "entry_gate" TEXT,
     "exit_gate" TEXT,
     "additional_guests" INTEGER NOT NULL DEFAULT 0,
     "pass_type" "pass_type" NOT NULL DEFAULT 'single_day',
-    "entity_id" UUID,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -82,10 +82,10 @@ CREATE TABLE "visits" (
 CREATE UNIQUE INDEX "departments_name_key" ON "departments"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "hosts_auth_id_key" ON "hosts"("auth_id");
+CREATE UNIQUE INDEX "hosts_email_key" ON "hosts"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "hosts_email_key" ON "hosts"("email");
+CREATE UNIQUE INDEX "hosts_google_id_key" ON "hosts"("google_id");
 
 -- CreateIndex
 CREATE INDEX "idx_hosts_email" ON "hosts"("email");

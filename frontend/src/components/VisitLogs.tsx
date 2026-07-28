@@ -23,6 +23,7 @@ import { useDebounce } from "../hooks/useDebounce";
 import { getStatusConfig } from "../lib/statusConfig";
 import { SEOMeta } from "./SEOMeta";
 import { VisitDetails } from "./VisitDetails";
+import { CustomSelect } from "./ui/CustomSelect";
 
 import type { Database } from "../lib/database.types";
 
@@ -233,22 +234,21 @@ export function VisitLogs() {
             )}
           </div>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-              <Filter className="w-4 h-4 text-gray-400" />
-            </div>
-            <select
-              className="py-2 pl-9 pr-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all dark:text-white text-xs font-bold"
+            <CustomSelect
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="checked_in">Active</option>
-              <option value="completed">Completed</option>
-              <option value="denied">Denied</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+              onChange={setStatusFilter}
+              options={[
+                { value: "", label: "All Status" },
+                { value: "pending", label: "Pending" },
+                { value: "approved", label: "Approved" },
+                { value: "checked_in", label: "Active" },
+                { value: "completed", label: "Completed" },
+                { value: "denied", label: "Denied" },
+                { value: "cancelled", label: "Cancelled" }
+              ]}
+              icon={<Filter className="w-4 h-4" />}
+              className="py-1.5 min-w-[140px] text-xs font-bold"
+            />
           </div>
         </div>
 

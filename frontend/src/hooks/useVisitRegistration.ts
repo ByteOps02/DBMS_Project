@@ -18,7 +18,6 @@ export type UnifiedVisitFormData = {
   hostEmail: string;
   photo?: FileList;
   idProof?: FileList;
-  notes?: string;
   vehicleNumber?: string;
   vehicleType?: string;
   additionalGuests?: number;
@@ -34,6 +33,7 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
   const [previewIdProof, setPreviewIdProof] = useState<string | null>(null);
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [lastVisitId, setLastVisitId] = useState<string | null>(null);
   const [isBlacklisted, setIsBlacklisted] = useState(false);
 
   const userRole = user?.role;
@@ -121,7 +121,6 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
 
       const effectiveHostEmail = isVisitor ? formData.hostEmail : user?.email;
       let approverId = null;
-      let approverName = "Campus Administration";
 
       if (effectiveHostEmail && effectiveHostEmail.trim() !== "") {
         const hosts = await api.hosts.list(effectiveHostEmail.trim());
@@ -129,7 +128,6 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
 
         if (!approver) throw new Error(`Approver not found with email: ${effectiveHostEmail}`);
         approverId = approver.id;
-        approverName = approver.name;
       }
       let photoUrl = null;
       if (formData.photo?.[0]) {
@@ -167,11 +165,9 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
         host_id: approverId,
         purpose: formData.purpose,
         status: "pending",
-        scheduled_time: visitDate.toISOString(),
         valid_until: validUntil.toISOString(),
         valid_from: visitDate.toISOString(),
         expected_out_time: validUntil.toISOString(),
-        notes: formData.notes || null,
         vehicle_number: formData.vehicleNumber || null,
         vehicle_type: formData.vehicleType || null,
         additional_guests: Number(formData.additionalGuests) || 0,
@@ -193,33 +189,7 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
         scale: 10,
       });
       setQrImageUrl(qrUrl);
-      const emailServiceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-      const emailTemplateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-      const emailPublicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-
-      if (emailServiceId && emailTemplateId && emailPublicKey) {
-        try {
-          const emailjs = (await import("@emailjs/browser")).default;
-          await emailjs.send(
-            emailServiceId,
-            emailTemplateId,
-            {
-              to_name: formData.name,
-              to_email: formData.email,
-              email: formData.email,
-              qr_code: qrUrl,
-              visit_id: visitId,
-              visit_purpose: formData.purpose,
-              host_name: approverName,
-              host_email: effectiveHostEmail || "Campus Admin",
-              pass_type: formData.passType.replace("_", " "),
-            },
-            emailPublicKey
-          );
-        } catch (e) {
-          log.error("[UnifiedVisit] Email failed:", e);
-        }
-      }
+      setLastVisitId(visitId);
 
       toast.success("Visitor successfully Registered");
     } catch (error: unknown) {
@@ -236,6 +206,7 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
     setPreviewPhoto(null);
     setPreviewIdProof(null);
     setQrImageUrl(null);
+    setLastVisitId(null);
   };
 
   return {
@@ -244,6 +215,7 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
     previewPhoto,
     previewIdProof,
     qrImageUrl,
+    lastVisitId,
     isBlacklisted,
     isVisitor,
     isGuardOrAdmin,
