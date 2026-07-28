@@ -17,7 +17,7 @@ The application is built with a modern tech stack featuring **React (Vite)** on 
 - **Visitor Registration:** Hosts can pre-register visitors with detailed information (name, email, phone, photo, ID proof).
 - **Visit Approval Workflow:** Multi-stage process: `pending` → `approved`/`denied` → `checked-in` → `completed`.
 - **QR Code System:** Automatic high-density QR code generation for approved visits with instant email delivery.
-- **Email Notifications:** Automated emails via EmailJS with customizable templates for registration, approval, and denial.
+- **Email Notifications:** Automated emails via Resend with customizable HTML templates for registration, approval, and denial.
 
 ### Security & Compliance
 - **QR Scanner:** Integrated HTML5 scanner for security guards to verify visitor identity and validity in real-time.
@@ -63,8 +63,7 @@ The system leverages a robust authentication service built directly into the Exp
 | **State Management** | Zustand | Lightweight state management (Auth store) |
 | **Form Handling** | React Hook Form + Zod | Form management with schema validation |
 | **Routing** | React Router v7 | Client-side routing with nested routes |
-| **Email Service (Notifications)** | EmailJS | Email delivery for visitor status updates and QR code sending |
-| **Email Service (Auth)** | Resend | Backend OTP delivery for account verification |
+| **Email Service** | Resend | Email delivery for visitor status updates, QR code sending, and OTP verification |
 | **Authentication** | Google Auth Library | Google OAuth2 integration |
 | **File Storage** | Cloudinary & Multer | Secure cloud storage for visitor ID/Photos |
 | **QR Scanning** | html5-qrcode | Browser-based QR code scanning |
