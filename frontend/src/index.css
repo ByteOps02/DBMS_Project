@@ -543,66 +543,17 @@ body {
     ═══════════════════════════════════════ */
 @media print {
   @page {
-    margin: 0;
-    size: portrait;
+    margin: 0.5cm;
+    size: auto;
   }
 
   body {
     background: white !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-    height: 100vh;
-    overflow: hidden;
-    /* Prevent scrolling in print */
-  }
-
-  /* Hide everything by default */
-  body * {
-    visibility: hidden;
-  }
-
-  /* Un-hide only the generated pass */
-  #generated-pass,
-  #generated-pass * {
-    visibility: visible;
-  }
-
-  /* Force parents to not clip */
-  * {
-    overflow: visible !important;
-  }
-
-  #generated-pass {
-    position: fixed !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    transform: none !important;
-  }
-
-  /* Remove max-width restriction on the flex container so centering works */
-  #generated-pass>.flex.justify-center {
-    width: 100% !important;
-    display: flex !important;
-    justify-content: center !important;
-  }
-
-  /* Hide print/save buttons and hr during print */
-  #generated-pass button,
-  #generated-pass a,
-  .print-hide {
-    display: none !important;
-  }
-
-  /* Ensure gradients and shadows are printed */
-  * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  .print-hide {
+    display: none !important;
   }
 }

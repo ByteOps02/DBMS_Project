@@ -78,10 +78,10 @@ export function ScanQrCode() {
         await scanner.start(
           { facingMode: "environment" },
           {
-            fps: 20, 
+            fps: 30, 
             qrbox: (viewfinderWidth, viewHeight) => {
               const minEdge = Math.min(viewfinderWidth, viewHeight);
-              const size = Math.floor(minEdge * 0.55);
+              const size = Math.floor(minEdge * 0.70);
               return { width: size, height: size };
             },
             aspectRatio: 1.0,
@@ -215,7 +215,7 @@ export function ScanQrCode() {
 
   return (
     <div className="px-3 xs:px-4 sm:px-6 lg:px-8 pb-12">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto print:hidden">
         <BackButton />
         <PageHeader
           icon={ScanLine}
@@ -225,9 +225,9 @@ export function ScanQrCode() {
         />
       </div>
 
-      <div className="mt-4 sm:mt-8 max-w-2xl mx-auto space-y-4 sm:space-y-6">
+      <div className="mt-4 sm:mt-8 max-w-2xl mx-auto space-y-4 sm:space-y-6 print:m-0 print:space-y-0">
         {!visit && !optimisticVisit && (
-          <div className="bg-white dark:bg-[#0f172a] p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-3 sm:gap-4 transition-all duration-300">
+          <div className="bg-white dark:bg-[#0f172a] p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-3 sm:gap-4 transition-all duration-300 print:hidden relative z-50">
             <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-600 dark:text-slate-400">
               <MapPin className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
@@ -246,8 +246,8 @@ export function ScanQrCode() {
         )}
 
         {!visit && !optimisticVisit && (
-          <div className="bg-slate-950 rounded-2xl overflow-hidden relative aspect-square border border-slate-100 dark:border-slate-800">
-            <div id="qr-reader" className="w-full h-full"></div>
+          <div className="bg-slate-950 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden relative w-full max-w-md mx-auto aspect-square shadow-2xl border border-slate-800 ring-4 ring-slate-900/10 dark:ring-slate-900/50 print:hidden">
+            <div id="qr-reader" className="w-full h-full [&>video]:object-cover"></div>
             {!scannerReady && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-white gap-4">
                 <ScanLine className="w-10 h-10 sm:w-12 sm:h-12 animate-pulse text-indigo-400" />
@@ -290,127 +290,123 @@ export function ScanQrCode() {
         )}
 
         {(visit || optimisticVisit) && !error && (
-          <div id="generated-pass" className="print:m-0 w-full flex justify-center">
-            <div className="bg-white dark:bg-[#0f172a] rounded-2xl sm:rounded-[1.5rem] overflow-hidden border border-slate-100 dark:border-slate-800 w-full">
-            <div
-              className={`p-6 ${visit ? (visit.status === "checked_in" ? "bg-emerald-500" : "bg-indigo-600") : "bg-slate-700"} text-white flex items-center justify-between`}
-            >
-              <div className="flex items-center gap-3">
-                {isVerifying ? (
-                  <Clock className="w-6 h-6 animate-spin" />
-                ) : visit?.status === "checked_in" ? (
-                  <CheckCircle className="w-6 h-6" />
-                ) : (
-                  <ShieldCheck className="w-6 h-6" />
-                )}
-                <h2 className="font-black uppercase tracking-widest text-sm">
-                  {isVerifying
-                    ? "Verifying Identity..."
+          <div id="generated-pass" className="print:m-0 w-full flex justify-center animate-in zoom-in-95 duration-300">
+            <div className="bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border border-slate-200 dark:border-slate-800 w-full shadow-2xl">
+              <div
+                className={`p-6 sm:p-8 transition-colors duration-500 flex items-center justify-between ${
+                  isVerifying
+                    ? "bg-gradient-to-r from-slate-600 to-slate-700 animate-pulse"
                     : visit?.status === "checked_in"
-                      ? "Check-in Confirmed"
-                      : "Verification Complete"}
-                </h2>
-              </div>
-              <span className="text-[10px] font-black bg-white/20 px-4 py-1.5 rounded-full uppercase tracking-widest">
-                {(visit?.pass_type || optimisticVisit?.passType || "Single Day").replace("_", " ")}
-              </span>
-            </div>
-
-            <div className="p-8 space-y-8">
-              <div className="flex items-center gap-6">
-                <div className="w-24 h-24 rounded-[2rem] bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-4xl font-black text-slate-300 overflow-hidden shadow-inner border-4 border-white dark:border-slate-700">
-                  {visit?.visitor?.photo_url ? (
-                    <img src={visit.visitor.photo_url} className="w-full h-full object-cover" />
+                      ? "bg-gradient-to-r from-emerald-500 to-teal-600"
+                      : "bg-gradient-to-r from-indigo-500 to-blue-600"
+                } text-white`}
+              >
+                <div className="flex items-center gap-3 sm:gap-4">
+                  {isVerifying ? (
+                    <Clock className="w-7 h-7 sm:w-8 sm:h-8 animate-spin" />
+                  ) : visit?.status === "checked_in" ? (
+                    <CheckCircle className="w-7 h-7 sm:w-8 sm:h-8" />
                   ) : (
-                    (visit?.visitor?.name || optimisticVisit?.name || "?").charAt(0).toUpperCase()
+                    <ShieldCheck className="w-7 h-7 sm:w-8 sm:h-8" />
                   )}
+                  <div>
+                    <h2 className="font-black uppercase tracking-widest text-sm sm:text-base">
+                      {isVerifying
+                        ? "Verifying..."
+                        : visit?.status === "checked_in"
+                          ? "Checked In"
+                          : "Verified"}
+                    </h2>
+                    <p className="text-[10px] sm:text-xs opacity-80 font-medium">
+                      {isVerifying ? "Please wait" : formatIST(new Date().toISOString())}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter truncate leading-none mb-2">
-                    {visit?.visitor?.name || optimisticVisit?.name}
-                  </h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 font-bold flex items-center gap-2">
-                    {visit?.visitor?.phone ||
-                      optimisticVisit?.email ||
-                      "Verification in progress..."}
-                  </p>
-                </div>
+                <span className="text-[10px] sm:text-xs font-black bg-white/20 backdrop-blur-md px-4 py-1.5 sm:py-2 rounded-full uppercase tracking-widest">
+                  {(visit?.pass_type || optimisticVisit?.passType || "Single Day").replace("_", " ")}
+                </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-8 border-t border-slate-100 dark:border-slate-800">
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
-                  <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                    Visit Purpose
-                  </span>
-                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                    {visit?.purpose || optimisticVisit?.purpose}
-                  </p>
-                </div>
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
-                  <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    Host Personnel
-                  </span>
-                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                    {visit?.host?.name || "Verifying..."}
-                  </p>
-                </div>
-                {(visit?.vehicle_number || optimisticVisit?.vehicle) && (
-                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
-                    <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Vehicle Access
-                    </span>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2 uppercase">
-                      <Car className="w-4 h-4 text-indigo-500" />{" "}
-                      {visit?.vehicle_number || optimisticVisit?.vehicle}
-                    </p>
+              <div className="p-6 sm:p-8 space-y-8">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-8 text-center sm:text-left">
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-4xl sm:text-5xl font-black text-slate-300 overflow-hidden shadow-lg border-4 border-white dark:border-slate-800 ring-4 ring-slate-50 dark:ring-slate-900/50 shrink-0">
+                    {visit?.visitor?.photo_url ? (
+                      <img src={visit.visitor.photo_url} className="w-full h-full object-cover" />
+                    ) : (
+                      (visit?.visitor?.name || optimisticVisit?.name || "?").charAt(0).toUpperCase()
+                    )}
                   </div>
-                )}
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
-                  <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    Verification Point
-                  </span>
-                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-emerald-500" /> {currentGate}
-                  </p>
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <h3 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white uppercase tracking-tighter truncate leading-none mb-3">
+                      {visit?.visitor?.name || optimisticVisit?.name}
+                    </h3>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-center sm:items-start justify-center sm:justify-start">
+                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-bold bg-slate-100 dark:bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/50">
+                        {visit?.visitor?.phone || optimisticVisit?.email || "N/A"}
+                      </p>
+                      {visit?.visitor?.email && (
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-bold bg-slate-100 dark:bg-slate-800/50 px-3 py-1.5 rounded-lg truncate max-w-full border border-slate-200 dark:border-slate-700/50">
+                          {visit.visitor.email}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                {visit?.valid_from && (
-                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
-                    <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Valid From
-                    </span>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                      {formatIST(visit.valid_from)}
-                    </p>
-                  </div>
-                )}
-                {visit?.valid_until && (
-                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
-                    <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Valid Until
-                    </span>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                      {formatIST(visit.valid_until)}
-                    </p>
-                  </div>
-                )}
-              </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 pt-4 print-hide">
-                <button
-                  onClick={handleScanAnother}
-                  className="flex-1 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold uppercase tracking-wider text-[11px] sm:text-xs active:scale-95 transition-all shadow-sm hover:bg-slate-800 dark:hover:bg-slate-100"
-                >
-                  Clear & Scan Next
-                </button>
-                <button
-                  onClick={() => window.print()}
-                  className="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 transition-colors shadow-sm flex items-center justify-center"
-                >
-                  <Printer className="w-5 h-5" />
-                </button>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 pt-6 border-t border-slate-100 dark:border-slate-800/50">
+                  <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center">
+                    <span className="block text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                      Purpose
+                    </span>
+                    <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 truncate capitalize">
+                      {(visit?.purpose || optimisticVisit?.purpose || "").replace("_", " ")}
+                    </p>
+                  </div>
+                  <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center">
+                    <span className="block text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                      Host
+                    </span>
+                    <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
+                      {visit?.host?.name || "Pending..."}
+                    </p>
+                  </div>
+                  <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center">
+                    <span className="block text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                      Vehicle
+                    </span>
+                    <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 uppercase truncate">
+                      <Car className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-500 shrink-0" />
+                      <span className="truncate">{visit?.vehicle_number || optimisticVisit?.vehicle || "None"}</span>
+                    </p>
+                  </div>
+                  <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center">
+                    <span className="block text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                      Gate
+                    </span>
+                    <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 truncate">
+                      <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0" />
+                      <span className="truncate">{currentGate}</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 print-hide">
+                  <button
+                    onClick={handleScanAnother}
+                    className="flex-1 py-3.5 sm:py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-[11px] active:scale-95 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 focus:ring-4 focus:ring-slate-900/20"
+                  >
+                    Scan Next Visitor
+                  </button>
+                  <button
+                    onClick={() => window.print()}
+                    className="px-6 py-3.5 sm:py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-sm flex items-center justify-center active:scale-95 border border-slate-200 dark:border-slate-700/50"
+                    title="Print Receipt"
+                  >
+                    <Printer className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
           </div>
         )}
       </div>

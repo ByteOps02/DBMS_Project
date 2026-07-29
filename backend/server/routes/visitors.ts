@@ -3,9 +3,9 @@ import { prisma } from '../lib/prisma.js';
 import { requireAuth, optionalAuth, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
-router.get('/', requireAuth, async (req: AuthRequest, res) => {
+router.get('/', optionalAuth, async (req: AuthRequest, res) => {
   try {
-    const authUser = req.user!;
+    const authUser = req.user;
     const { search, blacklisted, email, ids } = req.query as Record<string, string>;
 
     type WhereClause = {
@@ -19,25 +19,32 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
 
     const where: WhereClause = {};
 
-    if (blacklisted === 'true') where.is_blacklisted = true;
-
-    if (email) {
+    if (!authUser) {
+      if (!email) {
+        return res.status(403).json({ error: 'Forbidden: Must provide email for public query' });
+      }
       where.email = { equals: email.trim(), mode: 'insensitive' };
-    }
+    } else {
+      if (blacklisted === 'true') where.is_blacklisted = true;
 
-    if (ids) {
-      const idArray = ids.split(',').filter(Boolean);
-      where.email = { in: idArray };
-    }
+      if (email) {
+        where.email = { equals: email.trim(), mode: 'insensitive' };
+      }
 
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-    if (authUser.role === 'visitor') {
-      where.email = { equals: authUser.email, mode: 'insensitive' };
+      if (ids) {
+        const idArray = ids.split(',').filter(Boolean);
+        where.email = { in: idArray };
+      }
+
+      if (search) {
+        where.OR = [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+      if (authUser.role === 'visitor') {
+        where.email = { equals: authUser.email, mode: 'insensitive' };
+      }
     }
 
     const visitors = await prisma.visitor.findMany({

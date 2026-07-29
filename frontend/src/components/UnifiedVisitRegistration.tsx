@@ -61,12 +61,12 @@ export function UnifiedVisitRegistration() {
   return (
     <div className="pt-6 px-4 sm:px-6 lg:px-8 pb-12 relative">
       {!user && (
-        <div className="absolute top-6 right-6 z-50 sm:right-8 lg:right-10">
+        <div className="absolute top-6 right-6 z-50 sm:right-8 lg:right-10 print:hidden">
           <ThemeSwitcher />
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto print:hidden">
         <BackButton to={user ? "/app/dashboard" : "/"} />
 
         <PageHeader
@@ -82,8 +82,8 @@ export function UnifiedVisitRegistration() {
       </div>
 
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white dark:bg-slate-900 shadow-sm dark:shadow-none rounded-[1.5rem] overflow-hidden border border-slate-200 dark:border-slate-800">
-          <form onSubmit={handleSubmit(onSubmit)} className="p-3 xs:p-4 sm:p-5">
+        <div className="bg-white dark:bg-slate-900 shadow-sm dark:shadow-none rounded-[1.5rem] overflow-hidden border border-slate-200 dark:border-slate-800 print:shadow-none print:border-none">
+          <form onSubmit={handleSubmit(onSubmit)} className="p-3 xs:p-4 sm:p-5 print:hidden">
             {errorMessage && (
               <div
                 className={`mb-6 rounded-2xl p-3 xs:p-4 flex items-center gap-3 border ${isBlacklisted ? "bg-red-50 border-red-200 text-red-800" : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300"}`}

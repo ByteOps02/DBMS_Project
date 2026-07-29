@@ -107,7 +107,7 @@ export function VisitLogs() {
         setLoadingMore(false);
       }
     },
-    [user, debouncedSearchTerm, statusFilter, dateFilter, page]
+    [user, debouncedSearchTerm, statusFilter, dateFilter, page, logs.length]
   );
 
   useEffect(() => {

@@ -57,7 +57,7 @@ export function Signup() {
     return Math.min(score, 4); // Max 4 points for the bar
   };
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
+  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/google`, {
         method: "POST",

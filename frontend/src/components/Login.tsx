@@ -46,7 +46,7 @@ export function Login() {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
+  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/google`, {
         method: "POST",

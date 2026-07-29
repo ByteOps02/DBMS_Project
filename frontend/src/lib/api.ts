@@ -95,6 +95,7 @@ export const api = {
   },
 
   // Synchronous UI cache for components to completely eliminate mount flashes
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   uiCache: new Map<string, any>(),
 
   departments: {

@@ -3,7 +3,7 @@ import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import path from 'path';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, optionalAuth } from '../middleware/auth.js';
 
 const router = Router();
 cloudinary.config({
@@ -36,7 +36,7 @@ const upload = multer({
     }
   },
 });
-router.post('/', requireAuth, upload.single('file'), (req, res) => {
+router.post('/', optionalAuth, upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });

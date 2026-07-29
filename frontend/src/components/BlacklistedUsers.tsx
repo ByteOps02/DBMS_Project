@@ -34,7 +34,7 @@ export function BlacklistedUsers() {
       toast.error("Failed to fetch blacklisted visitors");
     }
     setLoading(false);
-  }, [searchTerm]);
+  }, [searchTerm, visitors.length]);
 
   useEffect(() => {
     const delay = searchTerm ? 300 : 0;
