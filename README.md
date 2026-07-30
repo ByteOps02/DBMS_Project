@@ -1,4 +1,4 @@
-# IIIT Nagpur VMS
+## IIIT Nagpur VMS
 
 ## Overview
 This project is a comprehensive full-stack web application designed to help organizations manage visitor access, track campus traffic, and ensure security. It features real-time updates, role-based access control, automated QR code generation, and email notifications for approved visits. 
