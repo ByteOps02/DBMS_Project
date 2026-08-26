@@ -17,18 +17,58 @@ function generateOTP() {
 
 router.post('/signup', async (req, res) => {
   try {
-    const { email, password, name, department_id } = req.body;
+    const { email, password, name, department_id, role = 'visitor', roll_number } = req.body;
 
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Email, password, and name are required' });
     }
 
+    const cleanEmail = email.trim().toLowerCase();
     const existingUser = await prisma.host.findUnique({
-      where: { email: email.trim().toLowerCase() },
+      where: { email: cleanEmail },
     });
 
     if (existingUser) {
       return res.status(409).json({ error: 'This email is already registered.' });
+    }
+
+    let assignedRole: 'admin' | 'guard' | 'host' | 'visitor' | 'student' = 'visitor';
+    let cleanRoll: string | null = null;
+
+    // --- STUDENT DIRECTORY VERIFICATION ---
+    if (role === 'student') {
+      if (!roll_number || typeof roll_number !== 'string' || !roll_number.trim()) {
+        return res.status(400).json({ error: 'College Roll Number is required for student registration.' });
+      }
+
+      cleanRoll = roll_number.trim().toUpperCase();
+
+      // Check if Roll Number exists in the official Student Directory (uploaded by Admin)
+      const studentProfile = await prisma.student.findUnique({
+        where: { roll_number: cleanRoll },
+      });
+
+      if (!studentProfile) {
+        return res.status(400).json({
+          error: `Verification Failed: Roll Number "${cleanRoll}" is not found in the College Student Directory. Please contact the Hostel Warden / Administration Office.`,
+        });
+      }
+
+      // Check if another account already claimed this roll number
+      const existingRollUser = await prisma.host.findUnique({
+        where: { roll_number: cleanRoll },
+      });
+
+      if (existingRollUser) {
+        return res.status(409).json({
+          error: `An account has already been registered with Roll Number "${cleanRoll}". If this is your roll number, please log in or reset your password.`,
+        });
+      }
+
+      assignedRole = 'student';
+    } else if (role === 'host' || role === 'guard' || role === 'admin') {
+      // If signing up as staff / host
+      assignedRole = role === 'host' ? 'host' : 'visitor';
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -39,16 +79,18 @@ router.post('/signup', async (req, res) => {
 
     const host = await prisma.host.create({
       data: {
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         name,
         password_hash,
         department_id: department_id || null,
-        role: 'visitor',
+        roll_number: cleanRoll,
+        role: assignedRole,
         is_verified: false,
         otp,
         otp_expiry
       },
     });
+
 
     try {
       await sendOTP(host.email, otp);
@@ -96,7 +138,18 @@ router.post('/login', async (req, res) => {
       expiresIn: '7d',
     });
 
-    res.status(200).json({ token, user: { id: host.id, name: host.name, email: host.email, role: host.role, department_id: host.department_id } });
+    res.status(200).json({
+      token,
+      user: {
+        id: host.id,
+        name: host.name,
+        email: host.email,
+        role: host.role,
+        department_id: host.department_id,
+        roll_number: host.roll_number,
+      },
+    });
+
   } catch (err) {
     console.error('[Auth Login Error]', err);
     res.status(500).json({ error: 'Failed to login', details: err instanceof Error ? err.message : String(err) });
@@ -240,22 +293,31 @@ router.post('/google', async (req, res) => {
     if (!payload || !payload.email) return res.status(400).json({ error: 'Invalid Google token' });
 
     const { email, name, sub: google_id } = payload;
-    let host = await prisma.host.findUnique({ where: { email: email.toLowerCase() } });
+    const cleanEmail = email.toLowerCase().trim();
+    let host = await prisma.host.findUnique({ where: { email: cleanEmail } });
+
+    // Check if email matches a registered student in the directory
+    const matchedStudent = await prisma.student.findUnique({ where: { email: cleanEmail } });
 
     if (host) {
-      if (!host.google_id) {
+      if (!host.google_id || (matchedStudent && host.role !== 'student')) {
         host = await prisma.host.update({
           where: { id: host.id },
-          data: { google_id, is_verified: true },
+          data: {
+            google_id,
+            is_verified: true,
+            ...(matchedStudent ? { role: 'student', roll_number: matchedStudent.roll_number } : {})
+          },
         });
       }
     } else {
       host = await prisma.host.create({
         data: {
-          email: email.toLowerCase(),
-          name: name || 'Google User',
+          email: cleanEmail,
+          name: name || matchedStudent?.name || 'Google User',
           google_id,
-          role: 'visitor',
+          role: matchedStudent ? 'student' : 'visitor',
+          roll_number: matchedStudent?.roll_number || null,
           is_verified: true,
         },
       });
@@ -264,11 +326,92 @@ router.post('/google', async (req, res) => {
     if (!host.active) return res.status(403).json({ error: 'Account is deactivated' });
 
     const token = jwt.sign({ userId: host.id, role: host.role }, JWT_SECRET, { expiresIn: '7d' });
-    res.status(200).json({ token, user: { id: host.id, name: host.name, email: host.email, role: host.role, department_id: host.department_id } });
+    res.status(200).json({
+      token,
+      user: {
+        id: host.id,
+        name: host.name,
+        email: host.email,
+        role: host.role,
+        department_id: host.department_id,
+        roll_number: host.roll_number,
+      },
+    });
   } catch (err) {
     console.error('[Auth Google Error]', err);
     res.status(500).json({ error: 'Google authentication failed' });
   }
 });
 
+/**
+ * CLAIM / ACTIVATE STUDENT GATEPASS FOR VISITOR OR GOOGLE USER
+ * POST /api/auth/claim-student
+ */
+router.post('/claim-student', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { roll_number } = req.body;
+    if (!roll_number || typeof roll_number !== 'string' || !roll_number.trim()) {
+      return res.status(400).json({ error: 'College Roll Number is required.' });
+    }
+
+    const cleanRoll = roll_number.trim().toUpperCase();
+
+    // 1. Verify roll number exists in Student Directory
+    const student = await prisma.student.findUnique({
+      where: { roll_number: cleanRoll }
+    });
+
+    if (!student) {
+      return res.status(400).json({
+        error: `Verification Failed: Roll Number "${cleanRoll}" is not found in the official College Student Directory. Please contact Hostel Administration.`
+      });
+    }
+
+    // 2. Check if already claimed by another user account
+    const existingClaim = await prisma.host.findFirst({
+      where: {
+        roll_number: cleanRoll,
+        id: { not: req.user!.id }
+      }
+    });
+
+    if (existingClaim) {
+      return res.status(409).json({
+        error: `Roll Number "${cleanRoll}" has already been linked to another account.`
+      });
+    }
+
+    // 3. Upgrade user account to permanent student role
+    const updatedUser = await prisma.host.update({
+      where: { id: req.user!.id },
+      data: {
+        role: 'student',
+        roll_number: cleanRoll
+      }
+    });
+
+    // 4. Issue new token with student role
+    const token = jwt.sign({ userId: updatedUser.id, role: updatedUser.role }, JWT_SECRET, { expiresIn: '7d' });
+
+    res.json({
+      success: true,
+      message: `Successfully verified as Resident Student (${student.name}, ${student.roll_number}). Student GatePass is now activated!`,
+      token,
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        roll_number: updatedUser.roll_number,
+        department_id: updatedUser.department_id
+      },
+      student
+    });
+  } catch (err) {
+    console.error('[API POST /auth/claim-student]', err);
+    res.status(500).json({ error: 'Failed to claim student pass', details: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 export default router;
+

@@ -1,0 +1,135 @@
+import { useState } from "react";
+import { GraduationCap, ShieldCheck, ArrowRight, X, AlertCircle } from "lucide-react";
+import { api } from "../lib/api";
+import { useAuthStore } from "../store/auth";
+import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+
+interface ClaimStudentPassModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function ClaimStudentPassModal({ isOpen, onClose }: ClaimStudentPassModalProps) {
+  const [rollNumber, setRollNumber] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rollNumber.trim()) {
+      setError("Please enter your College Roll Number.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await api.students.claimPass(rollNumber.trim().toUpperCase());
+
+      // Update auth store with new student token and profile
+      localStorage.setItem("vms_token", res.token);
+      localStorage.setItem("vms_user_profile", JSON.stringify(res.user));
+      useAuthStore.setState({ user: res.user, isAuthenticated: true, error: null });
+
+      toast.success(res.message || "🎉 Student GatePass permanently activated!");
+      onClose();
+      navigate("/app/student-pass");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to claim student pass";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fadeIn">
+      <div className="w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-2xl p-6 sm:p-7 relative overflow-hidden">
+        {/* Glow effect */}
+        <div className="absolute -top-16 -right-16 w-36 h-36 bg-sky-500/20 rounded-full blur-2xl pointer-events-none" />
+
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Modal Header */}
+        <div className="flex items-center gap-3.5 mb-5">
+          <div className="p-3 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white shadow-md">
+            <GraduationCap className="w-6 h-6" />
+          </div>
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600 dark:text-sky-400">
+              Directory Verification
+            </span>
+            <h3 className="text-lg font-black text-gray-900 dark:text-white mt-0.5">
+              Issue Resident Student Pass
+            </h3>
+          </div>
+        </div>
+
+        <p className="text-xs text-gray-600 dark:text-slate-300 leading-relaxed mb-5">
+          Are you an enrolled resident student of <strong>Hostel Block A</strong>? Enter your official College Roll Number to verify against the Student Directory and activate your permanent <strong>Student GatePass</strong>.
+        </p>
+
+        {error && (
+          <div className="mb-4 p-3.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-2xl text-xs text-red-600 dark:text-red-400 flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
+              College Roll Number <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              autoFocus
+              value={rollNumber}
+              onChange={(e) => setRollNumber(e.target.value.toUpperCase())}
+              placeholder="e.g. BT23CSE026"
+              className="w-full px-4 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 text-sm font-mono font-bold text-gray-900 dark:text-white uppercase tracking-wider outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all placeholder:text-gray-400"
+            />
+            <p className="text-[10px] text-gray-400 mt-1.5 ml-1 flex items-center gap-1 font-medium">
+              <ShieldCheck className="w-3.5 h-3.5 text-sky-500" /> Matches against official college census records
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 btn btn-secondary text-xs font-bold py-3"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !rollNumber.trim()}
+              className="flex-1 btn btn-primary text-xs font-bold py-3 flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20"
+            >
+              {loading ? (
+                "Verifying..."
+              ) : (
+                <>
+                  Verify & Issue Pass <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

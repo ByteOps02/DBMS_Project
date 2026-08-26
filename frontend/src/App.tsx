@@ -62,6 +62,19 @@ const FilteredVisits = lazy(() =>
 const BlacklistedUsers = lazy(() =>
   import("./components/BlacklistedUsers").then((m) => ({ default: m.BlacklistedUsers }))
 );
+const HostelHub = lazy(() =>
+  import("./components/HostelHub").then((m) => ({ default: m.HostelHub }))
+);
+const StudentPassPortal = lazy(() =>
+  import("./components/StudentPassPortal").then((m) => ({ default: m.StudentPassPortal }))
+);
+const SelfServiceKiosk = lazy(() =>
+  import("./components/SelfServiceKiosk").then((m) => ({ default: m.SelfServiceKiosk }))
+);
+const LostAndFound = lazy(() =>
+  import("./components/LostAndFound").then((m) => ({ default: m.LostAndFound }))
+);
+
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -90,9 +103,10 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     log.info("[PrivateRoute] User not authenticated, redirecting to login");
+    return <Navigate to="/login" replace />;
   }
 
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+  return <>{children}</>;
 }
 
 function App() {
@@ -118,6 +132,7 @@ function App() {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/display" element={<PublicDisplay />} />
               <Route path="/request-visit" element={<UnifiedVisitRegistration />} />
+              <Route path="/kiosk" element={<SelfServiceKiosk />} />
 
             <Route
               element={
@@ -127,7 +142,11 @@ function App() {
               }
             >
               <Route path="/app/dashboard" element={<Dashboard />} />
+              <Route path="/app/hostel-hub" element={<HostelHub />} />
+              <Route path="/app/student-pass" element={<StudentPassPortal />} />
               <Route path="/app/logs" element={<VisitLogs />} />
+              <Route path="/app/lost-and-found" element={<LostAndFound />} />
+              <Route path="/app/kiosk" element={<SelfServiceKiosk />} />
               <Route path="/app/users" element={<UserManagement />} />
               <Route path="/app/scan" element={<ScanQrCode />} />
               <Route path="/app/register-visit" element={<UnifiedVisitRegistration />} />
@@ -143,6 +162,7 @@ function App() {
               <Route path="/app/visits/:status" element={<FilteredVisits />} />
               <Route path="/app/blacklist" element={<BlacklistedUsers />} />
               <Route path="/app/change-password" element={<ChangePassword />} />
+
             </Route>
           </Routes>
         </Suspense>

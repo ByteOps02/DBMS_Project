@@ -2,7 +2,22 @@ import { useState, useEffect, useCallback, memo } from "react";
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/auth";
 import { useDataSync } from "../lib/dataSync";
-import { AlertCircle, Hourglass, Users, CalendarDays, RefreshCw, ArrowRight } from "lucide-react";
+import {
+  AlertCircle,
+  Hourglass,
+  Users,
+  CalendarDays,
+  RefreshCw,
+  ArrowRight,
+  GraduationCap,
+  Building2,
+  TrendingUp,
+  ShieldAlert,
+  ShieldCheck,
+  PhoneCall,
+} from "lucide-react";
+import toast from "react-hot-toast";
+
 
 import { useNavigate } from "react-router-dom";
 import { useVisitStats } from "../hooks/useVisitStats";
@@ -11,6 +26,9 @@ import { formatDistanceToNow } from "date-fns";
 import { formatISTTime, getISTTodayRange } from "../lib/dateIST";
 import { getStatusConfig } from "../lib/statusConfig";
 import { SEOMeta } from "./SEOMeta";
+import { ClaimStudentPassModal } from "./ClaimStudentPassModal";
+
+
 
 function getInitials(name: string) {
   if (!name) return "US";
@@ -89,11 +107,57 @@ export function Dashboard() {
   const { user } = useAuthStore();
   const { stats, loading, error: statsError, fetchStats } = useVisitStats(user);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [showClaimModal, setShowClaimModal] = useState(false);
   const [recentVisits, setRecentVisits] = useState<RecentVisit[]>(() => api.uiCache.get("vms_dash_recent") || []);
   const [recentLoading, setRecentLoading] = useState(!api.uiCache.has("vms_dash_recent"));
   const [activeVisitors, setActiveVisitors] = useState<ActiveVisitor[]>(() => api.uiCache.get("vms_dash_active") || []);
   const [activeLoading, setActiveLoading] = useState(!api.uiCache.has("vms_dash_active"));
   const isGuardOrAdmin = user?.role === "admin" || user?.role === "guard";
+
+  // Real-time Traffic Telemetry & Campus Capacity state
+  const [telemetry, setTelemetry] = useState<{
+    census: {
+      currentCampusPopulation: number;
+      campusSafeCapacity: number;
+      occupancyPercentage: number;
+      insideStudents: number;
+      outStudents: number;
+      leaveStudents: number;
+      activeVisitorsCount: number;
+      overstayCount: number;
+    };
+    overstayedVisits: Array<{
+      id: string;
+      visitorName?: string;
+      visitorPhone?: string;
+      purpose: string;
+      checkInTime: string;
+      hostName: string;
+      overstayMinutes: number;
+      escortName?: string;
+      overstayNotified: boolean;
+    }>;
+    hourlyDistribution: Array<{ hour: string; entries: number; exits: number }>;
+  } | null>(null);
+
+  const fetchTelemetry = useCallback(async () => {
+    try {
+      const data = await api.visits.getTrafficTelemetry();
+      setTelemetry(data);
+    } catch {
+      // ignore telemetry errors
+    }
+  }, []);
+
+  const handleDispatchEscort = async (visitId: string, visitorName?: string) => {
+    try {
+      await api.visits.dispatchEscort(visitId);
+      toast.success(`Security Escort dispatched for ${visitorName || "visitor"}!`);
+      fetchTelemetry();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to dispatch escort.");
+    }
+  };
 
   const handleStatCardClick = useCallback(
     (status: string) => {
@@ -175,9 +239,14 @@ export function Dashboard() {
   }, [user]);
 
   const refreshAll = useCallback(() => {
-    Promise.all([fetchStats(true), fetchRecentVisits(true), fetchActiveVisitors(true)]);
+    Promise.all([
+      fetchStats(true),
+      fetchRecentVisits(true),
+      fetchActiveVisitors(true),
+      fetchTelemetry(),
+    ]);
     setLastRefresh(new Date());
-  }, [fetchStats, fetchRecentVisits, fetchActiveVisitors]);
+  }, [fetchStats, fetchRecentVisits, fetchActiveVisitors, fetchTelemetry]);
 
   // Real-time listener for instant card & list updates
   useDataSync(["visits", "visitors", "stats", "all"], () => {
@@ -195,6 +264,7 @@ export function Dashboard() {
       clearInterval(refreshInterval);
     };
   }, [user?.role, user?.id, refreshAll]);
+
 
 
   return (
@@ -245,12 +315,47 @@ export function Dashboard() {
         </div>
       </div>
 
+      {/* Student Pass Claim Banner for Visitor Accounts */}
+      {user?.role === "visitor" && (
+        <div className="mb-8 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-sky-500/15 via-indigo-500/10 to-transparent border border-sky-500/30 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fadeIn">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white shadow-md shrink-0">
+              <GraduationCap className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-600 dark:text-sky-400">
+                Enrolled College Student?
+              </span>
+              <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white mt-0.5">
+                Activate Your Resident Student GatePass
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                Enter your College Roll Number to verify against the hostel directory and get your permanent ID pass.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowClaimModal(true)}
+            className="btn btn-primary text-xs font-bold whitespace-nowrap self-end sm:self-auto shadow-md shadow-sky-500/20"
+          >
+            Claim Student Pass <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Claim Student Pass Modal */}
+      <ClaimStudentPassModal
+        isOpen={showClaimModal}
+        onClose={() => setShowClaimModal(false)}
+      />
+
       {statsError && (
         <div className="mb-8 p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-700 dark:text-red-300 rounded-2xl flex items-center shadow-sm">
           <AlertCircle className="h-6 w-6 mr-3 text-red-500" />
           <span className="font-medium">{statsError}</span>
         </div>
       )}
+
 
       <div className="mb-8">
         <h2 className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4">
@@ -273,6 +378,193 @@ export function Dashboard() {
           />
         )}
       </div>
+
+      {/* Live Campus Population Capacity & Peak Traffic Telemetry */}
+      {telemetry && (
+        <div className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Capacity Progress Meter */}
+          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-sky-500" />
+                  <h3 className="text-xs font-bold uppercase text-gray-700 dark:text-slate-300 tracking-wider">
+                    Live Campus Capacity Gauge
+                  </h3>
+                </div>
+                <span className="px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 text-[10px] font-black uppercase">
+                  Safe Limit: {telemetry.census.campusSafeCapacity}
+                </span>
+              </div>
+
+              <div className="mt-4 flex items-baseline justify-between">
+                <div>
+                  <span className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white">
+                    {telemetry.census.currentCampusPopulation}
+                  </span>
+                  <span className="text-xs text-gray-400 font-semibold ml-2">
+                    On Campus Right Now
+                  </span>
+                </div>
+                <span className="text-base font-bold text-sky-600 dark:text-sky-400">
+                  {telemetry.census.occupancyPercentage}%
+                </span>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="w-full bg-gray-100 dark:bg-slate-800 h-3 rounded-full overflow-hidden mt-3 shadow-inner">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    telemetry.census.occupancyPercentage > 85
+                      ? "bg-red-500"
+                      : telemetry.census.occupancyPercentage > 60
+                      ? "bg-amber-500"
+                      : "bg-gradient-to-r from-sky-500 to-emerald-500"
+                  }`}
+                  style={{ width: `${Math.min(100, telemetry.census.occupancyPercentage)}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-100 dark:border-slate-800 text-center">
+              <div className="p-2 rounded-xl bg-gray-50 dark:bg-slate-800/60">
+                <span className="block text-[10px] uppercase font-bold text-gray-400">Students</span>
+                <span className="text-sm font-black text-gray-900 dark:text-white">
+                  {telemetry.census.insideStudents}
+                </span>
+              </div>
+              <div className="p-2 rounded-xl bg-gray-50 dark:bg-slate-800/60">
+                <span className="block text-[10px] uppercase font-bold text-gray-400">Visitors</span>
+                <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                  {telemetry.census.activeVisitorsCount}
+                </span>
+              </div>
+              <div className="p-2 rounded-xl bg-gray-50 dark:bg-slate-800/60">
+                <span className="block text-[10px] uppercase font-bold text-gray-400">Outings</span>
+                <span className="text-sm font-black text-amber-600 dark:text-amber-400">
+                  {telemetry.census.outStudents}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Peak Traffic Inflow/Outflow Histogram */}
+          <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-indigo-500" />
+                <h3 className="text-xs font-bold uppercase text-gray-700 dark:text-slate-300 tracking-wider">
+                  Hourly Checkpoint Traffic (06:00 – 22:00 IST)
+                </h3>
+              </div>
+              <div className="flex items-center gap-3 text-[10px] font-bold uppercase">
+                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" /> Entries
+                </span>
+                <span className="flex items-center gap-1 text-sky-600 dark:text-sky-400">
+                  <span className="w-2 h-2 rounded-full bg-sky-500" /> Exits
+                </span>
+              </div>
+            </div>
+
+            {/* Bars */}
+            <div className="h-32 flex items-end justify-between gap-2 pt-4 px-2">
+              {telemetry.hourlyDistribution.map((item, idx) => {
+                const maxVal = Math.max(
+                  ...telemetry.hourlyDistribution.map((d) => Math.max(d.entries, d.exits, 1))
+                );
+                const entryHeight = Math.max(8, (item.entries / maxVal) * 100);
+                const exitHeight = Math.max(8, (item.exits / maxVal) * 100);
+
+                return (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-1 group">
+                    <div className="w-full flex items-end justify-center gap-1 h-24">
+                      {/* Entry Bar */}
+                      <div
+                        className="w-1/2 bg-emerald-500/80 hover:bg-emerald-500 rounded-t-md transition-all relative group-hover:scale-105"
+                        style={{ height: `${entryHeight}%` }}
+                        title={`${item.hour}: ${item.entries} Entries`}
+                      />
+                      {/* Exit Bar */}
+                      <div
+                        className="w-1/2 bg-sky-500/80 hover:bg-sky-500 rounded-t-md transition-all relative group-hover:scale-105"
+                        style={{ height: `${exitHeight}%` }}
+                        title={`${item.hour}: ${item.exits} Exits`}
+                      />
+                    </div>
+                    <span className="text-[9px] font-mono text-gray-400 font-bold truncate">
+                      {item.hour}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-[10px] text-gray-400 dark:text-slate-500 font-medium">
+              ⚡ Real-time gate sensor feeds auto-correlated with barcode kiosk entries.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Visitor Overstay Watchlist Banner */}
+      {telemetry && telemetry.overstayedVisits.length > 0 && isGuardOrAdmin && (
+        <div className="mb-8 p-5 sm:p-6 rounded-3xl bg-red-50/80 dark:bg-red-950/40 border-2 border-red-500/40 shadow-lg space-y-4 animate-fadeIn">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
+              <ShieldAlert className="w-6 h-6 animate-pulse" />
+              <div>
+                <h3 className="text-sm sm:text-base font-black uppercase tracking-tight">
+                  Security Overstay Radar ({telemetry.overstayedVisits.length} Visitors Exceeding Pass Time)
+                </h3>
+                <p className="text-xs text-red-700/80 dark:text-red-300 font-medium">
+                  Active visitors on campus exceeding scheduled duration without checkout.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+            {telemetry.overstayedVisits.map((v) => (
+              <div
+                key={v.id}
+                className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-red-200 dark:border-red-900/50 flex items-center justify-between gap-3 shadow-xs"
+              >
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-gray-900 dark:text-white truncate">
+                      {v.visitorName || "Guest"}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 text-[10px] font-bold">
+                      +{v.overstayMinutes}m Overstay
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 truncate">Host: {v.hostName} • {v.purpose}</p>
+                </div>
+
+                <button
+                  onClick={() => handleDispatchEscort(v.id, v.visitorName)}
+                  disabled={v.overstayNotified}
+                  className={`btn btn-sm text-xs font-bold whitespace-nowrap shrink-0 ${
+                    v.overstayNotified ? "btn-secondary opacity-70" : "btn-danger"
+                  }`}
+                >
+                  {v.overstayNotified ? (
+                    <span className="flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Escort Dispatched
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <PhoneCall className="w-3.5 h-3.5" /> Dispatch Escort
+                    </span>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
 
       {(isGuardOrAdmin || user?.role === "host") && (
         <div className="mb-8">

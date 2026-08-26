@@ -295,10 +295,68 @@ export const api = {
         check_out_time: string | null;
         exit_gate: string | null;
         entry_gate: string | null;
+        is_vip?: boolean;
+        vip_category?: string | null;
+        vip_parking_slot?: string | null;
+        overstay_notified?: boolean;
+        escort_name?: string | null;
         updated_at: string;
       }>
     ): Promise<Row<"visits">> =>
       apiFetch(`/visits/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+
+    getTrafficTelemetry: () =>
+      apiFetch<{
+        census: {
+          currentCampusPopulation: number;
+          campusSafeCapacity: number;
+          occupancyPercentage: number;
+          insideStudents: number;
+          outStudents: number;
+          leaveStudents: number;
+          activeVisitorsCount: number;
+          overstayCount: number;
+        };
+        overstayedVisits: Array<{
+          id: string;
+          visitorName?: string;
+          visitorPhone?: string;
+          purpose: string;
+          checkInTime: string;
+          hostName: string;
+          overstayMinutes: number;
+          escortName?: string;
+          overstayNotified: boolean;
+        }>;
+        hourlyDistribution: Array<{ hour: string; entries: number; exits: number }>;
+      }>("/visits/analytics/traffic-telemetry"),
+
+    selfServiceKiosk: (data: {
+      name: string;
+      email?: string;
+      phone: string;
+      company?: string;
+      purpose: string;
+      category?: string;
+      vehicle_number?: string;
+      photo_url?: string;
+      host_name?: string;
+    }) =>
+      apiFetch<{
+        visit: any;
+        qrPayload: string;
+        message: string;
+      }>("/visits/self-service-kiosk", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+
+    dispatchEscort: (id: string, escort_name?: string) =>
+      apiFetch<{ visit: any; message: string }>(`/visits/${id}/escort`, {
+        method: "PATCH",
+        body: JSON.stringify({ escort_name }),
+      }),
+
   },
 
   analytics: {
@@ -321,4 +379,427 @@ export const api = {
       }>(`/analytics${q ? `?${q}` : ""}`);
     },
   },
+
+  students: {
+    scanPass: (data: { scanData: string; gate?: string }): Promise<{
+      success: boolean;
+      action: "exit" | "entry";
+      movement_type: string;
+      message: string;
+      expected_in?: string;
+      is_overdue?: boolean;
+      curfew_delay_minutes?: number;
+      strikes?: number;
+      is_flagged?: boolean;
+      has_extension?: boolean;
+      student: {
+        id: string;
+        roll_number: string;
+        name: string;
+        email: string;
+        phone: string;
+        hostel_block: string;
+        room_number: string;
+        branch: string;
+        year: number;
+        parent_name: string;
+        parent_phone: string;
+        photo_url?: string | null;
+        status: string;
+        late_strike_count?: number;
+        is_flagged?: boolean;
+      };
+
+      movement?: {
+        id: string;
+        movement_type: string;
+        exit_time: string;
+        entry_time?: string | null;
+        exit_gate?: string | null;
+        entry_gate?: string | null;
+        expected_in: string;
+        is_overdue: boolean;
+      };
+    }> => apiFetch("/students/scan-pass", { method: "POST", body: JSON.stringify(data) }),
+
+    getCensus: (): Promise<{
+      total: number;
+      inside: number;
+      out_day: number;
+      on_leave: number;
+      overdue: number;
+      blocks: { hostel_block: string; status: string; _count: { _all: number } }[];
+    }> => apiFetch("/students/census"),
+
+    getOverdue: (): Promise<Array<{
+      id: string;
+      movement_type: string;
+      exit_time: string;
+      expected_in: string;
+      exit_gate?: string | null;
+      student: {
+        id: string;
+        roll_number: string;
+        name: string;
+        phone: string;
+        hostel_block: string;
+        room_number: string;
+        parent_name: string;
+        parent_phone: string;
+        photo_url?: string | null;
+      };
+    }>> => apiFetch("/students/overdue"),
+
+    list: (params?: {
+      search?: string;
+      status?: string;
+      hostel_block?: string;
+      limit?: number;
+      offset?: number;
+    }): Promise<{
+      students: Array<{
+        id: string;
+        roll_number: string;
+        name: string;
+        email: string;
+        phone: string;
+        hostel_block: string;
+        room_number: string;
+        branch: string;
+        year: number;
+        parent_name: string;
+        parent_phone: string;
+        photo_url?: string | null;
+        status: string;
+        created_at: string;
+      }>;
+      total: number;
+    }> => {
+      const qs = new URLSearchParams();
+      if (params?.search) qs.set("search", params.search);
+      if (params?.status) qs.set("status", params.status);
+      if (params?.hostel_block) qs.set("hostel_block", params.hostel_block);
+      if (params?.limit) qs.set("limit", String(params.limit));
+      if (params?.offset) qs.set("offset", String(params.offset));
+      const q = qs.toString();
+      return apiFetch(`/students${q ? `?${q}` : ""}`);
+    },
+
+    updateStudent: (id: string, data: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      hostel_block?: string;
+      room_number?: string;
+      branch?: string;
+      year?: number;
+      parent_name?: string;
+      parent_phone?: string;
+      status?: string;
+      late_strike_count?: number;
+      is_flagged?: boolean;
+    }) =>
+      apiFetch<{ success: boolean; message: string; student: any }>(`/students/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data)
+      }),
+
+    bulkUpload: (students: Array<{
+
+      roll_number: string;
+      name: string;
+      email: string;
+      phone?: string;
+      hostel_block?: string;
+      room_number?: string;
+      branch?: string;
+      year?: number;
+      parent_name?: string;
+      parent_phone?: string;
+      photo_url?: string;
+    }>): Promise<{ success: boolean; message: string; inserted: number; updated: number }> =>
+      apiFetch("/students/bulk", { method: "POST", body: JSON.stringify({ students }) }),
+
+    claimPass: (roll_number: string) =>
+      apiFetch<{
+        success: boolean;
+        message: string;
+        token: string;
+        user: any;
+        student: any;
+      }>("/auth/claim-student", {
+        method: "POST",
+        body: JSON.stringify({ roll_number }),
+      }),
+
+
+    createLeave: (data: {
+      student_id?: string;
+      roll_number?: string;
+      leave_type: string;
+      from_date: string;
+      to_date: string;
+      destination: string;
+      reason: string;
+    }) => apiFetch("/students/leave", { method: "POST", body: JSON.stringify(data) }),
+
+    listLeaves: (params?: { status?: string; student_id?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.status) qs.set("status", params.status);
+      if (params?.student_id) qs.set("student_id", params.student_id);
+      const q = qs.toString();
+      return apiFetch<Array<{
+        id: string;
+        student_id: string;
+        leave_type: string;
+        from_date: string;
+        to_date: string;
+        destination: string;
+        reason: string;
+        status: string;
+        approved_by?: string | null;
+        approved_at?: string | null;
+        created_at: string;
+        student: {
+          id: string;
+          roll_number: string;
+          name: string;
+          hostel_block: string;
+          room_number: string;
+          photo_url?: string | null;
+          phone: string;
+        };
+      }>>(`/students/leaves${q ? `?${q}` : ""}`);
+    },
+
+    updateLeave: (id: string, status: "approved" | "rejected") =>
+      apiFetch(`/students/leave/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+
+    updateParentConsent: (id: string, parent_consent: "pending" | "verified" | "exempted", parent_remarks?: string) =>
+      apiFetch(`/students/leave/${id}/parent-consent`, {
+        method: "PATCH",
+        body: JSON.stringify({ parent_consent, parent_remarks })
+      }),
+
+    getFloorCensus: () =>
+      apiFetch<{
+        hostel: string;
+        totalResidents: number;
+        totalInside: number;
+        totalOut: number;
+        totalLeave: number;
+        floors: Array<{
+          floor: number;
+          label: string;
+          description: string;
+          total: number;
+          inside: number;
+          out_day: number;
+          on_leave: number;
+          flagged: number;
+          occupancyRate: number;
+          students: Array<{
+            id: string;
+            name: string;
+            roll_number: string;
+            room_number: string;
+            branch: string;
+            year: number;
+            phone: string;
+            parent_phone: string;
+            status: string;
+            late_strike_count: number;
+            is_flagged: boolean;
+          }>;
+        }>;
+      }>("/students/floor-census"),
+
+    resetStrikes: (id: string) =>
+      apiFetch(`/students/${id}/reset-strikes`, { method: "POST" }),
+
+    getExportCensusUrl: () => `${API_BASE}/api/students/export-census`,
+
+    listMovements: (params?: { student_id?: string; limit?: number }) => {
+      const qs = new URLSearchParams();
+      if (params?.student_id) qs.set("student_id", params.student_id);
+      if (params?.limit) qs.set("limit", String(params.limit));
+      const q = qs.toString();
+      return apiFetch<Array<{
+        id: string;
+        student_id: string;
+        movement_type: string;
+        exit_time: string;
+        entry_time?: string | null;
+        exit_gate?: string | null;
+        entry_gate?: string | null;
+        expected_in: string;
+        curfew_delay_minutes?: number;
+        is_overdue: boolean;
+        student: {
+          name: string;
+          roll_number: string;
+          hostel_block: string;
+          room_number: string;
+          photo_url?: string | null;
+        };
+      }>>(`/students/movements${q ? `?${q}` : ""}`);
+    },
+
+    requestCurfewExtension: (data: { roll_number?: string; additional_minutes?: number; reason: string }) =>
+      apiFetch<{ success: boolean; message: string; extension: any }>("/students/curfew-extension", {
+        method: "POST",
+        body: JSON.stringify(data)
+      }),
+
+    listCurfewExtensions: (params?: { status?: string; student_id?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.status) qs.set("status", params.status);
+      if (params?.student_id) qs.set("student_id", params.student_id);
+      const q = qs.toString();
+      return apiFetch<any[]>(`/students/curfew-extensions${q ? `?${q}` : ""}`);
+    },
+
+    updateCurfewExtension: (id: string, status: "approved" | "rejected") =>
+      apiFetch<{ success: boolean; message: string; extension: any }>(`/students/curfew-extensions/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status })
+      }),
+
+    addDisciplinaryLog: (studentId: string, data: { action_type: string; remarks: string }) =>
+      apiFetch<{ success: boolean; message: string; log: any }>(`/students/${studentId}/disciplinary-log`, {
+        method: "POST",
+        body: JSON.stringify(data)
+      }),
+
+    listDisciplinaryLogs: (studentId: string) =>
+      apiFetch<any[]>(`/students/${studentId}/disciplinary-logs`),
+  },
+
+  emergency: {
+    getActive: () => apiFetch<any>("/emergency/active"),
+
+    broadcastAlert: (data: { title: string; message: string; severity?: string }) =>
+      apiFetch<{ success: boolean; message: string; alert: any }>("/emergency/alert", {
+        method: "POST",
+        body: JSON.stringify(data)
+      }),
+
+    resolveAlert: () =>
+      apiFetch<{ success: boolean; message: string }>("/emergency/resolve", { method: "POST" }),
+
+    checkin: (data: { alert_id: string; status?: string; location?: string; notes?: string; roll_number?: string; name?: string }) =>
+      apiFetch<{ success: boolean; message: string; checkin: any }>("/emergency/checkin", {
+        method: "POST",
+        body: JSON.stringify(data)
+      }),
+
+    getCensus: (alertId: string) =>
+      apiFetch<{ totalStudents: number; safeCount: number; needHelpCount: number; pendingCount: number; checkins: any[] }>(
+        `/emergency/census/${alertId}`
+      ),
+  },
+
+  vehicles: {
+    register: (data: {
+      owner_type?: string;
+      owner_name?: string;
+      roll_number?: string;
+      vehicle_type: string;
+      license_plate: string;
+      vehicle_model?: string;
+      parking_slot?: string;
+    }) =>
+      apiFetch<{ success: boolean; message: string; vehiclePass: any }>("/vehicles", {
+        method: "POST",
+        body: JSON.stringify(data)
+      }),
+
+    list: (params?: { search?: string; owner_type?: string; status?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.search) qs.set("search", params.search);
+      if (params?.owner_type) qs.set("owner_type", params.owner_type);
+      if (params?.status) qs.set("status", params.status);
+      const q = qs.toString();
+      return apiFetch<any[]>(`/vehicles${q ? `?${q}` : ""}`);
+    },
+
+    lookup: (plate: string) =>
+      apiFetch<{ success: boolean; pass: any }>(`/vehicles/lookup/${encodeURIComponent(plate)}`),
+
+    revoke: (id: string) =>
+      apiFetch<{ success: boolean; message: string }>(`/vehicles/${id}`, { method: "DELETE" }),
+  },
+
+  lostAndFound: {
+    list: (params?: { search?: string; category?: string; status?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.search) qs.set("search", params.search);
+      if (params?.category) qs.set("category", params.category);
+      if (params?.status) qs.set("status", params.status);
+      const q = qs.toString();
+      return apiFetch<{
+        items: Array<{
+          id: string;
+          title: string;
+          category: string;
+          description?: string;
+          location_found: string;
+          photo_url?: string;
+          found_by_name: string;
+          found_by_role: string;
+          found_by_contact?: string;
+          status: string;
+          claimed_by_name?: string;
+          claimed_by_id?: string;
+          claimed_by_phone?: string;
+          claimed_at?: string;
+          handover_officer?: string;
+          created_at: string;
+        }>;
+        stats: {
+          total: number;
+          inCustody: number;
+          claimed: number;
+        };
+      }>(`/lost-and-found${q ? `?${q}` : ""}`);
+    },
+
+    create: (data: {
+      title: string;
+      category: string;
+      description?: string;
+      location_found: string;
+      photo_url?: string;
+      found_by_name: string;
+      found_by_role?: string;
+      found_by_contact?: string;
+    }) =>
+      apiFetch<{ item: any; message: string }>("/lost-and-found", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+
+    claim: (
+      id: string,
+      data: {
+        claimed_by_name: string;
+        claimed_by_id: string;
+        claimed_by_phone?: string;
+        handover_officer?: string;
+      }
+    ) =>
+      apiFetch<{ item: any; message: string }>(`/lost-and-found/${id}/claim`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+
+    delete: (id: string) =>
+      apiFetch<{ success: boolean; message: string }>(`/lost-and-found/${id}`, {
+        method: "DELETE",
+      }),
+  },
 };
+
+
+
+

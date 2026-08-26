@@ -1,7 +1,8 @@
 import type React from "react";
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ShieldCheck, Eye, EyeOff, ArrowRight, Building2, CheckCircle2, AlertCircle } from "lucide-react";
+import { ShieldCheck, Eye, EyeOff, ArrowRight, Building2, CheckCircle2, AlertCircle, GraduationCap, UserCheck } from "lucide-react";
+
 
 import { useAuthStore } from "../store/auth";
 import { ThemeSwitcher } from "./ThemeSwitcher";
@@ -24,6 +25,8 @@ export function Signup() {
   const navigate = useNavigate();
   const signup = useAuthStore((state) => state.signup);
   const isLoading = useAuthStore((state) => state.isLoading);
+  const [accountType, setAccountType] = useState<"student" | "visitor" | "host">("student");
+  const [rollNumber, setRollNumber] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -96,6 +99,16 @@ export function Signup() {
 
     if (view === "verify") return;
 
+    if (accountType === "student" && !rollNumber.trim()) {
+      setError("Please enter your College Roll Number (e.g. BT23CSE026).");
+      return;
+    }
+
+    if (accountType === "host" && !departmentId) {
+      setError("Please select your department.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -106,13 +119,15 @@ export function Signup() {
       return;
     }
 
-    if (!departmentId) {
-      setError("Please select a department");
-      return;
-    }
-
     try {
-      const result = await signup(email, password, name, departmentId);
+      const result = await signup(
+        email,
+        password,
+        name,
+        departmentId || undefined,
+        accountType,
+        accountType === "student" ? rollNumber.trim().toUpperCase() : undefined
+      );
       setSuccess(true);
       if (result?.requiresVerification) {
         setTimeout(() => {
@@ -130,6 +145,7 @@ export function Signup() {
       }
     }
   };
+
 
   const handleVerifySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -235,6 +251,78 @@ export function Signup() {
             {view === "signup" ? (
               <>
             <form className="space-y-5" onSubmit={handleSubmit}>
+              {/* Account Type Selector */}
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
+                  Account Type
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAccountType("student")}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-bold transition-all ${
+                      accountType === "student"
+                        ? "border-sky-500 bg-sky-500/10 text-sky-600 dark:text-sky-400 shadow-sm"
+                        : "border-gray-200 dark:border-slate-800 text-gray-600 dark:text-slate-400 hover:border-gray-300"
+                    }`}
+                  >
+                    <GraduationCap className="w-5 h-5 mb-1 text-sky-500" />
+                    <span>Resident Student</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAccountType("visitor")}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-bold transition-all ${
+                      accountType === "visitor"
+                        ? "border-sky-500 bg-sky-500/10 text-sky-600 dark:text-sky-400 shadow-sm"
+                        : "border-gray-200 dark:border-slate-800 text-gray-600 dark:text-slate-400 hover:border-gray-300"
+                    }`}
+                  >
+                    <UserCheck className="w-5 h-5 mb-1 text-emerald-500" />
+                    <span>Visitor / Guest</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAccountType("host")}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-bold transition-all ${
+                      accountType === "host"
+                        ? "border-sky-500 bg-sky-500/10 text-sky-600 dark:text-sky-400 shadow-sm"
+                        : "border-gray-200 dark:border-slate-800 text-gray-600 dark:text-slate-400 hover:border-gray-300"
+                    }`}
+                  >
+                    <Building2 className="w-5 h-5 mb-1 text-indigo-500" />
+                    <span>Campus Staff</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Student Roll Number (Verified against directory) */}
+              {accountType === "student" && (
+                <div>
+                  <label
+                    htmlFor="rollNumber"
+                    className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1"
+                  >
+                    College Roll Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="rollNumber"
+                    name="rollNumber"
+                    type="text"
+                    required
+                    value={rollNumber}
+                    onChange={(e) => setRollNumber(e.target.value.toUpperCase())}
+                    className="block w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 font-mono font-bold text-sm tracking-wider uppercase"
+                    placeholder="e.g. BT23CSE026"
+                  />
+                  <p className="text-[11px] text-sky-600 dark:text-sky-400 mt-1.5 ml-1 flex items-center gap-1 font-medium">
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> Verified against official College Student Directory
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label
                   htmlFor="name"
@@ -270,30 +358,33 @@ export function Signup() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="block w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-200 hover:border-gray-300 dark:hover:border-slate-600 text-sm font-medium"
-                  placeholder="name@campus.edu"
+                  placeholder={accountType === "student" ? "bt23cse026@iiitn.ac.in" : "name@example.com"}
                 />
               </div>
 
-              <div>
-                <label
-                  htmlFor="department"
-                  className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1"
-                >
-                  Department
-                </label>
-                <div className="relative">
-                  <CustomSelect
-                    id="department"
-                    name="department"
-                    required
-                    value={departmentId}
-                    onChange={setDepartmentId}
-                    options={departments.map(dept => ({ value: dept.id, label: dept.name }))}
-                    placeholder="Select a department"
-                    icon={<Building2 className="h-4 w-4" />}
-                  />
+              {accountType === "host" && (
+                <div>
+                  <label
+                    htmlFor="department"
+                    className="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-1"
+                  >
+                    Department <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <CustomSelect
+                      id="department"
+                      name="department"
+                      required
+                      value={departmentId}
+                      onChange={setDepartmentId}
+                      options={departments.map(dept => ({ value: dept.id, label: dept.name }))}
+                      placeholder="Select a department"
+                      icon={<Building2 className="h-4 w-4" />}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
+
 
               <div className="grid gap-5 grid-cols-1 sm:grid-cols-2">
                 <div>

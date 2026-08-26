@@ -15,6 +15,7 @@ enum UserRole {
   guard
   host
   visitor
+  student
 
   @@schema("public")
   @@map("user_role")
@@ -66,6 +67,7 @@ model Host {
   otp           String?
   otp_expiry    DateTime?
   department_id String?    @db.Uuid
+  roll_number   String?    @unique
   role          UserRole   @default(visitor)
   active        Boolean    @default(true)
   created_at    DateTime   @default(now()) @db.Timestamptz(6)
@@ -80,9 +82,11 @@ model Host {
   approved_visits Visit[] @relation("ApprovedVisits")
 
   @@index([email], name: "idx_hosts_email")
+  @@index([roll_number], name: "idx_hosts_roll_number")
   @@map("hosts")
   @@schema("public")
 }
+
 
 model Visitor {
   id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -124,8 +128,16 @@ model Visit {
   exit_gate        String?
   additional_guests Int        @default(0)
   pass_type        PassType    @default(single_day)
+
+  // Enterprise VIP & Overstay Management
+  is_vip           Boolean     @default(false)
+  vip_category     String?     // "Board of Governors" | "Guest Lecturer" | "Government Official" | "Corporate Recruiter"
+  vip_parking_slot String?
+  overstay_notified Boolean    @default(false)
+  escort_name      String?
   created_at       DateTime    @default(now()) @db.Timestamptz(6)
   updated_at       DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
+
 
   visitor     Visitor @relation(fields: [visitor_id], references: [id], onDelete: Cascade)
   host        Host?   @relation("HostedVisits", fields: [host_id], references: [id], onDelete: Restrict)
@@ -136,5 +148,197 @@ model Visit {
   @@index([host_id], name: "idx_visits_host_id")
   @@index([visitor_id], name: "idx_visits_visitor_id")
   @@map("visits")
+  @@schema("public")
+}
+
+model Student {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roll_number     String            @unique
+  name            String
+  email           String            @unique
+  phone           String
+  hostel_block    String            // e.g. "Aryabhatta Block A"
+  room_number     String            // e.g. "304"
+  branch          String            // e.g. "CSE"
+  year            Int               // e.g. 1, 2, 3, 4
+  parent_name     String
+  parent_phone    String
+  photo_url       String?
+  late_strike_count Int             @default(0)
+  is_flagged      Boolean           @default(false)
+  status          String            @default("inside") // inside | out_day | on_leave | suspended
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
+
+  movements       StudentMovement[]
+  leaves          HostelLeave[]
+
+  @@index([roll_number], name: "idx_students_roll_number")
+  @@index([status], name: "idx_students_status")
+  @@index([is_flagged], name: "idx_students_is_flagged")
+  @@index([hostel_block], name: "idx_students_hostel_block")
+  @@map("students")
+  @@schema("public")
+}
+
+model StudentMovement {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  student_id      String            @db.Uuid
+  student         Student           @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  movement_type   String            // "day_outing" | "hostel_leave"
+  exit_time       DateTime          @default(now()) @db.Timestamptz(6)
+  entry_time      DateTime?         @db.Timestamptz(6)
+  exit_gate       String?
+  entry_gate      String?
+  expected_in     DateTime          @db.Timestamptz(6)
+  curfew_delay_minutes Int          @default(0)
+  is_overdue      Boolean           @default(false)
+  purpose         String?
+  leave_id        String?           @db.Uuid
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([student_id], name: "idx_student_movements_student_id")
+  @@index([exit_time], name: "idx_student_movements_exit_time")
+  @@index([entry_time], name: "idx_student_movements_entry_time")
+  @@map("student_movements")
+  @@schema("public")
+}
+
+model HostelLeave {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  student_id      String            @db.Uuid
+  student         Student           @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  leave_type      String            // "vacation" | "home_visit" | "semester_break" | "medical"
+  from_date       DateTime          @db.Timestamptz(6)
+  to_date         DateTime          @db.Timestamptz(6)
+  destination     String
+  reason          String
+  parent_consent  String            @default("pending") // "pending" | "verified" | "exempted"
+  parent_remarks  String?
+  qr_signature    String?
+  status          String            @default("pending") // pending | approved | rejected | completed | cancelled
+  approved_by     String?
+  approved_at     DateTime?         @db.Timestamptz(6)
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([student_id], name: "idx_hostel_leaves_student_id")
+  @@index([status], name: "idx_hostel_leaves_status")
+  @@index([parent_consent], name: "idx_hostel_leaves_parent_consent")
+  @@map("hostel_leaves")
+  @@schema("public")
+}
+
+model EmergencyAlert {
+  id          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  message     String
+  severity    String            @default("critical") // "critical" | "warning" | "drill"
+  active      Boolean           @default(true)
+  created_by  String
+  created_at  DateTime          @default(now()) @db.Timestamptz(6)
+  resolved_at DateTime?         @db.Timestamptz(6)
+
+  checkins    EmergencyCheckIn[]
+
+  @@index([active], name: "idx_emergency_alerts_active")
+  @@map("emergency_alerts")
+  @@schema("public")
+}
+
+model EmergencyCheckIn {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  alert_id      String          @db.Uuid
+  alert         EmergencyAlert  @relation(fields: [alert_id], references: [id], onDelete: Cascade)
+  student_id    String?         @db.Uuid
+  roll_number   String
+  name          String
+  status        String          @default("safe") // "safe" | "need_help"
+  location      String?
+  notes         String?
+  checked_in_at DateTime        @default(now()) @db.Timestamptz(6)
+
+  @@index([alert_id], name: "idx_emergency_checkins_alert_id")
+  @@index([roll_number], name: "idx_emergency_checkins_roll_number")
+  @@map("emergency_checkins")
+  @@schema("public")
+}
+
+model CurfewExtension {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  student_id          String    @db.Uuid
+  roll_number         String
+  student_name        String
+  requested_until     DateTime  @db.Timestamptz(6)
+  additional_minutes  Int       @default(30)
+  reason              String
+  status              String    @default("pending") // "pending" | "approved" | "rejected"
+  reviewed_by         String?
+  reviewed_at         DateTime? @db.Timestamptz(6)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([student_id], name: "idx_curfew_ext_student_id")
+  @@index([status], name: "idx_curfew_ext_status")
+  @@map("curfew_extensions")
+  @@schema("public")
+}
+
+model VehiclePass {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_type    String    @default("student") // "student" | "visitor" | "faculty"
+  owner_name    String
+  roll_number   String?
+  vehicle_type  String    @default("two_wheeler") // "two_wheeler" | "four_wheeler" | "bicycle"
+  license_plate String    @unique
+  vehicle_model String?
+  parking_slot  String?
+  status        String    @default("active") // "active" | "revoked"
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([license_plate], name: "idx_vehicle_passes_plate")
+  @@index([roll_number], name: "idx_vehicle_passes_roll_number")
+  @@map("vehicle_passes")
+  @@schema("public")
+}
+
+model StudentDisciplinaryLog {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  student_id  String    @db.Uuid
+  roll_number String
+  action_type String    // "warning" | "parent_call" | "counseling" | "pardon"
+  remarks     String
+  warden_name String
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([student_id], name: "idx_disciplinary_logs_student_id")
+  @@index([roll_number], name: "idx_disciplinary_logs_roll_number")
+  @@map("student_disciplinary_logs")
+  @@schema("public")
+}
+
+model LostAndFoundItem {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title            String
+  category         String    // "electronics" | "documents" | "keys" | "wallet" | "clothing" | "other"
+  description      String?
+  location_found   String    // e.g. "Library 2nd Floor", "Hostel Block A Lobby", "Cafeteria"
+  photo_url        String?
+  found_by_name    String
+  found_by_role    String    @default("guard") // "guard" | "student" | "staff" | "visitor"
+  found_by_contact String?
+  status           String    @default("in_custody") // "in_custody" | "claimed" | "disposed"
+  claimed_by_name  String?
+  claimed_by_id    String?   // roll number or ID
+  claimed_by_phone String?
+  claimed_at       DateTime? @db.Timestamptz(6)
+  handover_officer String?
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([status], name: "idx_lost_found_status")
+  @@index([category], name: "idx_lost_found_category")
+  @@map("lost_and_found_items")
   @@schema("public")
 }

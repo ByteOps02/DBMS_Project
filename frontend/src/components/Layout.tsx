@@ -2,9 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
 import { LogOut, X } from "lucide-react";
+
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { navLinks } from "../lib/navigation";
 import { Logo } from "./Logo";
+import { ClaimStudentPassModal } from "./ClaimStudentPassModal";
+import { EmergencyBanner } from "./EmergencyBanner";
+
+
 
 function getInitials(name: string) {
   return name
@@ -20,7 +25,9 @@ export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showClaimModal, setShowClaimModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!user?.id) return;
 
@@ -37,7 +44,6 @@ export function Layout() {
   };
 
   const accessibleNavLinks = user ? navLinks.filter((link) => link.roles.includes(user.role)) : [];
-  const bottomTabLinks = accessibleNavLinks;
 
   return (
     <div className="h-[100dvh] w-full flex overflow-hidden bg-gray-50 dark:bg-slate-950">
@@ -99,6 +105,7 @@ export function Layout() {
                 const isDashboard = link.href === "/app/dashboard";
                 const isDashboardChild = isDashboard && location.pathname.startsWith("/app/visits");
                 const isActive = location.pathname === link.href || isDashboardChild;
+                const isStudentClaimLink = link.href === "/app/student-pass" && user?.role === "visitor";
 
                 return (
                   <Link
@@ -112,7 +119,13 @@ export function Layout() {
                   >
                     <link.icon className="h-4 w-4" strokeWidth={isActive ? 2.5 : 2} />
                     <span className="text-sm">{link.label}</span>
-                    {isActive && <span className="ml-auto w-1.5 h-1.5 bg-sky-500 rounded-full" />}
+                    {isStudentClaimLink ? (
+                      <span className="ml-auto px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
+                        Claim
+                      </span>
+                    ) : (
+                      isActive && <span className="ml-auto w-1.5 h-1.5 bg-sky-500 rounded-full" />
+                    )}
                   </Link>
                 );
               })}
@@ -132,21 +145,25 @@ export function Layout() {
           </div>
         </>
       )}
-      <aside className="hidden lg:flex flex-col w-72 shrink-0 glass-sidebar z-30 overflow-y-auto scroll-ios relative">
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex flex-col w-64 glass-sidebar border-r border-white/60 dark:border-slate-800/60 z-30 transition-all duration-300">
         <div className="h-20 flex items-center px-6 border-b border-white/50 dark:border-slate-800 shrink-0">
           <Link to="/app/dashboard" className="flex items-center gap-3 group">
             <Logo size="md" />
           </Link>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-1">
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           <p className="px-3 text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4">
             Navigation
           </p>
+
           {accessibleNavLinks.map((link) => {
             const isDashboard = link.href === "/app/dashboard";
             const isDashboardChild = isDashboard && location.pathname.startsWith("/app/visits");
             const isActive = location.pathname === link.href || isDashboardChild;
+            const isStudentClaimLink = link.href === "/app/student-pass" && user?.role === "visitor";
 
             return (
               <Link
@@ -172,10 +189,17 @@ export function Layout() {
                   strokeWidth={isActive ? 2.5 : 2}
                 />
                 <span className="relative z-10 text-sm">{link.label}</span>
+
+                {isStudentClaimLink && (
+                  <span className="relative z-10 ml-auto px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 group-hover:bg-sky-500/25 transition-colors">
+                    Claim
+                  </span>
+                )}
               </Link>
             );
           })}
         </nav>
+
         <div className="p-4 border-t border-white/50 dark:border-slate-800 shrink-0">
           <div className="flex items-center justify-between px-1 mb-4">
             <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">
@@ -208,19 +232,30 @@ export function Layout() {
           )}
         </div>
       </aside>
+
+      {/* Global Claim Student Pass Modal */}
+      <ClaimStudentPassModal
+        isOpen={showClaimModal}
+        onClose={() => setShowClaimModal(false)}
+      />
+
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <EmergencyBanner />
         <div className="flex-1 scroll-ios pt-14 pb-[72px] lg:pt-0 lg:pb-0">
           <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-6 py-4 lg:py-8">
             <Outlet />
           </div>
         </div>
       </main>
+
+      {/* Mobile Bottom Navigation Bar */}
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 glass-nav"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 glass-nav border-t border-gray-200/80 dark:border-slate-800/80 shadow-2xl backdrop-blur-xl"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <div className="flex items-stretch h-[56px] overflow-x-auto scrollbar-hide flex-nowrap px-2">
-          {bottomTabLinks.map((link) => {
+        <div className="flex items-center justify-around h-16 px-1 max-w-lg mx-auto">
+          {/* Primary Role Tabs */}
+          {accessibleNavLinks.slice(0, 4).map((link) => {
             const isDashboard = link.href === "/app/dashboard";
             const isDashboardChild = isDashboard && location.pathname.startsWith("/app/visits");
             const isActive = location.pathname === link.href || isDashboardChild;
@@ -229,39 +264,49 @@ export function Layout() {
               <Link
                 key={link.href}
                 to={link.href}
-                className="flex-shrink-0 w-[72px] flex flex-col items-center justify-center gap-1 transition-all duration-200 active:scale-90 relative"
+                className="flex-1 flex flex-col items-center justify-center py-1.5 transition-all duration-200 active:scale-95 relative"
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 {isActive && (
-                  <span className="absolute top-1 w-1.5 h-1.5 bg-sky-500 rounded-full animate-tabPop shadow-[0_0_8px_rgba(14,165,233,0.6)]" />
+                  <span className="absolute top-0.5 w-2 h-1 bg-sky-500 rounded-full shadow-[0_0_8px_rgba(14,165,233,0.8)]" />
                 )}
 
                 <div
-                  className={`flex items-center justify-center w-12 h-7 rounded-2xl transition-all duration-300 ${isActive ? "bg-sky-100 dark:bg-sky-900/40 shadow-sm" : ""
-                    }`}
+                  className={`flex items-center justify-center w-10 h-7 rounded-xl transition-all duration-300 ${
+                    isActive ? "bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400 shadow-xs" : "text-gray-400 dark:text-slate-500"
+                  }`}
                 >
-                  <link.icon
-                    className={`transition-all duration-200 ${isActive
-                        ? "w-5 h-5 text-sky-600 dark:text-sky-400"
-                        : "w-[20px] h-[20px] text-gray-400 dark:text-slate-500"
-                      }`}
-                    strokeWidth={isActive ? 2.5 : 2}
-                  />
+                  <link.icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
                 </div>
 
                 <span
-                  className={`text-[10px] font-black tracking-wide transition-colors duration-200 ${isActive
-                      ? "text-sky-600 dark:text-sky-400"
-                      : "text-gray-400 dark:text-slate-500"
-                    }`}
+                  className={`text-[10px] font-bold tracking-tight truncate max-w-[68px] mt-0.5 ${
+                    isActive ? "text-sky-600 dark:text-sky-400 font-black" : "text-gray-400 dark:text-slate-500"
+                  }`}
                 >
                   {link.label.split(" ")[0]}
                 </span>
               </Link>
             );
           })}
+
+          {/* More Menu Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(true)}
+            className={`flex-1 flex flex-col items-center justify-center py-1.5 transition-all duration-200 active:scale-95 ${
+              isMobileMenuOpen ? "text-sky-600 dark:text-sky-400 font-black" : "text-gray-400 dark:text-slate-500"
+            }`}
+            style={{ WebkitTapHighlightColor: "transparent" }}
+          >
+            <div className="flex items-center justify-center w-10 h-7 rounded-xl">
+              <span className="text-lg leading-none font-bold">☰</span>
+            </div>
+            <span className="text-[10px] font-bold tracking-tight mt-0.5">More</span>
+          </button>
         </div>
       </nav>
+
     </div>
   );
 }

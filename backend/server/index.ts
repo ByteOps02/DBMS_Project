@@ -8,6 +8,11 @@ import visitorsRoutes from './routes/visitors.js';
 import hostsRoutes from './routes/hosts.js';
 import departmentsRoutes from './routes/departments.js';
 import analyticsRoutes from './routes/analytics.js';
+import studentsRoutes from './routes/students.js';
+import emergencyRoutes from './routes/emergency.js';
+import vehiclesRoutes from './routes/vehicles.js';
+import lostAndFoundRoutes from './routes/lostAndFound.js';
+
 
 const app = express();
 
@@ -41,6 +46,12 @@ app.use('/api/visitors', visitorsRoutes);
 app.use('/api/hosts', hostsRoutes);
 app.use('/api/departments', departmentsRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/students', studentsRoutes);
+app.use('/api/emergency', emergencyRoutes);
+app.use('/api/vehicles', vehiclesRoutes);
+app.use('/api/lost-and-found', lostAndFoundRoutes);
+
+
 
 // Global error handler
 app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {

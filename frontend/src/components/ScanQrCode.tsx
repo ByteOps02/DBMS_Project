@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import toast from "react-hot-toast";
@@ -11,6 +12,8 @@ import {
   Car,
   Clock,
   ShieldCheck,
+  GraduationCap,
+  Users,
 } from "lucide-react";
 
 import { BackButton } from "./BackButton";
@@ -19,6 +22,7 @@ import { api } from "../lib/api";
 import { formatIST } from "../lib/dateIST";
 import { useAuthStore } from "../store/auth";
 import { CustomSelect } from "./ui/CustomSelect";
+import { StudentGateKiosk } from "./StudentGateKiosk";
 
 import type { Database } from "../lib/database.types";
 
@@ -38,6 +42,7 @@ interface OptimisticVisit {
 }
 
 export function ScanQrCode() {
+  const [scannerMode, setScannerMode] = useState<"visitors" | "students">("students");
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [visit, setVisit] = useState<Visit | null>(null);
@@ -48,6 +53,7 @@ export function ScanQrCode() {
   
   const [currentGate, setCurrentGate] = useState(CAMPUS_GATES[0]);
   const [scannerReady, setScannerReady] = useState(false);
+
   const [scannerKey, setScannerKey] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -216,69 +222,114 @@ export function ScanQrCode() {
     );
 
   return (
-    <div className="px-3 xs:px-4 sm:px-6 lg:px-8 pb-12">
-      <div className="max-w-7xl mx-auto print:hidden">
-        <BackButton />
+    <div className="px-4 sm:px-6 lg:px-8 pb-12 animate-fadeIn max-w-5xl mx-auto">
+      <div className="print:hidden">
+        <div className="flex items-center gap-3 mb-2">
+          <BackButton />
+        </div>
+
         <PageHeader
           icon={QrCode}
           gradient="from-indigo-600 to-sky-600"
-          title="Security Scanner"
-          description="Instant identity verification and campus gate traffic management."
+          title="Security Scanner & Checkpoint Kiosk"
+          description="Instant identity verification, visitor processing, and 2000+ student campus outing management."
         />
 
+        {/* Premium Mode Switcher */}
+        <div className="mt-6 flex justify-center sm:justify-start">
+          <div className="inline-flex p-1.5 bg-gray-100 dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-inner">
+            <button
+              type="button"
+              onClick={() => setScannerMode("students")}
+              className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider transition-all ${
+                scannerMode === "students"
+                  ? "bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-md border border-gray-200/60 dark:border-slate-700"
+                  : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+              }`}
+            >
+              <GraduationCap className="w-4 h-4" />
+              <span>Student Outings Kiosk</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setScannerMode("visitors")}
+              className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider transition-all ${
+                scannerMode === "visitors"
+                  ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-md border border-gray-200/60 dark:border-slate-700"
+                  : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>External Visitors</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="mt-4 sm:mt-8 max-w-2xl mx-auto space-y-4 sm:space-y-6 print:m-0 print:space-y-0">
-        {!visit && !optimisticVisit && (
-          <div className="bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl border border-gray-200/80 dark:border-slate-800 flex items-center justify-between gap-3 sm:gap-4 shadow-sm transition-all duration-300 print:hidden relative z-50">
-            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-              <div className="p-2.5 bg-sky-50 dark:bg-sky-950/60 border border-sky-100 dark:border-sky-900/50 rounded-xl text-sky-600 dark:text-sky-400 shrink-0">
-                <MapPin className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <span className="block text-[10px] font-black uppercase text-gray-400 dark:text-slate-500 tracking-wider">
-                  Current Gate Location
-                </span>
-                <span className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate block">
-                  {currentGate}
-                </span>
-              </div>
-            </div>
-            <div className="w-44 sm:w-56 shrink-0">
-              <CustomSelect
-                value={currentGate}
-                onChange={setCurrentGate}
-                options={CAMPUS_GATES.map((g) => ({ value: g, label: g }))}
-                className="!py-2 !px-3 font-semibold text-xs sm:text-sm shadow-xs"
-              />
-            </div>
-          </div>
-        )}
-
-
-        {!visit && !optimisticVisit && (
-          <div className="bg-slate-950 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden relative w-full max-w-md mx-auto aspect-square shadow-2xl border border-slate-800 ring-4 ring-slate-900/10 dark:ring-slate-900/50 print:hidden">
-            <div id="qr-reader" className="w-full h-full [&>video]:object-cover"></div>
-            {!scannerReady && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-white gap-4">
-                <ScanLine className="w-10 h-10 sm:w-12 sm:h-12 animate-pulse text-indigo-400" />
-                <p className="font-bold tracking-widest uppercase text-[9px] sm:text-[10px] opacity-60">
-                  Initializing...
-                </p>
-              </div>
-            )}
-            {scannerReady && (
-              <div className="absolute inset-0 pointer-events-none border-[30px] sm:border-[60px] border-black/30">
-                <div className="w-full h-full border-2 border-indigo-500/50 rounded-2xl relative">
-                  <div className="absolute top-0 left-0 w-6 h-6 sm:w-8 sm:h-8 border-t-4 border-l-4 border-indigo-500 -mt-1 -ml-1"></div>
-                  <div className="absolute top-0 right-0 w-6 h-6 sm:w-8 sm:h-8 border-t-4 border-r-4 border-indigo-500 -mt-1 -mr-1"></div>
-                  <div className="absolute bottom-0 left-0 w-6 h-6 sm:w-8 sm:h-8 border-b-4 border-l-4 border-indigo-500 -mb-1 -ml-1"></div>
-                  <div className="absolute bottom-0 right-0 w-6 h-6 sm:w-8 sm:h-8 border-b-4 border-r-4 border-indigo-500 -mb-1 -mr-1"></div>
+      {scannerMode === "students" ? (
+        <div className="mt-6">
+          <StudentGateKiosk />
+        </div>
+      ) : (
+        <div className="mt-6 space-y-6 print:m-0 print:space-y-0">
+          {!visit && !optimisticVisit && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm relative z-30">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/50 rounded-xl text-indigo-600 dark:text-indigo-400 shrink-0">
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="block text-xs font-bold uppercase text-gray-400 dark:text-slate-500 tracking-wider">
+                    Active Visitor Checkpoint
+                  </span>
+                  <span className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
+                    {currentGate}
+                  </span>
                 </div>
               </div>
-            )}
-          </div>
-        )}
+              <div className="w-full sm:w-60">
+                <CustomSelect
+                  value={currentGate}
+                  onChange={setCurrentGate}
+                  options={CAMPUS_GATES.map((g) => ({ value: g, label: g }))}
+                  className="!py-2 !px-3 font-semibold text-sm shadow-xs"
+                />
+              </div>
+            </div>
+          )}
+
+          {!visit && !optimisticVisit && (
+            <div className="flex flex-col items-center justify-center p-6 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-md">
+              <div className="bg-slate-950 rounded-3xl overflow-hidden relative w-full max-w-md aspect-square shadow-2xl border-2 border-indigo-500/40 ring-4 ring-indigo-500/10">
+                <div id="qr-reader" className="w-full h-full [&>video]:object-cover"></div>
+                {!scannerReady && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 text-white gap-3">
+                    <ScanLine className="w-12 h-12 animate-pulse text-indigo-400" />
+                    <p className="font-bold tracking-widest uppercase text-xs opacity-70">
+                      Initializing Camera Scanner...
+                    </p>
+                  </div>
+                )}
+                {scannerReady && (
+                  <div className="absolute inset-0 pointer-events-none border-[30px] sm:border-[45px] border-black/50">
+                    <div className="w-full h-full border-2 border-indigo-400/80 rounded-2xl relative shadow-inner">
+                      {/* Laser scanner sweeping line */}
+                      <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_12px_#38bdf8] animate-pulse" style={{ top: "50%" }} />
+                      <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-cyan-400 -mt-1 -ml-1"></div>
+                      <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-cyan-400 -mt-1 -mr-1"></div>
+                      <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-cyan-400 -mb-1 -ml-1"></div>
+                      <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-cyan-400 -mb-1 -mr-1"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-4 text-center">
+                Point camera directly at the visitor's Pass QR Code displayed on their mobile or printed badge.
+              </p>
+            </div>
+          )}
+
 
         {error && (
           <div className="bg-red-50 dark:bg-red-900/10 border-2 border-red-100 dark:border-red-900/30 p-6 rounded-3xl flex items-start gap-4">
@@ -423,6 +474,8 @@ export function ScanQrCode() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
+

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 
-export type SyncTopic = "visits" | "visitors" | "hosts" | "stats" | "all";
+export type SyncTopic = "visits" | "visitors" | "hosts" | "stats" | "students" | "all";
+
 
 class DataSyncBus extends EventTarget {
   private channel: BroadcastChannel | null = null;

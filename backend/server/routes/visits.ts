@@ -313,4 +313,245 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+/**
+ * GET /api/visits/traffic-telemetry
+ * Real-time campus census, live capacity meter, and hourly traffic distribution
+ */
+router.get('/analytics/traffic-telemetry', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    // 1. Live inside students
+    const insideStudents = await prisma.student.count({
+      where: { status: 'inside' },
+    });
+    const outStudents = await prisma.student.count({
+      where: { status: 'out_day' },
+    });
+    const leaveStudents = await prisma.student.count({
+      where: { status: 'on_leave' },
+    });
+
+    // 2. Active checked-in visitors
+    const activeVisits = await prisma.visit.findMany({
+      where: {
+        status: 'approved',
+        check_in_time: { not: null },
+        check_out_time: null,
+      },
+      include: { visitor: true, host: true },
+    });
+
+    const now = new Date();
+    const overstayThresholdMs = 4 * 60 * 60 * 1000; // 4 hours default
+
+    const overstayedVisits = activeVisits.filter((v) => {
+      if (v.expected_out_time && new Date(v.expected_out_time) < now) return true;
+      if (v.check_in_time && now.getTime() - new Date(v.check_in_time).getTime() > overstayThresholdMs) return true;
+      return false;
+    });
+
+    const activeVisitorsCount = activeVisits.length;
+    const campusSafeCapacity = 1000;
+    const currentCampusPopulation = insideStudents + activeVisitorsCount;
+    const occupancyPercentage = Math.min(100, Math.round((currentCampusPopulation / campusSafeCapacity) * 100));
+
+    // 3. Hourly traffic distribution for today (06:00 to 22:00)
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const todayVisits = await prisma.visit.findMany({
+      where: {
+        OR: [
+          { check_in_time: { gte: todayStart } },
+          { check_out_time: { gte: todayStart } },
+        ],
+      },
+      select: { check_in_time: true, check_out_time: true },
+    });
+
+    const hourlyDistribution: Array<{ hour: string; entries: number; exits: number }> = [];
+    for (let h = 6; h <= 22; h += 2) {
+      const label = `${h.toString().padStart(2, '0')}:00`;
+      let entries = 0;
+      let exits = 0;
+
+      todayVisits.forEach((v) => {
+        if (v.check_in_time) {
+          const inHour = new Date(v.check_in_time).getHours();
+          if (inHour >= h && inHour < h + 2) entries++;
+        }
+        if (v.check_out_time) {
+          const outHour = new Date(v.check_out_time).getHours();
+          if (outHour >= h && outHour < h + 2) exits++;
+        }
+      });
+
+      hourlyDistribution.push({ hour: label, entries, exits });
+    }
+
+    res.json({
+      census: {
+        currentCampusPopulation,
+        campusSafeCapacity,
+        occupancyPercentage,
+        insideStudents,
+        outStudents,
+        leaveStudents,
+        activeVisitorsCount,
+        overstayCount: overstayedVisits.length,
+      },
+      overstayedVisits: overstayedVisits.map((v) => ({
+        id: v.id,
+        visitorName: v.visitor?.name,
+        visitorPhone: v.visitor?.phone,
+        purpose: v.purpose,
+        checkInTime: v.check_in_time,
+        hostName: v.host?.name || 'Academic Block',
+        overstayMinutes: v.check_in_time
+          ? Math.round((now.getTime() - new Date(v.check_in_time).getTime()) / (1000 * 60))
+          : 0,
+        escortName: v.escort_name,
+        overstayNotified: v.overstay_notified,
+      })),
+      hourlyDistribution,
+    });
+  } catch (err: any) {
+    console.error('Error calculating traffic telemetry:', err);
+    res.status(500).json({ error: 'Failed to retrieve traffic telemetry.' });
+  }
+});
+
+/**
+ * POST /api/visits/self-service-kiosk
+ * Fast walk-in reception self check-in with instant auto-approval & badge token
+ */
+router.post('/self-service-kiosk', async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      phone,
+      company,
+      purpose,
+      category = 'guest', // "guest" | "courier" | "interview" | "vip"
+      vehicle_number,
+      photo_url,
+      host_name,
+    } = req.body;
+
+    if (!name || !phone || !purpose) {
+      return res.status(400).json({ error: 'Name, Phone, and Purpose of visit are required.' });
+    }
+
+    const cleanPhone = phone.trim();
+    const cleanEmail = email?.trim() || `${cleanPhone}@kiosk.guest`;
+
+    // 1. Upsert visitor
+    let visitor = await prisma.visitor.findFirst({
+      where: {
+        OR: [{ phone: cleanPhone }, { email: cleanEmail }],
+      },
+    });
+
+    if (!visitor) {
+      visitor = await prisma.visitor.create({
+        data: {
+          name: name.trim(),
+          email: cleanEmail,
+          phone: cleanPhone,
+          photo_url: photo_url || null,
+        },
+      });
+    } else if (photo_url && !visitor.photo_url) {
+      visitor = await prisma.visitor.update({
+        where: { id: visitor.id },
+        data: { photo_url },
+      });
+    }
+
+    // 2. Default Host for Walk-In / Courier / Reception
+    let host = await prisma.host.findFirst({
+      where: { role: 'admin' },
+    });
+    if (!host) {
+      host = await prisma.host.findFirst();
+    }
+
+    const validFrom = new Date();
+    const validUntil = new Date(Date.now() + 8 * 60 * 60 * 1000); // 8-hour single day pass
+
+    const isVIP = category === 'vip';
+
+    const visit = await prisma.visit.create({
+      data: {
+        visitor_id: visitor.id,
+        host_id: host ? host.id : undefined,
+        purpose: `${category === 'courier' ? '[DELIVERY/COURIER] ' : category === 'interview' ? '[INTERVIEW] ' : category === 'vip' ? '[VIP DIGNITARY] ' : ''}${purpose.trim()}`,
+        status: 'approved', // Auto-approved for reception kiosk
+        approved_at: new Date(),
+        check_in_time: new Date(), // Instant self check-in
+        valid_from: validFrom,
+        valid_until: validUntil,
+        vehicle_number: vehicle_number?.trim() || null,
+        is_vip: isVIP,
+        vip_category: isVIP ? 'Dignitary Guest' : null,
+        entry_gate: 'Main Reception Kiosk',
+      },
+      include: {
+        visitor: true,
+        host: true,
+      },
+    });
+
+    // Fast-pass QR payload
+    const qrPayload = JSON.stringify({
+      vId: visit.id,
+      vName: visitor.name,
+      vPhone: visitor.phone,
+      type: 'WALK_IN_PASS',
+      validUntil: validUntil.toISOString(),
+    });
+
+    res.status(201).json({
+      visit,
+      qrPayload,
+      message: 'Self Check-in successful. Thermal Badge Generated.',
+    });
+  } catch (err: any) {
+    console.error('Self service kiosk error:', err);
+    res.status(500).json({ error: 'Failed to process self-service registration.' });
+  }
+});
+
+/**
+ * PATCH /api/visits/:id/escort
+ * Dispatch security escort officer for overstayed visitor
+ */
+router.patch('/:id/escort', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const id = req.params.id as string;
+    const { escort_name } = req.body;
+
+    const officer = escort_name?.trim() || req.user?.name || 'Security Patrol Alpha';
+
+    const updated = await prisma.visit.update({
+      where: { id },
+      data: {
+        overstay_notified: true,
+        escort_name: officer,
+      },
+      include: { visitor: true, host: true },
+    });
+
+    res.json({
+      visit: updated,
+      message: `Security Escort (${officer}) dispatched for visitor.`,
+    });
+  } catch (err: any) {
+    console.error('Error dispatching escort:', err);
+    res.status(500).json({ error: 'Failed to dispatch security escort.' });
+  }
+});
+
+
 export default router;
+

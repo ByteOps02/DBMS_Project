@@ -1,16 +1,17 @@
 import { create } from "zustand";
 import { api, API_BASE } from "../lib/api";
-import type { Database } from "../lib/database.types";
 import log from "../lib/logger";
 
-export type UserRole = Database["public"]["Enums"]["user_role"];
+
+export type UserRole = "admin" | "guard" | "host" | "visitor" | "student";
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
-  department_id: string;
+  department_id?: string | null;
+  roll_number?: string | null;
 }
 
 interface AuthState {
@@ -20,10 +21,18 @@ interface AuthState {
   error: string | null;
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string, departmentId: string) => Promise<{ requiresVerification: boolean; email?: string }>;
+  signup: (
+    email: string,
+    password: string,
+    name: string,
+    departmentId?: string,
+    role?: string,
+    rollNumber?: string
+  ) => Promise<{ requiresVerification: boolean; email?: string }>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
+
 
 const PROFILE_CACHE_KEY = "vms_user_profile";
 const TOKEN_KEY = "vms_token";
@@ -155,16 +164,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ error: errorMessage, isLoading: false, isAuthenticated: false, user: null });
     }
   },
-  signup: async (email: string, password: string, name: string, departmentId: string) => {
-    log.info("[Auth] Signup attempt:", { email, name, departmentId });
+  signup: async (
+    email: string,
+    password: string,
+    name: string,
+    departmentId?: string,
+    role?: string,
+    rollNumber?: string
+  ) => {
+    log.info("[Auth] Signup attempt:", { email, name, departmentId, role, rollNumber });
     try {
       set({ isLoading: true, error: null });
 
       const res = await fetch(`${API_BASE}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name, department_id: departmentId }),
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          department_id: departmentId || undefined,
+          role: role || "visitor",
+          roll_number: rollNumber || undefined,
+        }),
       });
+
 
       const text = await res.text();
       let data: Record<string, unknown> = {};

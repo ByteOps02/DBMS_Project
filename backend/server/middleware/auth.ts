@@ -5,8 +5,10 @@ import { prisma } from '../lib/prisma.js';
 export interface AuthRequest extends Request {
   user?: {
     id: string;
-    role: 'admin' | 'guard' | 'host' | 'visitor';
+    name: string;
+    role: 'admin' | 'guard' | 'host' | 'visitor' | 'student';
     email: string;
+    roll_number?: string | null;
   };
 }
 
@@ -30,7 +32,7 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
 
     const host = await prisma.host.findUnique({
       where: { id: payload.userId as string },
-      select: { id: true, role: true, email: true },
+      select: { id: true, name: true, role: true, email: true, roll_number: true },
     });
 
     if (!host) {
@@ -39,11 +41,14 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
 
     req.user = {
       id: host.id,
-      role: host.role as 'admin' | 'guard' | 'host' | 'visitor',
+      name: host.name,
+      role: host.role as 'admin' | 'guard' | 'host' | 'visitor' | 'student',
       email: host.email,
+      roll_number: host.roll_number,
     };
 
     next();
+
   } catch (err) {
     console.error('[Auth Middleware Error]', err);
     res.status(500).json({ error: 'Internal server error during authentication' });
@@ -61,17 +66,20 @@ export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFu
     const payload = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
     const host = await prisma.host.findUnique({
       where: { id: payload.userId as string },
-      select: { id: true, role: true, email: true },
+      select: { id: true, name: true, role: true, email: true, roll_number: true },
     });
     
     if (host) {
       req.user = {
         id: host.id,
-        role: host.role as 'admin' | 'guard' | 'host' | 'visitor',
+        name: host.name,
+        role: host.role as 'admin' | 'guard' | 'host' | 'visitor' | 'student',
         email: host.email,
+        roll_number: host.roll_number,
       };
     }
   } catch {
+
     // Optional auth, ignore errors
   }
   next();
