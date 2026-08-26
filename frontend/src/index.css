@@ -44,6 +44,30 @@ body {
   flex-direction: column;
 }
 
+html.dark,
+.dark {
+  color-scheme: dark;
+}
+
+html:not(.dark) {
+  color-scheme: light;
+}
+
+/* Custom styling for native date inputs */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8) brightness(1.2);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 @layer base {
   body {
     @apply bg-gray-50 text-gray-900;
@@ -56,6 +80,7 @@ body {
     background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
     background-size: 24px 24px;
   }
+
 
   /* ── Scrollbar – light ── */
   ::-webkit-scrollbar {
@@ -487,23 +512,69 @@ body {
   }
 
   /* ═══════════════════════════════════════
-     BUTTONS
+     BUTTONS (Standardized Design System)
      ═══════════════════════════════════════ */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2
+           font-semibold text-sm
+           px-4 py-2.5 rounded-xl
+           transition-all duration-200 ease-out
+           focus:outline-none focus:ring-2 focus:ring-offset-2
+           active:scale-[0.98]
+           disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed
+           cursor-pointer select-none;
+  }
+
   .btn-primary {
-    @apply bg-blue-500 hover:bg-blue-600
-           text-white font-black tracking-widest text-[10px] uppercase
-           py-3 px-6 rounded-full
-           transition-all duration-300
-           active:scale-95;
+    @apply btn
+           bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700
+           text-white shadow-sm shadow-sky-500/25 hover:shadow-md hover:shadow-sky-500/35
+           focus:ring-sky-500 focus:ring-offset-white dark:focus:ring-offset-slate-900;
   }
 
   .btn-secondary {
-    @apply bg-emerald-500 hover:bg-emerald-600
-           text-white font-black tracking-widest text-[10px] uppercase
-           py-3 px-6 rounded-full
-           transition-all duration-300
-           active:scale-95;
+    @apply btn
+           bg-white dark:bg-slate-800
+           text-gray-700 dark:text-slate-200
+           border border-gray-200 dark:border-slate-700
+           hover:bg-gray-50 dark:hover:bg-slate-700/70
+           shadow-sm hover:border-gray-300 dark:hover:border-slate-600
+           focus:ring-slate-400 focus:ring-offset-white dark:focus:ring-offset-slate-900;
   }
+
+  .btn-outline {
+    @apply btn
+           border border-sky-500 text-sky-600 dark:text-sky-400
+           hover:bg-sky-500 hover:text-white dark:hover:bg-sky-600 dark:hover:text-white
+           focus:ring-sky-500 focus:ring-offset-white dark:focus:ring-offset-slate-900;
+  }
+
+  .btn-success {
+    @apply btn
+           bg-emerald-600 hover:bg-emerald-700
+           text-white shadow-sm shadow-emerald-600/20 hover:shadow-md hover:shadow-emerald-600/30
+           focus:ring-emerald-500 focus:ring-offset-white dark:focus:ring-offset-slate-900;
+  }
+
+  .btn-danger {
+    @apply btn
+           bg-rose-600 hover:bg-rose-700
+           text-white shadow-sm shadow-rose-600/20 hover:shadow-md hover:shadow-rose-600/30
+           focus:ring-rose-500 focus:ring-offset-white dark:focus:ring-offset-slate-900;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs rounded-lg;
+  }
+
+  .btn-md {
+    @apply px-4 py-2.5 text-sm rounded-xl;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-base rounded-2xl;
+  }
+
 
   /* ═══════════════════════════════════════
      CARDS

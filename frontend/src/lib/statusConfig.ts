@@ -1,4 +1,4 @@
-import { Hourglass, CheckCircle2, XCircle, LogIn } from "lucide-react";
+import { Clock3, CheckCircle2, XCircle, LogIn, CheckCheck, Ban } from "lucide-react";
 
 export const STATUS_CONFIG: Record<
   string,
@@ -6,7 +6,7 @@ export const STATUS_CONFIG: Record<
 > = {
   pending: {
     label: "Pending",
-    icon: Hourglass,
+    icon: Clock3,
     className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
   },
   approved: {
@@ -21,7 +21,7 @@ export const STATUS_CONFIG: Record<
   },
   completed: {
     label: "Completed",
-    icon: CheckCircle2,
+    icon: CheckCheck,
     className: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
   },
   checked_in: {
@@ -31,7 +31,7 @@ export const STATUS_CONFIG: Record<
   },
   cancelled: {
     label: "Cancelled",
-    icon: XCircle,
+    icon: Ban,
     className: "bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-400",
   },
 };
@@ -41,3 +41,4 @@ export function getStatusConfig(
 ): (typeof STATUS_CONFIG)[keyof typeof STATUS_CONFIG] {
   return STATUS_CONFIG[status] || STATUS_CONFIG["pending"];
 }
+

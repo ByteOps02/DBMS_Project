@@ -1,5 +1,6 @@
 import React from "react";
-import { Zap, ArrowUpRight } from "lucide-react";
+import { TrendingUp, ArrowUpRight } from "lucide-react";
+
 
 export type StatItemProps = {
   name: string;
@@ -138,11 +139,12 @@ export const StatItem = React.memo(
         </div>
 
         <div className="px-4 sm:px-5 py-3 sm:py-3.5 bg-slate-50/50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 relative z-10 flex items-center gap-2">
-          <Zap className={`h-3.5 w-3.5 ${color}`} strokeWidth={2.5} />
+          <TrendingUp className={`h-3.5 w-3.5 ${color}`} strokeWidth={2.5} />
           <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            Today&apos;s Metric
+            Live Metric
           </span>
         </div>
+
         
         {/* Animated bottom border on hover mimicking the active state in the screenshot */}
         <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-0 group-hover:w-full bg-gradient-to-r ${theme.gradient} rounded-t-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-20`} />

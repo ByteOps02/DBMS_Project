@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import {
   CheckCircle,
   ScanLine,
+  QrCode,
   Printer,
   AlertTriangle,
   MapPin,
@@ -11,6 +12,7 @@ import {
   Clock,
   ShieldCheck,
 } from "lucide-react";
+
 import { BackButton } from "./BackButton";
 import { PageHeader } from "./PageHeader";
 import { api } from "../lib/api";
@@ -218,32 +220,41 @@ export function ScanQrCode() {
       <div className="max-w-7xl mx-auto print:hidden">
         <BackButton />
         <PageHeader
-          icon={ScanLine}
-          gradient="from-slate-800 to-slate-900"
+          icon={QrCode}
+          gradient="from-indigo-600 to-sky-600"
           title="Security Scanner"
-          description="Instant identity verification and traffic management."
+          description="Instant identity verification and campus gate traffic management."
         />
+
       </div>
 
       <div className="mt-4 sm:mt-8 max-w-2xl mx-auto space-y-4 sm:space-y-6 print:m-0 print:space-y-0">
         {!visit && !optimisticVisit && (
-          <div className="bg-white dark:bg-[#0f172a] p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-3 sm:gap-4 transition-all duration-300 print:hidden relative z-50">
-            <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-600 dark:text-slate-400">
-              <MapPin className="w-5 h-5 sm:w-6 sm:h-6" />
+          <div className="bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl border border-gray-200/80 dark:border-slate-800 flex items-center justify-between gap-3 sm:gap-4 shadow-sm transition-all duration-300 print:hidden relative z-50">
+            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+              <div className="p-2.5 bg-sky-50 dark:bg-sky-950/60 border border-sky-100 dark:border-sky-900/50 rounded-xl text-sky-600 dark:text-sky-400 shrink-0">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <span className="block text-[10px] font-black uppercase text-gray-400 dark:text-slate-500 tracking-wider">
+                  Current Gate Location
+                </span>
+                <span className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate block">
+                  {currentGate}
+                </span>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <label className="block text-[9px] sm:text-[10px] font-black uppercase text-gray-400 dark:text-slate-500 tracking-widest mb-0.5 sm:mb-1">
-                Current Gate Location
-              </label>
+            <div className="w-44 sm:w-56 shrink-0">
               <CustomSelect
                 value={currentGate}
                 onChange={setCurrentGate}
                 options={CAMPUS_GATES.map((g) => ({ value: g, label: g }))}
-                className="!p-0 !border-none !bg-transparent !ring-0 text-gray-900 dark:text-white font-bold text-xs sm:text-base w-full overflow-hidden"
+                className="!py-2 !px-3 font-semibold text-xs sm:text-sm shadow-xs"
               />
             </div>
           </div>
         )}
+
 
         {!visit && !optimisticVisit && (
           <div className="bg-slate-950 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden relative w-full max-w-md mx-auto aspect-square shadow-2xl border border-slate-800 ring-4 ring-slate-900/10 dark:ring-slate-900/50 print:hidden">
@@ -281,10 +292,11 @@ export function ScanQrCode() {
               </p>
               <button
                 onClick={handleScanAnother}
-                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest"
+                className="btn-danger mt-4 !py-2 !px-4"
               >
                 Restart Scanner
               </button>
+
             </div>
           </div>
         )}
@@ -393,18 +405,19 @@ export function ScanQrCode() {
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 print-hide">
                   <button
                     onClick={handleScanAnother}
-                    className="flex-1 py-3.5 sm:py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-[11px] active:scale-95 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 focus:ring-4 focus:ring-slate-900/20"
+                    className="btn-primary flex-1 !py-3.5 !rounded-2xl !text-sm"
                   >
                     Scan Next Visitor
                   </button>
                   <button
                     onClick={() => window.print()}
-                    className="px-6 py-3.5 sm:py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-sm flex items-center justify-center active:scale-95 border border-slate-200 dark:border-slate-700/50"
+                    className="btn-secondary !px-6 !py-3.5 !rounded-2xl"
                     title="Print Receipt"
                   >
-                    <Printer className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <Printer className="w-5 h-5" />
                   </button>
                 </div>
+
               </div>
             </div>
           </div>

@@ -1,7 +1,8 @@
 import type React from "react";
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Shield, Eye, EyeOff, ArrowRight, ArrowLeft, Building2, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, Eye, EyeOff, ArrowRight, Building2, CheckCircle2, AlertCircle } from "lucide-react";
+
 import { useAuthStore } from "../store/auth";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { api, API_BASE } from "../lib/api";
@@ -9,6 +10,10 @@ import { validatePasswordStrength } from "../lib/sanitize";
 import log from "../lib/logger";
 import { GoogleLogin } from "@react-oauth/google";
 import { CustomSelect } from "./ui/CustomSelect";
+import { Logo } from "./Logo";
+import { BackButton } from "./BackButton";
+
+
 
 type Department = {
   id: string;
@@ -159,8 +164,9 @@ export function Signup() {
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 py-12 w-full h-full text-white">
           <div className="glass-dark border border-white/10 rounded-[2rem] p-8 max-w-lg shadow-2xl animate-slideInLeft">
             <div className="inline-flex gap-2 items-center mb-8 px-4 py-2 rounded-full border border-sky-400/30 bg-sky-900/40 text-sky-200 text-sm font-medium">
-              <Shield size={16} /> Indian Institute Of Information Technology Nagpur
+              <ShieldCheck size={16} /> Indian Institute Of Information Technology Nagpur
             </div>
+
 
             <h1 className="text-4xl xl:text-5xl font-extrabold tracking-tight mb-6">
               Start managing
@@ -200,21 +206,12 @@ export function Signup() {
       </div>
       <div className="w-full lg:w-[55%] xl:w-1/2 flex flex-col pt-12 pb-8 sm:pt-16 sm:pb-10 px-4 sm:px-8 lg:px-12 xl:px-24 min-h-[100dvh] lg:h-screen lg:overflow-y-auto">
         <div className="w-full max-w-md sm:max-w-lg mx-auto relative z-10 sm:py-8 my-auto">
-          <div className="mb-6">
-            <button
-              onClick={() => navigate("/")}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full shadow-sm transition-all duration-200 active:scale-95"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Home
-            </button>
-          </div>
+          <BackButton to="/" />
 
           <div className="text-center lg:text-left mb-10">
+
             <div className="lg:hidden flex justify-center mb-6">
-              <div className="p-3 bg-indigo-100 dark:bg-indigo-900/40 rounded-3xl shadow-sm border border-indigo-200 dark:border-indigo-800/50">
-                <Shield className="h-10 w-10 text-indigo-600 dark:text-indigo-400" />
-              </div>
+              <Logo size="lg" />
             </div>
             <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter">
               {view === "signup" ? "Create account" : "Verify Your Email"}
@@ -223,6 +220,7 @@ export function Signup() {
               {view === "signup" ? "Sign up to access the IIIT Nagpur VMS" : "Enter the 6-digit code sent to your email"}
             </p>
           </div>
+
 
           <div className="card">
             {success && (
@@ -251,7 +249,7 @@ export function Signup() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 dark:hover:border-slate-600"
+                  className="block w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-200 hover:border-gray-300 dark:hover:border-slate-600 text-sm font-medium"
                   placeholder="John Doe"
                 />
               </div>
@@ -271,7 +269,7 @@ export function Signup() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 dark:hover:border-slate-600"
+                  className="block w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-200 hover:border-gray-300 dark:hover:border-slate-600 text-sm font-medium"
                   placeholder="name@campus.edu"
                 />
               </div>
@@ -293,7 +291,6 @@ export function Signup() {
                     options={departments.map(dept => ({ value: dept.id, label: dept.name }))}
                     placeholder="Select a department"
                     icon={<Building2 className="h-4 w-4" />}
-                    className="pl-2 py-2"
                   />
                 </div>
               </div>
@@ -315,13 +312,13 @@ export function Signup() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 dark:hover:border-slate-600 pr-10"
+                      className="block w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-200 hover:border-gray-300 dark:hover:border-slate-600 pr-10 text-sm font-medium"
                       placeholder="••••••••"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -364,13 +361,13 @@ export function Signup() {
                       required
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="block w-full px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 hover:border-gray-300 dark:hover:border-slate-600 pr-10"
+                      className="block w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-200 hover:border-gray-300 dark:hover:border-slate-600 pr-10 text-sm font-medium"
                       placeholder="••••••••"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -382,14 +379,16 @@ export function Signup() {
                 </div>
               </div>
 
+
               {error && (
                 <div className="p-3.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 rounded-2xl text-sm flex items-start gap-2.5">
                   <div className="mt-0.5 shrink-0">
-                    <Shield className="w-4 h-4" />
+                    <AlertCircle className="w-4 h-4 text-red-500" />
                   </div>
                   <p>{error}</p>
                 </div>
               )}
+
 
               <div className="pt-4">
                 <button
@@ -476,21 +475,21 @@ export function Signup() {
                 </div>
                 {error && (
                   <div className="p-3.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 rounded-2xl text-sm flex items-start gap-2.5">
-                    <Shield className="w-4 h-4 mt-0.5 shrink-0" />
+                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
                     <p>{error}</p>
                   </div>
                 )}
+
                 <div className="pt-2">
                   <button type="submit" disabled={verifyLoading || success} className="btn-primary w-full flex justify-center items-center py-3">
                     {verifyLoading ? <span className="loading-spinner w-5 h-5 mr-2"></span> : "Verify"}
                   </button>
                 </div>
-                <div className="mt-6 text-center">
-                  <button type="button" onClick={() => { setView("signup"); setError(""); }} className="text-sm font-medium text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors inline-flex items-center">
-                    <ArrowLeft className="w-4 h-4 mr-1" /> Back to signup
-                  </button>
+                <div className="mt-6 flex justify-center">
+                  <BackButton onClick={() => { setView("signup"); setError(""); }} label="Back to Signup" className="mb-0" />
                 </div>
               </form>
+
             )}
           </div>
         </div>

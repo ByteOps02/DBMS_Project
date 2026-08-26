@@ -356,14 +356,14 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
               <button
                 onClick={() => handleStatusUpdate("approved")}
                 disabled={loading}
-                className="flex items-center justify-center gap-2 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all active:scale-95 disabled:opacity-50"
+                className="btn-success !py-2.5 !text-xs"
               >
                 Approve
               </button>
               <button
                 onClick={() => handleStatusUpdate("denied")}
                 disabled={loading}
-                className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl font-black uppercase tracking-widest text-[9px] transition-all hover:bg-gray-50 dark:hover:bg-slate-800 active:scale-95 disabled:opacity-50"
+                className="btn-secondary !py-2.5 !text-xs"
               >
                 Deny
               </button>
@@ -389,13 +389,13 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                     <button
                       onClick={handleCompleteVisit}
                       disabled={loading}
-                      className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 active:scale-95 shadow-sm shadow-indigo-500/20"
+                      className="btn-primary flex-1 !py-2 !text-xs"
                     >
                       Confirm Exit
                     </button>
                     <button
                       onClick={() => setShowExitGatePrompt(false)}
-                      className="flex-1 py-2.5 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest border border-gray-200 dark:border-slate-700 transition-all active:scale-95"
+                      className="btn-secondary flex-1 !py-2 !text-xs"
                     >
                       Cancel
                     </button>
@@ -405,7 +405,7 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                 <button
                   onClick={() => setShowExitGatePrompt(true)}
                   disabled={loading}
-                  className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-indigo-700 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+                  className="btn-primary w-full !py-2.5 !text-xs"
                 >
                   <CheckCircle2 className="w-4 h-4" /> Complete Visit
                 </button>
@@ -432,7 +432,7 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                     <button
                       onClick={() => handleBlacklistAction(true, blacklistReason.trim())}
                       disabled={loading || !blacklistReason.trim()}
-                      className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 active:scale-95 shadow-sm shadow-red-500/20"
+                      className="btn-danger flex-1 !py-2 !text-xs"
                     >
                       Confirm
                     </button>
@@ -441,7 +441,7 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                         setShowBlacklistPrompt(false);
                         setBlacklistReason("");
                       }}
-                      className="flex-1 py-2.5 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest border border-gray-200 dark:border-slate-700 transition-all active:scale-95"
+                      className="btn-secondary flex-1 !py-2 !text-xs"
                     >
                       Cancel
                     </button>
@@ -451,10 +451,10 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                 <button
                   onClick={handleBlacklistClick}
                   disabled={loading}
-                  className={`w-full py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                  className={`btn w-full !py-2 !text-xs ${
                     isBlacklisted
-                      ? "bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400"
-                      : "bg-red-50 border-red-100 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400"
+                      : "bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100 dark:bg-rose-900/20 dark:border-rose-800 dark:text-rose-400"
                   }`}
                 >
                   {isBlacklisted ? "Unblock Visitor" : "Blacklist"}
@@ -468,12 +468,13 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
             <a
               href={visitor.id_proof_url}
               target="_blank"
-              className="w-full py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 rounded-xl font-black uppercase tracking-widest text-[9px] flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all shadow-sm"
+              className="btn-secondary w-full !py-2 !text-xs"
             >
               <FileText className="w-3.5 h-3.5" /> View ID Proof
             </a>
           </div>
         )}
+
       </div>
     </div>,
     document.body

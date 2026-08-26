@@ -1,4 +1,5 @@
 import type { Database } from "./database.types";
+import { dataSync, SyncTopic } from "./dataSync";
 
 type Tables = Database["public"]["Tables"];
 type Row<T extends keyof Tables> = Tables[T]["Row"];
@@ -9,7 +10,40 @@ export const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
 
 const cache = new Map<string, { data: unknown; timestamp: number }>();
 const inFlightRequests = new Map<string, Promise<unknown>>();
-const CACHE_TTL_MS = 60000; // 60 seconds strict cache for instant UX
+const CACHE_TTL_MS = 15000; // 15 seconds max stale window with active real-time invalidation
+
+function invalidateMatchingCaches(path: string) {
+  // Clear in-memory API caches
+  const cleanPath = path.split("?")[0];
+  for (const key of cache.keys()) {
+    if (key.includes(cleanPath) || cleanPath.includes("/visits") || cleanPath.includes("/visitors")) {
+      cache.delete(key);
+    }
+  }
+
+  // Clear component UI caches & broadcast sync
+  let topic: SyncTopic = "all";
+  if (cleanPath.startsWith("/visitors")) {
+    topic = "visitors";
+    api.uiCache.delete("vms_blacklisted");
+  } else if (cleanPath.startsWith("/visits")) {
+    topic = "visits";
+    api.uiCache.delete("vms_all_logs");
+    api.uiCache.delete("vms_dash_recent");
+    api.uiCache.delete("vms_dash_active");
+    for (const key of api.uiCache.keys()) {
+      if (key.startsWith("vms_filtered_")) {
+        api.uiCache.delete(key);
+      }
+    }
+    // Also invalidate stats on visit changes
+    dataSync.notify("stats");
+  } else if (cleanPath.startsWith("/hosts")) {
+    topic = "hosts";
+  }
+
+  dataSync.notify(topic);
+}
 
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const method = options.method || "GET";
@@ -58,14 +92,8 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
       if (method === "GET") {
         cache.set(cacheKey, { data, timestamp: Date.now() });
       } else {
-        // Clear all GET caches for this resource path to ensure fresh data on mutations
-        // Very basic invalidation strategy: if we mutate /visits, clear all /visits caches
-        const resourcePrefix = `GET:${path.split('?')[0]}`;
-        for (const key of cache.keys()) {
-          if (key.startsWith(resourcePrefix)) {
-            cache.delete(key);
-          }
-        }
+        // Automatic real-time invalidation and notification on all mutations
+        invalidateMatchingCaches(path);
       }
       
       return data as T;
@@ -84,7 +112,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 }
 
 export const api = {
-  // Synchronous cache reader to completely eliminate React mount flickering
+  // Synchronous cache reader
   getCachedData: <T>(path: string): T | null => {
     const cacheKey = `GET:${path}`;
     const cached = cache.get(cacheKey);
@@ -94,9 +122,17 @@ export const api = {
     return null;
   },
 
-  // Synchronous UI cache for components to completely eliminate mount flashes
+  // Manual complete cache invalidator
+  invalidateAllCaches: () => {
+    cache.clear();
+    api.uiCache.clear();
+    dataSync.notify("all");
+  },
+
+  // Synchronous UI cache for components
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   uiCache: new Map<string, any>(),
+
 
   departments: {
     list: (): Promise<Pick<Row<"departments">, "id" | "name">[]> => apiFetch("/departments"),

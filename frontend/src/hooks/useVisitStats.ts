@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { UsersRound, CalendarCheck2, Hourglass, Trophy, ShieldX, Activity } from "lucide-react";
+
+import { UsersRound, CalendarCheck2, Clock3, CheckCheck, ShieldAlert, Activity } from "lucide-react";
 import { User } from "../store/auth";
 import { getISTTodayRange } from "../lib/dateIST";
 import {
@@ -8,6 +9,7 @@ import {
   getCacheTTL,
 } from "../lib/cache";
 import { api } from "../lib/api";
+import { useDataSync } from "../lib/dataSync";
 
 export type StatItem = {
   name: string;
@@ -28,9 +30,9 @@ const VISIT_STATUS = {
 const ICON_MAP: Record<string, React.ElementType> = {
   UsersRound,
   CalendarCheck2,
-  Hourglass,
-  Trophy,
-  ShieldX,
+  Clock3,
+  CheckCheck,
+  ShieldAlert,
   Activity,
 };
 const ICON_KEY_MAP = new Map<React.ElementType, string>(
@@ -42,18 +44,19 @@ type SerializedStat = Omit<StatItem, "icon"> & { iconKey: string };
 function serializeStats(stats: StatItem[]): SerializedStat[] {
   return stats.map(({ icon, ...rest }) => ({
     ...rest,
-    iconKey: ICON_KEY_MAP.get(icon) ?? "Hourglass",
+    iconKey: ICON_KEY_MAP.get(icon) ?? "Clock3",
   }));
 }
 
 function deserializeStats(raw: SerializedStat[]): StatItem[] {
   return raw.map(({ iconKey, ...rest }) => ({
     ...rest,
-    icon: ICON_MAP[iconKey] ?? Hourglass,
+    icon: ICON_MAP[iconKey] ?? Clock3,
   }));
 }
 
-const STATS_CACHE_TTL = 10 * 1000;
+
+const STATS_CACHE_TTL = 5 * 1000;
 
 function cacheKey(role: string) {
   return `vms_stats_cache_${role}`;
@@ -81,6 +84,7 @@ export const useVisitStats = (user: User | null) => {
   });
 
   const [error, setError] = useState<string | null>(null);
+
 
   const fetchStats = useCallback(
     async (force = false) => {
@@ -169,7 +173,7 @@ export const useVisitStats = (user: User | null) => {
           {
             name: "Pending Approvals",
             value: pendingCount ?? 0,
-            icon: Hourglass,
+            icon: Clock3,
             color: "text-yellow-500",
             bgColor: "bg-yellow-50",
             status: VISIT_STATUS.PENDING,
@@ -177,7 +181,7 @@ export const useVisitStats = (user: User | null) => {
           {
             name: "Completed Visits",
             value: completedToday ?? 0,
-            icon: Trophy,
+            icon: CheckCheck,
             color: "text-indigo-500",
             bgColor: "bg-indigo-50",
             status: VISIT_STATUS.COMPLETED,
@@ -185,12 +189,13 @@ export const useVisitStats = (user: User | null) => {
           {
             name: "Cancelled/Denied",
             value: (cancelledCount ?? 0) + (deniedCount ?? 0),
-            icon: ShieldX,
+            icon: ShieldAlert,
             color: "text-rose-500",
             bgColor: "bg-rose-50",
             status: "cancelled_denied",
           },
         ];
+
 
         if (role === "admin") {
           statsData.unshift({
@@ -214,5 +219,11 @@ export const useVisitStats = (user: User | null) => {
     [user]
   );
 
+  // Automatically refresh stats in real-time on any relevant event
+  useDataSync(["stats", "visits", "all"], () => {
+    fetchStats(true);
+  });
+
   return { stats, loading, error, fetchStats };
 };
+

@@ -1,14 +1,21 @@
 {
-  "name": "Vite + React + TS",
-  "short_name": "ViteReactTS",
-  "start_url": ".",
+  "name": "IIIT Nagpur Visitor Management System",
+  "short_name": "IIITN VMS",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "description": "A Vite, React and TypeScript boilerplate.",
+  "background_color": "#020617",
+  "theme_color": "#0284c7",
+  "description": "Official Visitor Management & Campus Security System for IIIT Nagpur.",
   "icons": [
     {
       "src": "/pwa-icon.svg",
-      "sizes": "192x192",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "48x48",
       "type": "image/svg+xml"
     }
   ]

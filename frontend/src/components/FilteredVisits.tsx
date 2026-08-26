@@ -6,15 +6,16 @@ import {
   Inbox,
   Search,
   CalendarCheck2,
-  Trophy,
-  ShieldX,
+  CheckCheck,
+  ShieldAlert,
   Activity,
   ChevronRight,
-  Hourglass,
+  Clock3,
   Users,
   CheckCircle2,
   XCircle,
   LogIn,
+  Ban,
 } from "lucide-react";
 import { VisitDetails } from "./VisitDetails";
 import type { Database } from "../lib/database.types";
@@ -23,6 +24,8 @@ import { useAuthStore } from "../store/auth";
 import { BackButton } from "./BackButton";
 import { PageHeader } from "./PageHeader";
 import { getISTTodayRange, formatIST } from "../lib/dateIST";
+import { useDataSync } from "../lib/dataSync";
+
 
 type Visit = Database["public"]["Tables"]["visits"]["Row"] & {
   visitor: Database["public"]["Tables"]["visitors"]["Row"] | null;
@@ -32,7 +35,7 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; cla
   {
     pending: {
       label: "Pending",
-      icon: Hourglass,
+      icon: Clock3,
       className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
     },
     approved: {
@@ -47,7 +50,7 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; cla
     },
     completed: {
       label: "Completed",
-      icon: CheckCircle2,
+      icon: CheckCheck,
       className: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
     },
     checked_in: {
@@ -57,10 +60,11 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; cla
     },
     cancelled: {
       label: "Cancelled",
-      icon: XCircle,
+      icon: Ban,
       className: "bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-400",
     },
   };
+
 
 const useDebounce = <T,>(value: T, delay: number): T => {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -99,7 +103,7 @@ export function FilteredVisits() {
         return {
           title: "Pending Approvals",
           desc: "Applications waiting for administrative clearance.",
-          icon: Hourglass,
+          icon: Clock3,
           gradient: "from-amber-500 to-orange-600",
           emptyClasses: {
             outer:
@@ -123,7 +127,7 @@ export function FilteredVisits() {
         return {
           title: "Completed Visits",
           desc: "Archive of visitors who have checked out today.",
-          icon: Trophy,
+          icon: CheckCheck,
           gradient: "from-purple-500 to-indigo-600",
           emptyClasses: {
             outer:
@@ -135,7 +139,7 @@ export function FilteredVisits() {
         return {
           title: "Cancelled/Denied Visits",
           desc: "Applications that were cancelled or denied access.",
-          icon: ShieldX,
+          icon: ShieldAlert,
           gradient: "from-rose-500 to-red-600",
           emptyClasses: {
             outer:
@@ -143,6 +147,7 @@ export function FilteredVisits() {
             icon: "text-rose-500 dark:text-rose-400",
           },
         };
+
       default:
         return {
           title: "Visit Log",
@@ -214,9 +219,24 @@ export function FilteredVisits() {
     }
   }, [status, user, debouncedSearchTerm]);
 
+  // Real-time synchronization subscription
+  useDataSync(["visits", "all"], () => {
+    fetchVisits();
+  });
+
   useEffect(() => {
     fetchVisits();
+
+    const interval = setInterval(() => {
+      fetchVisits();
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+    };
   }, [fetchVisits]);
+
+
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 pb-12 animate-fadeIn">
@@ -258,75 +278,75 @@ export function FilteredVisits() {
                   <table className="w-full divide-y divide-gray-200 dark:divide-slate-700/50 flex-1 min-w-[1100px]">
                     <thead>
                       <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-slate-800/90 dark:to-slate-800/60">
-                        <th className="py-4 pl-5 pr-3 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0">
+                        <th className="py-2.5 pl-4 pr-3 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0">
                           Visitor
                         </th>
-                        <th className="px-3 py-4 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0">
+                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
                           Guests
                         </th>
-                        <th className="px-3 py-4 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0">
+                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
                           Vehicle
                         </th>
-                        <th className="px-3 py-4 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0">
+                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
                           Phone
                         </th>
-                        <th className="px-3 py-4 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0">
+                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
                           Entry Time
                         </th>
-                        <th className="px-3 py-4 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0">
+                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
                           Exit Time
                         </th>
-                        <th className="px-3 py-4 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0">
+                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
                           Entry Gate
                         </th>
-                        <th className="px-3 py-4 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0">
+                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
                           Exit Gate
                         </th>
-                        <th className="px-3 py-4 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0">
+                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
                           Status
                         </th>
-                        <th className="relative py-4 pl-3 pr-4 sm:pr-5 sticky top-0">
+                        <th className="relative py-2.5 pl-2 pr-4 sm:pr-5 sticky top-0">
                           <span className="sr-only">Actions</span>
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white dark:bg-slate-900 dark:divide-slate-700">
+                    <tbody className="divide-y divide-gray-200 bg-white dark:bg-slate-900 dark:divide-slate-700/60">
                       {loading ? (
                         <>
                           {[...Array(5)].map((_, i) => (
                             <tr key={i} className="animate-pulse">
-                              <td className="py-4 pl-4 pr-3 sm:pl-6">
-                                <div className="flex items-center gap-3">
-                                  <div className="skeleton w-9 h-9 rounded-[1.25rem] shrink-0" />
-                                  <div className="skeleton h-4 w-24 rounded" />
+                              <td className="py-2.5 pl-4 pr-3">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="skeleton w-7 h-7 rounded-lg shrink-0" />
+                                  <div className="skeleton h-3.5 w-24 rounded" />
                                 </div>
                               </td>
-                              <td className="px-3 py-4">
-                                <div className="skeleton h-4 w-12 rounded" />
+                              <td className="px-3 py-2.5">
+                                <div className="skeleton h-3.5 w-10 rounded" />
                               </td>
-                              <td className="px-3 py-4">
-                                <div className="skeleton h-4 w-16 rounded" />
+                              <td className="px-3 py-2.5">
+                                <div className="skeleton h-3.5 w-16 rounded" />
                               </td>
-                              <td className="px-3 py-4">
-                                <div className="skeleton h-4 w-20 rounded" />
+                              <td className="px-3 py-2.5">
+                                <div className="skeleton h-3.5 w-18 rounded" />
                               </td>
-                              <td className="px-3 py-4">
-                                <div className="skeleton h-4 w-16 rounded" />
+                              <td className="px-3 py-2.5">
+                                <div className="skeleton h-3.5 w-20 rounded" />
                               </td>
-                              <td className="px-3 py-4">
-                                <div className="skeleton h-4 w-16 rounded" />
+                              <td className="px-3 py-2.5">
+                                <div className="skeleton h-3.5 w-20 rounded" />
                               </td>
-                              <td className="px-3 py-4">
-                                <div className="skeleton h-4 w-16 rounded" />
+                              <td className="px-3 py-2.5">
+                                <div className="skeleton h-3.5 w-14 rounded" />
                               </td>
-                              <td className="px-3 py-4">
-                                <div className="skeleton h-4 w-16 rounded" />
+                              <td className="px-3 py-2.5">
+                                <div className="skeleton h-3.5 w-14 rounded" />
                               </td>
-                              <td className="px-3 py-4">
-                                <div className="skeleton h-5 w-16 rounded-xl" />
+                              <td className="px-3 py-2.5">
+                                <div className="skeleton h-4 w-16 rounded-lg" />
                               </td>
-                              <td className="py-4 pl-3 pr-4 sm:pr-6 text-right">
-                                <div className="skeleton h-4 w-4 rounded inline-block ml-2" />
+                              <td className="py-2.5 pl-2 pr-4 sm:pr-5 text-right">
+                                <div className="skeleton h-3.5 w-3.5 rounded inline-block" />
                               </td>
                             </tr>
                           ))}
@@ -367,9 +387,9 @@ export function FilteredVisits() {
                               }`}
                               style={{ animationDelay: `${idx * 0.02}s` }}
                             >
-                              <td className="py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-6">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-9 h-9 rounded-[1.25rem] bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center font-black text-xs shrink-0 overflow-hidden">
+                              <td className="py-2.5 pl-4 pr-3 text-xs sm:text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center font-bold text-[11px] shrink-0 overflow-hidden">
                                     {visit.visitor?.photo_url ? (
                                       <img
                                         src={visit.visitor.photo_url}
@@ -379,78 +399,68 @@ export function FilteredVisits() {
                                       visitorName.charAt(0).toUpperCase()
                                     )}
                                   </div>
-                                  <div>
-                                    <p className="font-semibold">{visitorName}</p>
+                                  <div className="min-w-0">
+                                    <p className="font-semibold truncate max-w-[130px] sm:max-w-[170px]">{visitorName}</p>
                                     {isOverstay && (
-                                      <p className="text-[10px] text-red-600 dark:text-red-400 font-semibold">
+                                      <p className="text-[9px] text-red-600 dark:text-red-400 font-bold uppercase">
                                         ⚠ Overstay
                                       </p>
                                     )}
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-3 py-4 text-sm text-gray-500 dark:text-slate-400">
+                              <td className="whitespace-nowrap px-3 py-2.5 text-xs text-gray-500 dark:text-slate-400">
                                 {visit.additional_guests > 0 ? (
-                                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase">
-                                    <Users className="w-3 h-3" /> +{visit.additional_guests}
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
+                                    <Users className="w-2.5 h-2.5" /> +{visit.additional_guests}
                                   </span>
                                 ) : (
                                   <span className="text-gray-300 dark:text-slate-600">—</span>
                                 )}
                               </td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-slate-400">
-                                {visit.vehicle_number ? (
-                                  <span className="text-xs font-semibold text-gray-800 dark:text-slate-200">
-                                    {visit.vehicle_number}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-300 dark:text-slate-600">—</span>
+                              <td className="whitespace-nowrap px-3 py-2.5 text-xs font-semibold text-gray-800 dark:text-slate-200">
+                                {visit.vehicle_number || (
+                                  <span className="text-gray-300 dark:text-slate-600 font-normal">—</span>
                                 )}
                               </td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 dark:text-slate-400">
-                                <span className="text-xs font-medium">
-                                  {visit.visitor?.phone || "—"}
-                                </span>
+                              <td className="whitespace-nowrap px-3 py-2.5 text-xs font-medium text-gray-600 dark:text-slate-400">
+                                {visit.visitor?.phone || "—"}
                               </td>
-                              <td className="px-3 py-4 text-sm text-gray-500 dark:text-slate-400">
+                              <td className="whitespace-nowrap px-3 py-2.5 text-xs font-medium text-gray-800 dark:text-slate-200">
                                 {visit.check_in_time ? (
-                                  <span className="text-xs font-semibold text-gray-800 dark:text-slate-200">
-                                    {formatIST(visit.check_in_time)}
-                                  </span>
+                                  formatIST(visit.check_in_time)
                                 ) : (
-                                  <span className="text-gray-300 dark:text-slate-600">—</span>
+                                  <span className="text-gray-300 dark:text-slate-600 font-normal">—</span>
                                 )}
                               </td>
-                              <td className="px-3 py-4 text-sm text-gray-500 dark:text-slate-400">
+                              <td className="whitespace-nowrap px-3 py-2.5 text-xs font-medium text-gray-800 dark:text-slate-200">
                                 {visit.check_out_time ? (
-                                  <span className="text-xs font-semibold text-gray-800 dark:text-slate-200">
-                                    {formatIST(visit.check_out_time)}
-                                  </span>
+                                  formatIST(visit.check_out_time)
                                 ) : (
-                                  <span className="text-gray-300 dark:text-slate-600">—</span>
+                                  <span className="text-gray-300 dark:text-slate-600 font-normal">—</span>
                                 )}
                               </td>
-                              <td className="px-3 py-4 text-sm text-gray-500 dark:text-slate-400">
+                              <td className="whitespace-nowrap px-3 py-2.5 text-xs">
                                 {visit.entry_gate ? (
-                                  <span className="inline-flex items-center gap-1 rounded-xl px-2 py-1 text-[10px] font-bold text-gray-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-800/60 ring-1 ring-gray-200 dark:ring-slate-700/50">
+                                  <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium text-gray-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-800/80 ring-1 ring-gray-200/80 dark:ring-slate-700/50">
                                     {visit.entry_gate}
                                   </span>
                                 ) : (
                                   <span className="text-gray-300 dark:text-slate-600">—</span>
                                 )}
                               </td>
-                              <td className="px-3 py-4 text-sm text-gray-500 dark:text-slate-400">
+                              <td className="whitespace-nowrap px-3 py-2.5 text-xs">
                                 {visit.exit_gate ? (
-                                  <span className="inline-flex items-center gap-1 rounded-xl px-2 py-1 text-[10px] font-bold text-gray-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-800/60 ring-1 ring-gray-200 dark:ring-slate-700/50">
+                                  <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium text-gray-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-800/80 ring-1 ring-gray-200/80 dark:ring-slate-700/50">
                                     {visit.exit_gate}
                                   </span>
                                 ) : (
                                   <span className="text-gray-300 dark:text-slate-600">—</span>
                                 )}
                               </td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm">
+                              <td className="whitespace-nowrap px-3 py-2.5 text-xs">
                                 <span
-                                  className={`inline-flex items-center gap-1.5 rounded-xl px-2 py-1 text-[10px] font-black uppercase tracking-widest ${cfg.className}`}
+                                  className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${cfg.className}`}
                                 >
                                   <StatusIcon
                                     className={`w-3 h-3 ${visit.status === "checked_in" ? "animate-pulse" : ""}`}
@@ -458,14 +468,15 @@ export function FilteredVisits() {
                                   {cfg.label}
                                 </span>
                               </td>
-                              <td className="relative py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                <ChevronRight className="h-4 w-4 text-gray-400 inline ml-2" />
+                              <td className="whitespace-nowrap py-2.5 pl-2 pr-4 text-right text-sm font-medium sm:pr-5">
+                                <ChevronRight className="h-3.5 w-3.5 text-gray-400 inline" />
                               </td>
                             </tr>
                           );
                         })
                       )}
                     </tbody>
+
                   </table>
                 </div>
               </div>

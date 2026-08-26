@@ -4,7 +4,7 @@ import { useVisitRegistration, type UnifiedVisitFormData } from "../hooks/useVis
 
 import {
   Camera,
-  UserRoundPlus,
+  UserPlus,
   Calendar,
   FileText,
   User,
@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Printer,
 } from "lucide-react";
+
 import { BackButton } from "./BackButton";
 import { PageHeader } from "./PageHeader";
 import { ThemeSwitcher } from "./ThemeSwitcher";
@@ -70,7 +71,7 @@ export function UnifiedVisitRegistration() {
         <BackButton to={user ? "/app/dashboard" : "/"} />
 
         <PageHeader
-          icon={UserRoundPlus}
+          icon={UserPlus}
           gradient="from-cyan-500 to-blue-600"
           title={isVisitor || !user ? "Request Visit" : "Register Visit"}
           description={
@@ -79,6 +80,7 @@ export function UnifiedVisitRegistration() {
               : "Register visitors with ID verification."
           }
         />
+
       </div>
 
       <div className="max-w-7xl mx-auto">
@@ -362,7 +364,7 @@ export function UnifiedVisitRegistration() {
               <button
                 type="submit"
                 disabled={isSubmitting || loading}
-                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 font-bold uppercase tracking-wider text-[11px] sm:text-xs active:scale-95 transition-colors shadow-sm"
+                className="btn-primary flex-1 py-3"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -380,11 +382,12 @@ export function UnifiedVisitRegistration() {
               <button
                 type="button"
                 onClick={handleReset}
-                className="px-6 py-3 border border-gray-200 dark:border-slate-700 rounded-xl text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all active:scale-95"
+                className="btn-secondary !px-6 !py-3"
               >
                 Reset
               </button>
             </div>
+
           </form>
 
           {qrImageUrl && (
@@ -512,18 +515,19 @@ export function UnifiedVisitRegistration() {
                         <a
                           href={qrImageUrl}
                           download={`iiitn-pass-${watch("name")?.replace(/\s+/g, "-").toLowerCase()}.png`}
-                          className="flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[10px] sm:text-[11px] uppercase tracking-wider transition-colors active:scale-95 shadow-sm"
+                          className="btn-primary py-2.5"
                         >
                           <Download className="w-4 h-4" /> Save
                         </a>
                         <button
                           type="button"
                           onClick={() => window.print()}
-                          className="flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-[10px] sm:text-[11px] uppercase tracking-wider transition-colors border border-transparent dark:border-slate-700 active:scale-95"
+                          className="btn-secondary py-2.5"
                         >
                           <Printer className="w-4 h-4" /> Print
                         </button>
                       </div>
+
                     </div>
                     <div className="px-6 pb-4 flex items-center justify-center gap-2">
                       <ShieldCheck className="w-3 h-3 text-emerald-500" />

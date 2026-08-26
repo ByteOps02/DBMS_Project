@@ -1,21 +1,22 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { ShieldCheck, ClipboardList, BarChart2, Menu, X, ArrowRight } from "lucide-react";
+import { ShieldCheck, UserCheck, BarChart3, Menu, X, ArrowRight } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { useAuthStore } from "../store/auth";
 import { SEOMeta } from "./SEOMeta";
+import { Logo } from "./Logo";
 
 const features = [
   {
     icon: ShieldCheck,
     title: "Secure Check-ins",
     description:
-      "Ensure only authorized visitors access the campus with QR-code verification, roll-based approvals, and real-time gate alerts.",
+      "Ensure only authorized visitors access the campus with QR-code verification, role-based approvals, and real-time gate alerts.",
     gradient: "from-emerald-500 to-green-600",
     shadow: "shadow-emerald-500/20",
   },
   {
-    icon: ClipboardList,
+    icon: UserCheck,
     title: "Easy Registration",
     description:
       "Quick and intuitive visitor registration for everyone — walk-ins at the main gate, self-service kiosks, or pre-registered campus events.",
@@ -23,7 +24,7 @@ const features = [
     shadow: "shadow-sky-500/20",
   },
   {
-    icon: BarChart2,
+    icon: BarChart3,
     title: "Real-Time Monitoring",
     description:
       "Track visitor activity across campus with live dashboards, automated logs, and instant status updates for every entry and exit.",
@@ -61,34 +62,27 @@ const Home = () => {
           className="flex items-center gap-2.5 cursor-pointer group"
           onClick={() => navigate("/")}
         >
-          <div className="p-1.5 bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg shadow-md shadow-sky-500/30 group-hover:shadow-sky-500/50 transition-all duration-300">
-            <img src="/visistor-management.png" alt="Logo" className="h-6 w-6" />
-          </div>
-          <span className="hidden sm:block text-lg font-bold bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-400 dark:to-blue-400 bg-clip-text text-transparent">
-            IIIT Nagpur VMS
-          </span>
-          <span className="sm:hidden text-base font-bold bg-gradient-to-r from-sky-600 to-blue-600 bg-clip-text text-transparent">
-            IIIT Nagpur VMS
-          </span>
+          <Logo size="md" />
         </div>
+
 
         <div className="hidden md:flex gap-2.5 items-center">
           <ThemeSwitcher />
           <button
             onClick={() => navigate("/request-visit")}
-            className="border border-emerald-500 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold py-2 px-4 rounded-full text-sm transition-all duration-300 active:scale-95"
+            className="btn-outline !py-2 !px-4"
           >
             Request Visit
           </button>
           <button
             onClick={() => navigate("/signup")}
-            className="border border-sky-500 text-sky-600 dark:text-sky-400 hover:bg-sky-500 hover:text-white font-semibold py-2 px-4 rounded-full text-sm transition-all duration-300 active:scale-95"
+            className="btn-secondary !py-2 !px-4"
           >
             Sign Up
           </button>
           <button
             onClick={() => navigate("/login")}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-full text-sm transition-all duration-300 active:scale-95"
+            className="btn-primary !py-2 !px-5"
           >
             Log In
           </button>
@@ -98,7 +92,7 @@ const Home = () => {
           <ThemeSwitcher />
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all duration-300"
+            className="p-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all duration-200"
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -114,9 +108,9 @@ const Home = () => {
       >
         <div className="px-4 py-3 space-y-1.5">
           {[
-            { label: "Request Visit", path: "/request-visit", color: "emerald" },
-            { label: "Sign Up", path: "/signup", color: "sky" },
-            { label: "Log In", path: "/login", color: "blue" },
+            { label: "Request Visit", path: "/request-visit" },
+            { label: "Sign Up", path: "/signup" },
+            { label: "Log In", path: "/login" },
           ].map(({ label, path }) => (
             <button
               key={label}
@@ -153,18 +147,19 @@ const Home = () => {
             >
               <button
                 onClick={() => navigate("/login")}
-                className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full text-base transition-all duration-300 active:scale-95"
+                className="btn-primary !py-3 !px-8 !text-base !rounded-2xl"
               >
                 Get Started
                 <ArrowRight size={18} />
               </button>
               <button
                 onClick={() => navigate("/request-visit")}
-                className="inline-flex items-center justify-center gap-2 border-2 border-white bg-white/10 backdrop-blur-sm text-white hover:bg-white hover:text-sky-700 font-semibold py-3 px-7 rounded-full text-base transition-all duration-300 active:scale-95"
+                className="btn !py-3 !px-7 !text-base !rounded-2xl border-2 border-white bg-white/10 backdrop-blur-sm text-white hover:bg-white hover:text-sky-700 font-semibold transition-all duration-200"
               >
                 Request a Visit
               </button>
             </div>
+
           </div>
         </div>
       </div>
@@ -225,28 +220,27 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={() => navigate("/signup")}
-              className="inline-flex items-center justify-center gap-2 bg-white text-sky-700 font-bold py-3 px-8 rounded-full hover:bg-sky-50 transition-all duration-300 active:scale-95"
+              className="btn bg-white text-sky-700 hover:bg-sky-50 shadow-md font-bold !py-3 !px-8 !text-base !rounded-2xl"
             >
               Create Free Account <ArrowRight size={18} />
             </button>
             <button
               onClick={() => navigate("/request-visit")}
-              className="inline-flex items-center justify-center border-2 border-white/60 text-white font-semibold py-3 px-7 rounded-full hover:bg-white/10 transition-all duration-300 active:scale-95"
+              className="btn border-2 border-white/70 text-white hover:bg-white/10 font-semibold !py-3 !px-7 !text-base !rounded-2xl"
             >
               Request a Visit
             </button>
           </div>
+
         </div>
       </section>
       <footer className="bg-gray-900 dark:bg-slate-950 text-white py-8 border-t border-gray-800 dark:border-slate-900">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2.5">
-              <div className="p-1.5 bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg">
-                <img src="/visistor-management.png" alt="Logo" className="h-5 w-5" />
-              </div>
-              <span className="font-bold text-white/90 text-sm">IIIT Nagpur VMS</span>
+              <Logo size="sm" />
             </div>
+
 
             <div className="flex items-center gap-6 text-sm">
               {[

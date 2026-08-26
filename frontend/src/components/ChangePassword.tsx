@@ -3,7 +3,8 @@ import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 import { useAuthStore } from "../store/auth";
 import { API_BASE } from "../lib/api";
-import { Shield, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { KeyRound, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
+
 import { BackButton } from "./BackButton";
 import { PageHeader } from "./PageHeader";
 
@@ -80,11 +81,12 @@ export function ChangePassword() {
         <BackButton />
 
         <PageHeader
-          icon={Lock}
+          icon={KeyRound}
           gradient="from-indigo-500 to-purple-600"
           title="Change Password"
           description="Secure your account by updating your password."
         />
+
       </div>
 
       <div className="max-w-2xl mx-auto">
@@ -210,10 +212,11 @@ export function ChangePassword() {
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
                   ) : (
                     <>
-                      <Shield className="h-5 w-5" />
+                      <KeyRound className="h-4.5 w-4.5" />
                       Update Password
                     </>
                   )}
+
                 </button>
               </div>
             </div>

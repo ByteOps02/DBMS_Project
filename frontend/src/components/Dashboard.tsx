@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, memo } from "react";
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/auth";
+import { useDataSync } from "../lib/dataSync";
 import { AlertCircle, Hourglass, Users, CalendarDays, RefreshCw, ArrowRight } from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
 import { useVisitStats } from "../hooks/useVisitStats";
 import { StatsGrid } from "./StatsGrid";
@@ -172,19 +174,28 @@ export function Dashboard() {
     }
   }, [user]);
 
+  const refreshAll = useCallback(() => {
+    Promise.all([fetchStats(true), fetchRecentVisits(true), fetchActiveVisitors(true)]);
+    setLastRefresh(new Date());
+  }, [fetchStats, fetchRecentVisits, fetchActiveVisitors]);
+
+  // Real-time listener for instant card & list updates
+  useDataSync(["visits", "visitors", "stats", "all"], () => {
+    refreshAll();
+  });
+
   useEffect(() => {
     if (!user?.role) return;
-    Promise.all([fetchStats(), fetchRecentVisits(), fetchActiveVisitors()]);
-    setLastRefresh(new Date());
+    refreshAll();
     const refreshInterval = setInterval(() => {
-      Promise.all([fetchStats(true), fetchRecentVisits(true), fetchActiveVisitors(true)]);
-      setLastRefresh(new Date());
-    }, 10000);
+      refreshAll();
+    }, 5000);
 
     return () => {
       clearInterval(refreshInterval);
     };
-  }, [user?.role, user?.id, fetchStats, fetchRecentVisits, fetchActiveVisitors]);
+  }, [user?.role, user?.id, refreshAll]);
+
 
   return (
     <div className="pb-8">

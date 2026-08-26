@@ -220,11 +220,11 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
               {errors.file && <p className="mt-1 text-sm text-red-600">{errors.file.message}</p>}
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <button
                 type="submit"
                 disabled={isSubmitting || uploading}
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 hover:bg-orange-700 py-3 font-bold uppercase tracking-wider text-[11px] sm:text-xs text-white shadow-sm transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary flex-1 py-3"
               >
                 {uploading ? (
                   <>
@@ -241,12 +241,13 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
               <button
                 type="button"
                 onClick={downloadSampleCsv}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 dark:border-slate-700 rounded-xl font-bold uppercase tracking-wider text-[10px] sm:text-[11px] text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all active:scale-95"
+                className="btn-secondary px-6 py-3"
               >
                 <Download className="h-4 w-4" />
                 Download Template
               </button>
             </div>
+
           </form>
         </div>
 

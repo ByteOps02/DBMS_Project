@@ -1,42 +1,42 @@
 import {
-  Home,
-  UserRoundPlus,
-  ScanLine,
+  LayoutDashboard,
+  UserPlus,
+  QrCode,
   UploadCloud,
-  Lock,
-  ScrollText,
-  UserMinus,
+  KeyRound,
+  ClipboardList,
+  ShieldAlert,
 } from "lucide-react";
 
 export const navLinks = [
   {
     href: "/app/dashboard",
     label: "Dashboard",
-    icon: Home,
+    icon: LayoutDashboard,
     roles: ["admin", "host", "guard", "visitor"],
   },
   {
     href: "/app/logs",
     label: "Visit Logs",
-    icon: ScrollText,
+    icon: ClipboardList,
     roles: ["admin", "host", "guard", "visitor"],
   },
   {
     href: "/app/register-visit",
     label: "Register Visit",
-    icon: UserRoundPlus,
+    icon: UserPlus,
     roles: ["admin", "host", "guard", "visitor"],
   },
   {
     href: "/app/scan",
     label: "Scan QR Code",
-    icon: ScanLine,
+    icon: QrCode,
     roles: ["admin", "guard"],
   },
   {
     href: "/app/blacklist",
     label: "Blacklist Users",
-    icon: UserMinus,
+    icon: ShieldAlert,
     roles: ["admin", "guard"],
   },
   {
@@ -48,7 +48,8 @@ export const navLinks = [
   {
     href: "/app/change-password",
     label: "Change Password",
-    icon: Lock,
+    icon: KeyRound,
     roles: ["admin", "host", "guard", "visitor"],
   },
 ];
+

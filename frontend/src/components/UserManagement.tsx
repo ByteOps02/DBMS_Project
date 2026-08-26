@@ -224,38 +224,38 @@ export function UserManagement() {
                       className="hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors"
                       style={{ animationDelay: `${idx * 0.02}s` }}
                     >
-                      <td className="py-4 pl-4 pr-3 sm:pl-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-[1.25rem] bg-gradient-to-br from-indigo-500 to-sky-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
+                      <td className="py-2.5 pl-4 pr-3 sm:pl-5 whitespace-nowrap">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-sky-500 text-white flex items-center justify-center font-bold text-[11px] shrink-0 shadow-xs">
                             {user.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="text-sm font-black text-gray-900 dark:text-white">
+                            <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">
                               {user.name}
                             </p>
                             <div className="lg:hidden flex items-center gap-1.5 mt-0.5">
                               <Mail className="h-3 w-3 text-gray-400" />
-                              <span className="text-[11px] text-gray-400 truncate max-w-[160px]">
+                              <span className="text-[10px] text-gray-400 truncate max-w-[150px]">
                                 {user.email}
                               </span>
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 py-4 text-xs text-gray-500 dark:text-slate-400 hidden lg:table-cell">
-                        <div className="flex items-center gap-2">
+                      <td className="px-3 py-2.5 text-xs text-gray-500 dark:text-slate-400 hidden lg:table-cell whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 font-medium">
                           <Mail className="h-3.5 w-3.5 text-gray-300 dark:text-slate-600 shrink-0" />
                           {user.email}
                         </div>
                       </td>
-                      <td className="px-3 py-4 hidden lg:table-cell">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border border-purple-100 dark:border-purple-800/40">
+                      <td className="px-3 py-2.5 hidden lg:table-cell whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border border-purple-100 dark:border-purple-800/40">
                           <Shield className="w-3 h-3" /> {getRoleLabel(user.role)}
                         </span>
                       </td>
-                      <td className="px-3 py-4 hidden lg:table-cell">
+                      <td className="px-3 py-2.5 hidden lg:table-cell whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest ${user.active ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/40" : "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/40"}`}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${user.active ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/40" : "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/40"}`}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${user.active ? "bg-emerald-500" : "bg-red-500"}`}
@@ -263,18 +263,18 @@ export function UserManagement() {
                           {user.active ? "Active" : "Inactive"}
                         </span>
                       </td>
-                      <td className="py-4 pl-3 pr-4 sm:pr-6 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="py-2.5 pl-3 pr-4 sm:pr-5 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => setEditingUser(user)}
-                            className="p-2 rounded-2xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-900/20 dark:hover:bg-sky-900/40 text-sky-600 dark:text-sky-400 transition-all active:scale-90"
+                            className="p-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 dark:bg-sky-900/20 dark:hover:bg-sky-900/40 text-sky-600 dark:text-sky-400 transition-all active:scale-90"
                             title="Edit Role"
                           >
                             <Edit3 className="h-3.5 w-3.5" strokeWidth={2} />
                           </button>
                           <button
                             onClick={() => handleDeleteUser(user.id)}
-                            className="p-2 rounded-2xl bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-all active:scale-90"
+                            className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-all active:scale-90"
                             title="Delete"
                           >
                             <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
@@ -337,12 +337,14 @@ export function UserManagement() {
 
               <div className="pt-2">
                 <button
+                  type="button"
                   onClick={() => setEditingUser(null)}
-                  className="w-full py-3 rounded-2xl border border-gray-200 dark:border-slate-700 text-xs font-black uppercase tracking-widest text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all"
+                  className="btn-secondary w-full py-2.5"
                 >
                   Cancel
                 </button>
               </div>
+
             </div>
           </div>
         </div>

@@ -1,7 +1,8 @@
 import type React from "react";
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Shield, Eye, EyeOff, CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
+import { ShieldCheck, Eye, EyeOff, CheckCircle2, ArrowRight, AlertCircle } from "lucide-react";
+
 import { useAuthStore } from "../store/auth";
 import log from "../lib/logger";
 import { SEOMeta } from "./SEOMeta";
@@ -9,6 +10,9 @@ import { ThemeSwitcher } from "./ThemeSwitcher";
 import { GoogleLogin } from "@react-oauth/google";
 import { API_BASE } from "../lib/api";
 import { toast } from "react-hot-toast";
+import { Logo } from "./Logo";
+import { BackButton } from "./BackButton";
+
 
 export function Login() {
   const navigate = useNavigate();
@@ -107,8 +111,9 @@ export function Login() {
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 py-12 w-full h-full text-white">
           <div className="glass-dark border border-white/10 rounded-[2rem] p-8 max-w-lg shadow-2xl animate-slideInLeft">
             <div className="inline-flex gap-2 items-center mb-8 px-4 py-2 rounded-full border border-sky-400/30 bg-sky-900/40 text-sky-200 text-sm font-medium">
-              <Shield size={16} /> Indian Institute Of Information Technology Nagpur
+              <ShieldCheck size={16} /> Indian Institute Of Information Technology Nagpur
             </div>
+
 
             <h1 className="text-4xl xl:text-5xl font-black tracking-tighter mb-6">
               Secure.
@@ -143,21 +148,12 @@ export function Login() {
       </div>
       <div className="w-full lg:w-1/2 flex flex-col justify-center py-12 px-4 sm:px-8 lg:px-12 xl:px-24">
         <div className="w-full max-w-md mx-auto relative z-10">
-          <div className="mb-6">
-            <button
-              onClick={() => navigate("/")}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full shadow-sm transition-all duration-200 active:scale-95"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Home
-            </button>
-          </div>
+          <BackButton to="/" />
 
           <div className="text-center lg:text-left mb-10">
+
             <div className="lg:hidden flex justify-center mb-6">
-              <div className="p-3 bg-sky-100 dark:bg-sky-900/40 rounded-3xl shadow-sm border border-sky-200 dark:border-sky-800/50">
-                <Shield className="h-10 w-10 text-sky-600 dark:text-sky-400" />
-              </div>
+              <Logo size="lg" />
             </div>
             <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter">
               {view === "login" ? "Welcome back" : "Forgot Password"}
@@ -234,11 +230,12 @@ export function Login() {
               {error && (
                 <div className="animate-fadeIn p-3.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 rounded-2xl text-sm flex items-start gap-2.5">
                   <div className="mt-0.5 shrink-0">
-                    <Shield className="w-4 h-4" />
+                    <AlertCircle className="w-4 h-4 text-red-500" />
                   </div>
                   <p>{error}</p>
                 </div>
               )}
+
 
               <div className="pt-2">
                 <button
@@ -308,21 +305,21 @@ export function Login() {
                 </div>
                 {error && (
                   <div className="animate-fadeIn p-3.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 rounded-2xl text-sm flex items-start gap-2.5">
-                    <Shield className="w-4 h-4 mt-0.5 shrink-0" />
+                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
                     <p>{error}</p>
                   </div>
                 )}
+
                 <div className="pt-2">
                   <button type="submit" disabled={isForgotLoading} className="btn-primary w-full flex justify-center items-center py-3">
                     {isForgotLoading ? <span className="loading-spinner w-5 h-5 mr-2"></span> : "Send Reset Code"}
                   </button>
                 </div>
-                <div className="mt-6 text-center">
-                  <button type="button" onClick={() => { setView("login"); setLocalError(""); }} className="text-sm font-medium text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors inline-flex items-center">
-                    <ArrowLeft className="w-4 h-4 mr-1" /> Back to login
-                  </button>
+                <div className="mt-6 flex justify-center">
+                  <BackButton onClick={() => { setView("login"); setLocalError(""); }} label="Back to Login" className="mb-0" />
                 </div>
               </form>
+
             )}
           </div>
         </div>

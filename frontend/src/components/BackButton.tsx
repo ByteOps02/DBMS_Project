@@ -3,25 +3,43 @@ import { ArrowLeft } from "lucide-react";
 
 export function BackButton({
   to = "/app/dashboard",
-  className = "mb-6 flex items-center gap-3",
+  onClick,
+  label = "Back",
+  className = "mb-6 flex items-center gap-2.5",
 }: {
   to?: string | number;
+  onClick?: () => void;
+  label?: string;
   className?: string;
 }) {
   const navigate = useNavigate();
 
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+      return;
+    }
+    if (typeof to === "number") {
+      navigate(to);
+    } else {
+      navigate(to);
+    }
+  };
+
   return (
     <div className={className}>
       <button
-        onClick={() => {
-          if (typeof to === "number") navigate(to);
-          else navigate(to);
-        }}
-        className="p-2 text-gray-500 hover:text-gray-900 bg-white dark:bg-slate-800 dark:text-gray-400 dark:hover:text-white rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 transition-colors"
+        type="button"
+        onClick={handleClick}
+        className="btn-secondary !p-2 !rounded-xl text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white inline-flex items-center gap-2 group cursor-pointer shadow-sm"
+        aria-label={label}
+        title={label}
       >
-        <ArrowLeft className="w-5 h-5" />
+        <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+        <span className="text-xs font-semibold text-gray-600 dark:text-slate-300 select-none pr-1">
+          {label}
+        </span>
       </button>
-      <span className="text-sm font-semibold text-gray-500 dark:text-slate-400">Back</span>
     </div>
   );
 }
