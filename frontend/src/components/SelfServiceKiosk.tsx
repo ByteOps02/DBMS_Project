@@ -10,13 +10,14 @@ import {
   Clock,
   Sparkles,
   ArrowRight,
-  Building,
+  MonitorSmartphone,
   RotateCcw,
 } from "lucide-react";
 import QRCode from "qrcode";
 import toast from "react-hot-toast";
 import { api } from "../lib/api";
 import { BackButton } from "./BackButton";
+import { PageHeader } from "./PageHeader";
 
 type KioskCategory = "guest" | "courier" | "interview" | "vip";
 
@@ -50,6 +51,7 @@ export function SelfServiceKiosk() {
       const now = new Date();
       setCurrentTime(
         now.toLocaleTimeString("en-IN", {
+          timeZone: "Asia/Kolkata",
           hour: "2-digit",
           minute: "2-digit",
           second: "2-digit",
@@ -65,37 +67,36 @@ export function SelfServiceKiosk() {
   // Camera start / stop
   const startCamera = async () => {
     try {
-      setIsCameraActive(true);
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 400, height: 400, facingMode: "user" },
-        audio: false,
+        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play();
+        setIsCameraActive(true);
       }
     } catch {
-      toast.error("Camera access not available or denied.");
-      setIsCameraActive(false);
+      toast.error("Unable to access webcam. Please upload or continue without photo.");
     }
   };
 
   const stopCamera = () => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
+      stream.getTracks().forEach((t) => t.stop());
       videoRef.current.srcObject = null;
+      setIsCameraActive(false);
     }
-    setIsCameraActive(false);
   };
 
   const capturePhoto = () => {
     if (!videoRef.current) return;
     const canvas = document.createElement("canvas");
-    canvas.width = 320;
-    canvas.height = 320;
+    canvas.width = videoRef.current.videoWidth || 640;
+    canvas.height = videoRef.current.videoHeight || 480;
     const ctx = canvas.getContext("2d");
     if (ctx) {
-      ctx.drawImage(videoRef.current, 0, 0, 320, 320);
+      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
       setPhotoData(dataUrl);
       stopCamera();
@@ -106,11 +107,11 @@ export function SelfServiceKiosk() {
   const handleCategorySelect = (cat: KioskCategory) => {
     setCategory(cat);
     if (cat === "courier") {
-      setPurpose("Package / Document Delivery to Reception / Hostel");
+      setPurpose("Campus Courier / Logistics Parcel Delivery");
     } else if (cat === "interview") {
-      setPurpose("Recruitment Interview / Assessment");
+      setPurpose("Candidate Job Interview / Placement Round");
     } else if (cat === "vip") {
-      setPurpose("Official Academic / BoG Guest Visit");
+      setPurpose("VIP Official Visit / Dignitary Meeting");
     } else {
       setPurpose("");
     }
@@ -173,31 +174,22 @@ export function SelfServiceKiosk() {
 
 
   return (
-    <div className="min-h-[85vh] flex flex-col justify-between max-w-5xl mx-auto px-4 sm:px-6 py-6 animate-fadeIn">
-      {/* Top Kiosk Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm">
-        <div className="flex items-center gap-3.5">
-          <BackButton />
-          <div className="p-3 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-white shadow-md shrink-0">
-            <Building className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white tracking-tight">
-                Campus Self-Check-In Kiosk
-              </h1>
-              <span className="px-3 py-1 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 text-xs font-bold uppercase tracking-wider border border-sky-500/20">
-                Reception Terminal
-              </span>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mt-0.5">
-              Touchscreen fast visitor registration & instant badge printing
-            </p>
-          </div>
-        </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 animate-fadeIn space-y-6">
+      {/* Top Header Row */}
+      <div className="flex items-center gap-3">
+        <BackButton />
+      </div>
 
-        <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm font-mono font-bold text-gray-700 dark:text-slate-300 shadow-inner">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <PageHeader
+          icon={MonitorSmartphone}
+          gradient="from-sky-500 via-blue-600 to-indigo-600"
+          title="Campus Self-Check-In Kiosk"
+          description="Touchscreen fast visitor registration, live webcam snapshot, and instant QR badge printing."
+        />
+
+        <div className="flex items-center gap-3 shrink-0 self-end md:self-auto">
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-sm font-mono font-bold text-gray-700 dark:text-slate-300 shadow-sm">
             <Clock className="w-4 h-4 text-sky-500" />
             <span>{currentTime || "IST"}</span>
           </div>
@@ -205,7 +197,7 @@ export function SelfServiceKiosk() {
           {step !== "category" && (
             <button
               onClick={handleReset}
-              className="btn btn-sm btn-secondary text-xs sm:text-sm font-bold flex items-center gap-1.5 py-2.5 px-3.5"
+              className="btn btn-secondary text-xs sm:text-sm font-bold flex items-center gap-1.5 py-2.5 px-4 shadow-sm"
             >
               <RotateCcw className="w-4 h-4" />
               <span>Start Over</span>
@@ -216,7 +208,8 @@ export function SelfServiceKiosk() {
 
       {/* Step 1: Big Touch Category Tiles */}
       {step === "category" && (
-        <div className="my-8 space-y-6">
+        <div className="my-6 space-y-6">
+
           <div className="text-center space-y-2">
             <h2 className="text-2xl sm:text-4xl font-black text-gray-900 dark:text-white tracking-tight">
               Welcome to Campus! Please select your visit type:
@@ -226,97 +219,150 @@ export function SelfServiceKiosk() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 pt-2">
             {/* General Guest */}
-            <button
+            <div
               onClick={() => handleCategorySelect("guest")}
-              className="group p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-800 hover:border-sky-500 dark:hover:border-sky-500 text-left transition-all duration-300 shadow-sm hover:shadow-2xl hover:-translate-y-1 flex items-start gap-4"
+              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl sm:rounded-[1.5rem] overflow-hidden group relative flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-xl hover:border-sky-500/50 cursor-pointer"
             >
-              <div className="p-3.5 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 group-hover:scale-110 transition-transform shadow-xs shrink-0">
-                <UserCheck className="w-7 h-7" />
-              </div>
-              <div className="space-y-1.5 flex-1 min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
-                  General Walk-In Visitor
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">
-                  Meeting faculty, students, academic departments, or campus tour.
-                </p>
-                <div className="pt-1.5 flex items-center gap-1.5 text-sm font-bold text-sky-600 dark:text-sky-400">
-                  <span>Continue</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <div className="p-5 relative z-10 flex-1 flex flex-col">
+                <div className="flex items-start justify-between">
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-[0_12px_28px_-6px_rgba(59,130,246,0.5)] text-white">
+                    <UserCheck className="h-6 w-6" strokeWidth={2.5} />
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400">
+                    General
+                  </span>
+                </div>
+
+                <div className="mt-5 space-y-1.5">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-sky-500 transition-colors">
+                    General Visitor
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
+                    Meeting faculty, students, academic departments, or campus tour.
+                  </p>
                 </div>
               </div>
-            </button>
+
+              <div className="px-5 py-3.5 bg-slate-50/50 dark:bg-slate-800/40 border-t border-gray-100 dark:border-slate-800 relative z-10 flex items-center justify-between">
+                <span className="text-xs font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1">
+                  Continue <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </span>
+                <span className="text-[10px] font-bold uppercase text-gray-400">Instant Pass</span>
+              </div>
+
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-0 group-hover:w-full bg-gradient-to-r from-sky-500 to-blue-600 rounded-t-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-20" />
+            </div>
 
             {/* Courier & Delivery */}
-            <button
+            <div
               onClick={() => handleCategorySelect("courier")}
-              className="group p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-800 hover:border-amber-500 dark:hover:border-amber-500 text-left transition-all duration-300 shadow-sm hover:shadow-2xl hover:-translate-y-1 flex items-start gap-4"
+              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl sm:rounded-[1.5rem] overflow-hidden group relative flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-xl hover:border-amber-500/50 cursor-pointer"
             >
-              <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform shadow-xs shrink-0">
-                <Package className="w-7 h-7" />
-              </div>
-              <div className="space-y-1.5 flex-1 min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                  Courier / Package Drop-Off
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">
-                  Amazon, Flipkart, Swiggy, Speed Post, or logistics parcel delivery.
-                </p>
-                <div className="pt-1.5 flex items-center gap-1.5 text-sm font-bold text-amber-600 dark:text-amber-400">
-                  <span>Fast Drop-Off</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <div className="p-5 relative z-10 flex-1 flex flex-col">
+                <div className="flex items-start justify-between">
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-[0_12px_28px_-6px_rgba(249,115,22,0.5)] text-white">
+                    <Package className="h-6 w-6" strokeWidth={2.5} />
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                    Delivery
+                  </span>
+                </div>
+
+                <div className="mt-5 space-y-1.5">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-amber-500 transition-colors">
+                    Courier Drop-Off
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
+                    Amazon, Flipkart, Swiggy, Speed Post, or logistics parcel delivery.
+                  </p>
                 </div>
               </div>
-            </button>
 
-            {/* Interview & Recruitment */}
-            <button
+              <div className="px-5 py-3.5 bg-slate-50/50 dark:bg-slate-800/40 border-t border-gray-100 dark:border-slate-800 relative z-10 flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  Fast Drop-Off <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </span>
+                <span className="text-[10px] font-bold uppercase text-gray-400">Quick Gate</span>
+              </div>
+
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-0 group-hover:w-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-t-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-20" />
+            </div>
+
+            {/* Candidate / Job Interview */}
+            <div
               onClick={() => handleCategorySelect("interview")}
-              className="group p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-800 hover:border-purple-500 dark:hover:border-purple-500 text-left transition-all duration-300 shadow-sm hover:shadow-2xl hover:-translate-y-1 flex items-start gap-4"
+              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl sm:rounded-[1.5rem] overflow-hidden group relative flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-xl hover:border-purple-500/50 cursor-pointer"
             >
-              <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform shadow-xs shrink-0">
-                <Briefcase className="w-7 h-7" />
-              </div>
-              <div className="space-y-1.5 flex-1 min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                  Candidate / Job Interview
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">
-                  Attending recruitment, academic viva, or corporate placement round.
-                </p>
-                <div className="pt-1.5 flex items-center gap-1.5 text-sm font-bold text-purple-600 dark:text-purple-400">
-                  <span>Candidate Entry</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <div className="p-5 relative z-10 flex-1 flex flex-col">
+                <div className="flex items-start justify-between">
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-[0_12px_28px_-6px_rgba(168,85,247,0.5)] text-white">
+                    <Briefcase className="h-6 w-6" strokeWidth={2.5} />
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                    Interview
+                  </span>
                 </div>
-              </div>
-            </button>
 
-            {/* VIP & BoG Dignitary */}
-            <button
-              onClick={() => handleCategorySelect("vip")}
-              className="group p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-amber-500/10 via-amber-600/5 to-transparent dark:bg-slate-900 border-2 border-amber-400/40 hover:border-amber-500 text-left transition-all duration-300 shadow-sm hover:shadow-2xl hover:-translate-y-1 flex items-start gap-4"
-            >
-              <div className="p-3.5 rounded-2xl bg-amber-500/20 text-amber-500 group-hover:scale-110 transition-transform shadow-xs shrink-0">
-                <Crown className="w-7 h-7" />
-              </div>
-              <div className="space-y-1.5 flex-1 min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold text-amber-600 dark:text-amber-400 transition-colors">
-                  VIP & Academic Dignitary
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">
-                  Board of Governors, Guest Speakers, Government Officials, and Corporate Recruiters.
-                </p>
-                <div className="pt-1.5 flex items-center gap-1.5 text-sm font-bold text-amber-600 dark:text-amber-400">
-                  <span>Priority Clearance</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <div className="mt-5 space-y-1.5">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-purple-500 transition-colors">
+                    Candidate Interview
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
+                    Attending recruitment, academic viva, or placement rounds.
+                  </p>
                 </div>
               </div>
-            </button>
+
+              <div className="px-5 py-3.5 bg-slate-50/50 dark:bg-slate-800/40 border-t border-gray-100 dark:border-slate-800 relative z-10 flex items-center justify-between">
+                <span className="text-xs font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                  Candidate Entry <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </span>
+                <span className="text-[10px] font-bold uppercase text-gray-400">HR / Placement</span>
+              </div>
+
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-0 group-hover:w-full bg-gradient-to-r from-violet-500 to-purple-600 rounded-t-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-20" />
+            </div>
+
+            {/* VIP & Academic Dignitary */}
+            <div
+              onClick={() => handleCategorySelect("vip")}
+              className="bg-white dark:bg-slate-900 border border-amber-300/60 dark:border-amber-500/30 rounded-2xl sm:rounded-[1.5rem] overflow-hidden group relative flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-xl hover:border-amber-400 cursor-pointer"
+            >
+              <div className="p-5 relative z-10 flex-1 flex flex-col">
+                <div className="flex items-start justify-between">
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-500 shadow-[0_12px_28px_-6px_rgba(245,158,11,0.6)] text-white">
+                    <Crown className="h-6 w-6" strokeWidth={2.5} />
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-400/30">
+                    👑 VIP Fast-Pass
+                  </span>
+                </div>
+
+                <div className="mt-5 space-y-1.5">
+                  <h3 className="text-lg font-bold text-amber-600 dark:text-amber-400 transition-colors">
+                    VIP & Dignitary
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
+                    Board of Governors, Guest Speakers, Officials, and Recruiters.
+                  </p>
+                </div>
+              </div>
+
+              <div className="px-5 py-3.5 bg-amber-50/40 dark:bg-amber-950/20 border-t border-amber-100 dark:border-amber-900/30 relative z-10 flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  Priority Clearance <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </span>
+                <span className="text-[10px] font-bold uppercase text-amber-600">VIP Bay</span>
+              </div>
+
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-0 group-hover:w-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-t-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-20" />
+            </div>
           </div>
         </div>
       )}
+
 
 
       {/* Step 2: Form Details & Webcam Capture */}

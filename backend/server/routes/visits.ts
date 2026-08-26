@@ -368,11 +368,12 @@ router.get('/analytics/traffic-telemetry', requireAuth, async (req: AuthRequest,
       select: { check_in_time: true, check_out_time: true },
     });
 
-    const hourlyDistribution: Array<{ hour: string; entries: number; exits: number }> = [];
-    for (let h = 6; h <= 22; h += 2) {
+    const hourlyDistribution: Array<{ hour: string; entries: number; exits: number; isNight: boolean }> = [];
+    for (let h = 0; h < 24; h += 2) {
       const label = `${h.toString().padStart(2, '0')}:00`;
       let entries = 0;
       let exits = 0;
+      const isNight = h < 6 || h >= 22;
 
       todayVisits.forEach((v) => {
         if (v.check_in_time) {
@@ -385,8 +386,9 @@ router.get('/analytics/traffic-telemetry', requireAuth, async (req: AuthRequest,
         }
       });
 
-      hourlyDistribution.push({ hour: label, entries, exits });
+      hourlyDistribution.push({ hour: label, entries, exits, isNight });
     }
+
 
     res.json({
       census: {

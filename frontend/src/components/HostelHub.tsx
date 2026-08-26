@@ -385,11 +385,10 @@ export function HostelHub() {
       <div className="flex border-b border-gray-200 dark:border-slate-800 mt-8 space-x-2 sm:space-x-4 overflow-x-auto scrollbar-hide">
         <button
           onClick={() => setActiveTab("radar")}
-          className={`py-3.5 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
-            activeTab === "radar"
+          className={`py-3.5 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === "radar"
               ? "border-red-500 text-red-600 dark:text-red-400"
               : "border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white"
-          }`}
+            }`}
         >
           <AlertTriangle className="w-4 h-4" />
           <span>Curfew 3-Strike Radar ({overdueList.length})</span>
@@ -397,11 +396,10 @@ export function HostelHub() {
 
         <button
           onClick={() => setActiveTab("heatmap")}
-          className={`py-3.5 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
-            activeTab === "heatmap"
+          className={`py-3.5 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === "heatmap"
               ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
               : "border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white"
-          }`}
+            }`}
         >
           <Layers className="w-4 h-4" />
           <span>Hostel Block A Heatmap</span>
@@ -409,11 +407,10 @@ export function HostelHub() {
 
         <button
           onClick={() => setActiveTab("extensions")}
-          className={`py-3.5 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
-            activeTab === "extensions"
+          className={`py-3.5 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === "extensions"
               ? "border-amber-500 text-amber-600 dark:text-amber-400"
               : "border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white"
-          }`}
+            }`}
         >
           <Clock className="w-4 h-4" />
           <span>Curfew Extensions ({extensions.filter(e => e.status === "pending").length})</span>
@@ -421,11 +418,10 @@ export function HostelHub() {
 
         <button
           onClick={() => setActiveTab("vehicles")}
-          className={`py-3.5 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
-            activeTab === "vehicles"
+          className={`py-3.5 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === "vehicles"
               ? "border-purple-500 text-purple-600 dark:text-purple-400"
               : "border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white"
-          }`}
+            }`}
         >
           <Bike className="w-4 h-4" />
           <span>Vehicle Passes ({vehicles.length})</span>
@@ -433,11 +429,10 @@ export function HostelHub() {
 
         <button
           onClick={() => setActiveTab("leaves")}
-          className={`py-3.5 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
-            activeTab === "leaves"
+          className={`py-3.5 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === "leaves"
               ? "border-sky-500 text-sky-600 dark:text-sky-400"
               : "border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white"
-          }`}
+            }`}
         >
           <CalendarDays className="w-4 h-4" />
           <span>Vacation Leaves ({leaves.length})</span>
@@ -445,11 +440,10 @@ export function HostelHub() {
 
         <button
           onClick={() => setActiveTab("directory")}
-          className={`py-3.5 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
-            activeTab === "directory"
+          className={`py-3.5 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === "directory"
               ? "border-emerald-500 text-emerald-600 dark:text-emerald-400"
               : "border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white"
-          }`}
+            }`}
         >
           <Users className="w-4 h-4" />
           <span>Student Directory ({totalStudents})</span>
@@ -457,11 +451,10 @@ export function HostelHub() {
 
         <button
           onClick={() => setActiveTab("movements")}
-          className={`py-3.5 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
-            activeTab === "movements"
+          className={`py-3.5 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === "movements"
               ? "border-cyan-500 text-cyan-600 dark:text-cyan-400"
               : "border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white"
-          }`}
+            }`}
         >
           <Clock className="w-4 h-4" />
           <span>Gate Telemetry Log</span>
@@ -488,9 +481,8 @@ export function HostelHub() {
                 return (
                   <div key={item.id} className="p-4 sm:p-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-red-50/20 dark:bg-red-950/10">
                     <div className="flex items-center gap-3.5 min-w-0">
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-sm text-white ${
-                        isFlagged ? "bg-purple-600 animate-pulse" : "bg-red-600"
-                      }`}>
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-sm text-white ${isFlagged ? "bg-purple-600 animate-pulse" : "bg-red-600"
+                        }`}>
                         {item.student.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -569,19 +561,17 @@ export function HostelHub() {
                 <div
                   key={fl.floor}
                   onClick={() => setSelectedFloor(isSelected ? null : fl.floor)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                    isSelected
+                  className={`p-4 rounded-2xl border transition-all cursor-pointer ${isSelected
                       ? "border-sky-500 bg-sky-50/20 dark:bg-sky-950/20 ring-2 ring-sky-500/20 shadow-md"
                       : "border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-gray-300 dark:hover:border-slate-700"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-black text-gray-900 dark:text-white">Floor {fl.floor}</span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      fl.occupancyRate >= 90
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${fl.occupancyRate >= 90
                         ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
                         : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                    }`}>
+                      }`}>
                       {fl.occupancyRate}% In
                     </span>
                   </div>
@@ -640,13 +630,12 @@ export function HostelHub() {
                         </p>
                       </div>
                       <span
-                        className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
-                          st.status === "inside"
+                        className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${st.status === "inside"
                             ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
                             : st.status === "out_day"
-                            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                            : "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
-                        }`}
+                              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                              : "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
+                          }`}
                       >
                         {st.status.replace("_", " ")}
                       </span>
@@ -689,7 +678,7 @@ export function HostelHub() {
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400">
                         {leave.leave_type.replace("_", " ")}
                       </span>
-                      
+
                       {/* Parent Consent Indicator */}
                       {leave.parent_consent === "verified" ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
@@ -780,13 +769,12 @@ export function HostelHub() {
                       </span>
                     </div>
 
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                      ext.status === "approved"
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${ext.status === "approved"
                         ? "bg-emerald-100 text-emerald-700"
                         : ext.status === "rejected"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-amber-100 text-amber-700"
-                    }`}>
+                          ? "bg-red-100 text-red-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}>
                       {ext.status}
                     </span>
                   </div>
@@ -839,8 +827,8 @@ export function HostelHub() {
             <span className="text-sm font-medium text-gray-500">{vehicles.length} Registered Campus Vehicles</span>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-            <table className="w-full text-left text-sm divide-y divide-gray-100 dark:divide-slate-800">
+          <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-x-auto shadow-sm">
+            <table className="w-full text-left text-sm divide-y divide-gray-100 dark:divide-slate-800 min-w-[700px]">
               <thead className="bg-gray-50 dark:bg-slate-800/60 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
                 <tr>
                   <th className="py-3.5 px-4">License Plate</th>
@@ -900,8 +888,8 @@ export function HostelHub() {
             />
           </div>
 
-          <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-            <table className="w-full text-left text-sm divide-y divide-gray-100 dark:divide-slate-800">
+          <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-x-auto shadow-sm">
+            <table className="w-full text-left text-sm divide-y divide-gray-100 dark:divide-slate-800 min-w-[850px]">
               <thead className="bg-gray-50 dark:bg-slate-800/60 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
                 <tr>
                   <th className="py-3.5 px-4">Student</th>
@@ -923,9 +911,18 @@ export function HostelHub() {
                     <td className="py-3 px-4 whitespace-nowrap text-gray-700 dark:text-slate-300 font-medium">
                       {st.hostel_block}, Rm {st.room_number}
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap text-gray-700 dark:text-slate-300">
-                      B.Tech {st.branch}
+                    <td className="py-3 px-4 whitespace-nowrap text-gray-700 dark:text-slate-300 font-medium">
+                      {(() => {
+                        const b = (st.branch || "").toUpperCase();
+                        if (b.includes("HCI") || b.includes("HUMAN")) return "B.Tech HCI";
+                        if (b.includes("CSA") || b.includes("ARTIFICIAL")) return "B.Tech CSA";
+                        if (b.includes("ECE") || b.includes("ELECTRONIC")) return "B.Tech ECE";
+                        if (b.includes("CSE") || b.includes("COMPUTER")) return "B.Tech CSE";
+                        return b.startsWith("B.TECH") ? b : `B.Tech ${st.branch}`;
+                      })()}
                     </td>
+
+
                     <td className="py-3 px-4 whitespace-nowrap text-gray-900 dark:text-slate-100 font-mono font-medium">
                       {st.phone || "—"}
                     </td>
@@ -934,13 +931,12 @@ export function HostelHub() {
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">
                       <span
-                        className={`px-2.5 py-0.5 rounded text-xs font-bold uppercase ${
-                          st.late_strike_count >= 3
+                        className={`px-2.5 py-0.5 rounded text-xs font-bold uppercase ${st.late_strike_count >= 3
                             ? "bg-red-100 text-red-700 animate-pulse"
                             : st.late_strike_count > 0
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400"
-                        }`}
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400"
+                          }`}
                       >
                         {st.late_strike_count}/3 Strikes
                       </span>
@@ -972,9 +968,10 @@ export function HostelHub() {
 
       {/* Tab: Gate Telemetry Log */}
       {activeTab === "movements" && (
-        <div className="mt-6 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-          <table className="w-full text-left text-sm divide-y divide-gray-100 dark:divide-slate-800">
+        <div className="mt-6 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-x-auto shadow-sm">
+          <table className="w-full text-left text-sm divide-y divide-gray-100 dark:divide-slate-800 min-w-[700px]">
             <thead className="bg-gray-50 dark:bg-slate-800/60 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+
               <tr>
                 <th className="py-3.5 px-4">Student</th>
                 <th className="py-3.5 px-4">Type</th>

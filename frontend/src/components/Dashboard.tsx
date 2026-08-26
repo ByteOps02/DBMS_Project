@@ -450,59 +450,96 @@ export function Dashboard() {
 
           {/* Peak Traffic Inflow/Outflow Histogram */}
           <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-indigo-500" />
                 <h3 className="text-xs font-bold uppercase text-gray-700 dark:text-slate-300 tracking-wider">
-                  Hourly Checkpoint Traffic (06:00 – 22:00 IST)
+                  Hourly Checkpoint Traffic (24-Hour Gate Telemetry)
                 </h3>
               </div>
               <div className="flex items-center gap-3 text-[10px] font-bold uppercase">
+                <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400">
+                  <span className="w-2 h-2 rounded-full bg-purple-500" /> 🌙 Curfew / Night (22:00–06:00)
+                </span>
                 <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" /> Entries
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" /> In
                 </span>
                 <span className="flex items-center gap-1 text-sky-600 dark:text-sky-400">
-                  <span className="w-2 h-2 rounded-full bg-sky-500" /> Exits
+                  <span className="w-2 h-2 rounded-full bg-sky-500" /> Out
                 </span>
               </div>
             </div>
 
             {/* Bars */}
-            <div className="h-32 flex items-end justify-between gap-2 pt-4 px-2">
+            <div className="h-36 flex items-end justify-between gap-1 sm:gap-2 pt-8 px-1 sm:px-2 relative overflow-x-auto scrollbar-hide">
               {telemetry.hourlyDistribution.map((item, idx) => {
                 const maxVal = Math.max(
                   ...telemetry.hourlyDistribution.map((d) => Math.max(d.entries, d.exits, 1))
                 );
-                const entryHeight = Math.max(8, (item.entries / maxVal) * 100);
-                const exitHeight = Math.max(8, (item.exits / maxVal) * 100);
+                const entryHeight = Math.max(10, (item.entries / maxVal) * 100);
+                const exitHeight = Math.max(10, (item.exits / maxVal) * 100);
+                const isNight = item.hour.startsWith("22") || item.hour.startsWith("00") || item.hour.startsWith("02") || item.hour.startsWith("04");
 
                 return (
-                  <div key={idx} className="flex-1 flex flex-col items-center gap-1 group">
-                    <div className="w-full flex items-end justify-center gap-1 h-24">
+                  <div key={idx} className="flex-1 min-w-[28px] sm:min-w-[36px] flex flex-col items-center gap-1.5 group relative">
+                    {/* Floating Tooltip on Hover */}
+                    <div className="absolute -top-16 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center bg-slate-950 dark:bg-slate-900 text-white text-[11px] font-bold py-1.5 px-2.5 rounded-xl shadow-2xl border border-slate-700 whitespace-nowrap z-30 pointer-events-none animate-springIn">
+                      <div className="flex items-center gap-1.5 text-[9px] font-mono text-gray-400 font-bold uppercase">
+                        {isNight && <span>🌙 Night</span>}
+                        <span>{item.hour} Checkpoint</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-emerald-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> {item.entries} In
+                        </span>
+                        <span className="text-sky-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-400" /> {item.exits} Out
+                        </span>
+                      </div>
+                      {/* Triangle tail */}
+                      <div className="w-2 h-2 bg-slate-950 dark:bg-slate-900 rotate-45 border-r border-b border-slate-700 absolute -bottom-1 left-1/2 -translate-x-1/2" />
+                    </div>
+
+                    <div className={`w-full flex items-end justify-center gap-1 h-24 relative rounded-t-lg px-0.5 ${
+                      isNight ? "bg-purple-50/80 dark:bg-purple-950/40 border-t border-x border-purple-200/60 dark:border-transparent" : "bg-slate-50/60 dark:bg-slate-800/20"
+                    }`}>
                       {/* Entry Bar */}
                       <div
-                        className="w-1/2 bg-emerald-500/80 hover:bg-emerald-500 rounded-t-md transition-all relative group-hover:scale-105"
+                        className="w-1/2 bg-emerald-500 hover:bg-emerald-400 rounded-t-md transition-all relative flex items-start justify-center cursor-pointer group-hover:scale-105 shadow-sm"
                         style={{ height: `${entryHeight}%` }}
-                        title={`${item.hour}: ${item.entries} Entries`}
-                      />
+                      >
+                        <span className="text-[9px] font-black text-emerald-800 dark:text-emerald-200 opacity-0 group-hover:opacity-100 transition-opacity -mt-4 bg-white/90 dark:bg-slate-900 px-1 py-0.5 rounded shadow-xs">
+                          {item.entries}
+                        </span>
+                      </div>
+
                       {/* Exit Bar */}
                       <div
-                        className="w-1/2 bg-sky-500/80 hover:bg-sky-500 rounded-t-md transition-all relative group-hover:scale-105"
+                        className="w-1/2 bg-sky-500 hover:bg-sky-400 rounded-t-md transition-all relative flex items-start justify-center cursor-pointer group-hover:scale-105 shadow-sm"
                         style={{ height: `${exitHeight}%` }}
-                        title={`${item.hour}: ${item.exits} Exits`}
-                      />
+                      >
+                        <span className="text-[9px] font-black text-sky-800 dark:text-sky-200 opacity-0 group-hover:opacity-100 transition-opacity -mt-4 bg-white/90 dark:bg-slate-900 px-1 py-0.5 rounded shadow-xs">
+                          {item.exits}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-[9px] font-mono text-gray-400 font-bold truncate">
+
+                    <span className={`text-[9px] sm:text-[10px] font-mono group-hover:text-gray-900 dark:group-hover:text-white font-bold truncate transition-colors ${
+                      isNight ? "text-purple-600 dark:text-purple-400" : "text-gray-500 dark:text-slate-400"
+                    }`}>
                       {item.hour}
                     </span>
+
                   </div>
                 );
               })}
             </div>
 
-            <p className="text-[10px] text-gray-400 dark:text-slate-500 font-medium">
-              ⚡ Real-time gate sensor feeds auto-correlated with barcode kiosk entries.
+            <p className="text-[11px] text-gray-400 dark:text-slate-500 font-medium">
+              ⚡ 24-Hour gate sensors auto-correlated with barcode passes & late night curfew movements.
             </p>
+
+
           </div>
         </div>
       )}
