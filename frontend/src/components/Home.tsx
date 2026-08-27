@@ -210,12 +210,11 @@ const Home = () => {
       >
         <div className="px-4 py-4 space-y-2">
           {[
-            { label: "🖥️ Reception Kiosk", path: "/kiosk" },
-            { label: "🎓 Student Pass", path: "/app/student-pass" },
-            { label: "📝 Request Visit", path: "/request-visit" },
-            { label: "🔐 Log In", path: "/login" },
+            { label: "Reception Kiosk", path: "/kiosk" },
+            { label: "Student Pass", path: "/app/student-pass" },
+            { label: "Request Visit", path: "/request-visit" },
+            { label: "Log In", path: "/login" },
             { label: "Sign Up", path: "/signup" },
-
           ].map(({ label, path }) => (
             <button
               key={label}
