@@ -3,6 +3,7 @@ import {
   Users,
   Home,
   LogOut,
+  LogIn,
   CalendarDays,
   AlertTriangle,
   Search,
@@ -30,7 +31,7 @@ import { toast } from "react-hot-toast";
 import { formatIST } from "../lib/dateIST";
 import { PageHeader } from "./PageHeader";
 import { SEOMeta } from "./SEOMeta";
-import { useDataSync } from "../lib/dataSync";
+import { useDataSync, dataSync } from "../lib/dataSync";
 import { CustomSelect } from "./ui/CustomSelect";
 import Papa from "papaparse";
 
@@ -178,6 +179,21 @@ export function HostelHub() {
       fetchAllData();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to reset strikes");
+    }
+  };
+
+  // Check-In / Mark Returned Action
+  const handleCheckInStudent = async (rollNumber: string, name: string) => {
+    try {
+      const res = await api.students.scanPass({
+        scanData: rollNumber,
+        gate: "Main Gate"
+      });
+      toast.success(res.message || `Entry logged for ${name} — Student marked Inside Campus.`);
+      fetchAllData();
+      dataSync.notify("students");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to log entry");
     }
   };
 
@@ -356,7 +372,7 @@ export function HostelHub() {
             {census.out_day}
           </p>
           <span className="text-xs font-medium text-amber-600/70 dark:text-amber-400/70">
-            Out on short pass
+            {census.overdue > 0 ? `${census.overdue} past 09:30 PM curfew` : "Out on short pass"}
           </span>
         </div>
 
@@ -517,6 +533,13 @@ export function HostelHub() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 self-end lg:self-auto">
+                      <button
+                        onClick={() => handleCheckInStudent(item.student.roll_number, item.student.name)}
+                        className="btn btn-sm btn-primary text-xs flex items-center gap-1.5 shadow-sm"
+                        title="Log campus entry and update Inside Campus count"
+                      >
+                        <LogIn className="w-3.5 h-3.5" /> Check In / Return
+                      </button>
                       <a
                         href={`tel:${item.student.phone}`}
                         className="btn btn-sm btn-secondary text-xs"
@@ -1132,6 +1155,10 @@ export function HostelHub() {
                               return m.is_overdue ? (
                                 <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400 border border-red-500/30 uppercase animate-pulse">
                                   🚨 Overdue {delayFormatted ? `(${delayFormatted})` : ""}
+                                </span>
+                              ) : m.movement_type === "hostel_leave" ? (
+                                <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-400 border border-indigo-500/30 uppercase">
+                                  🏖️ On Leave
                                 </span>
                               ) : (
                                 <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-400 border border-sky-500/30 uppercase">

@@ -249,15 +249,20 @@ router.post('/scan-pass', requireAuth, async (req: AuthRequest, res) => {
  */
 router.get('/census', requireAuth, async (_req: AuthRequest, res) => {
   try {
-    const [total, inside, outDay, onLeave, overdueMovements, blocks] = await Promise.all([
+    const now = new Date();
+    const [total, inside, outDay, onLeave, activeMovements, extensions, blocks] = await Promise.all([
       prisma.student.count(),
       prisma.student.count({ where: { status: 'inside' } }),
       prisma.student.count({ where: { status: 'out_day' } }),
       prisma.student.count({ where: { status: 'on_leave' } }),
-      prisma.studentMovement.count({
+      prisma.studentMovement.findMany({
+        where: { entry_time: null },
+        include: { student: true }
+      }),
+      prisma.curfewExtension.findMany({
         where: {
-          entry_time: null,
-          expected_in: { lt: new Date() }
+          status: 'approved',
+          requested_until: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) }
         }
       }),
       prisma.student.groupBy({
@@ -266,12 +271,30 @@ router.get('/census', requireAuth, async (_req: AuthRequest, res) => {
       })
     ]);
 
+    // Calculate actual overdue count:
+    // 1. Day Outings: overdue if past 09:30 PM curfew on exit date (or approved extension) or during night curfew hours
+    // 2. Hostel Leave: NOT subject to daily night curfew; ONLY overdue if now > leave expected_in (to_date)
+    const overdueCount = activeMovements.filter((m) => {
+      if (!m.student || m.student.status === 'inside') return false;
+      if (m.movement_type === 'day_outing') {
+        const studentExt = extensions.find((e) => e.student_id === m.student_id);
+        const curfewDeadline = studentExt
+          ? new Date(studentExt.requested_until)
+          : getCurfewISTForDate(new Date(m.exit_time));
+        return now.getTime() > curfewDeadline.getTime() || isCurfewNightTimeIST(now);
+      }
+      if (m.movement_type === 'hostel_leave') {
+        return now.getTime() > new Date(m.expected_in).getTime();
+      }
+      return false;
+    }).length;
+
     res.json({
       total,
       inside,
       out_day: outDay,
       on_leave: onLeave,
-      overdue: overdueMovements,
+      overdue: overdueCount,
       blocks
     });
   } catch (err) {
@@ -285,16 +308,54 @@ router.get('/census', requireAuth, async (_req: AuthRequest, res) => {
  */
 router.get('/overdue', requireAuth, async (_req: AuthRequest, res) => {
   try {
-    const overdueList = await prisma.studentMovement.findMany({
-      where: {
-        entry_time: null,
-        expected_in: { lt: new Date() }
-      },
-      include: {
-        student: true
-      },
-      orderBy: { expected_in: 'asc' }
-    });
+    const now = new Date();
+    const [activeMovements, extensions] = await Promise.all([
+      prisma.studentMovement.findMany({
+        where: { entry_time: null },
+        include: { student: true },
+        orderBy: { exit_time: 'asc' }
+      }),
+      prisma.curfewExtension.findMany({
+        where: {
+          status: 'approved',
+          requested_until: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) }
+        }
+      })
+    ]);
+
+    const overdueList = activeMovements
+      .filter((m) => {
+        if (!m.student || m.student.status === 'inside') return false;
+        if (m.movement_type === 'day_outing') {
+          const studentExt = extensions.find((e) => e.student_id === m.student_id);
+          const curfewDeadline = studentExt
+            ? new Date(studentExt.requested_until)
+            : getCurfewISTForDate(new Date(m.exit_time));
+          return now.getTime() > curfewDeadline.getTime() || isCurfewNightTimeIST(now);
+        }
+        if (m.movement_type === 'hostel_leave') {
+          // Hostel Leave is ONLY overdue if past the approved leave return date
+          return now.getTime() > new Date(m.expected_in).getTime();
+        }
+        return false;
+      })
+      .map((m) => {
+        const studentExt = extensions.find((e) => e.student_id === m.student_id);
+        const curfewDeadline =
+          m.movement_type === 'day_outing'
+            ? studentExt
+              ? new Date(studentExt.requested_until)
+              : getCurfewISTForDate(new Date(m.exit_time))
+            : new Date(m.expected_in);
+
+        const delayMinutes = Math.max(1, Math.round((now.getTime() - curfewDeadline.getTime()) / 60000));
+        return {
+          ...m,
+          expected_in: curfewDeadline.toISOString(),
+          is_overdue: true,
+          curfew_delay_minutes: delayMinutes
+        };
+      });
 
     res.json(overdueList);
   } catch (err) {
@@ -451,6 +512,30 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res) => {
       }
     });
 
+    if (status === 'inside') {
+      // Close any active movements
+      await prisma.studentMovement.updateMany({
+        where: {
+          student_id: String(id),
+          entry_time: null
+        },
+        data: {
+          entry_time: new Date(),
+          entry_gate: 'Main Gate'
+        }
+      });
+      // Complete active leaves
+      await prisma.hostelLeave.updateMany({
+        where: {
+          student_id: String(id),
+          status: 'approved'
+        },
+        data: {
+          status: 'completed'
+        }
+      });
+    }
+
     res.json({
       success: true,
       message: `Student details for ${updated.name} (${updated.roll_number}) updated successfully.`,
@@ -596,15 +681,31 @@ router.get('/movements', requireAuth, async (req: AuthRequest, res) => {
 
       if (m.entry_time) {
         const entryDate = new Date(m.entry_time);
-        if (entryDate.getTime() > curfewDeadline.getTime() || isCurfewNightTimeIST(entryDate)) {
-          isLate = true;
-          delayMinutes = Math.max(1, Math.round((entryDate.getTime() - curfewDeadline.getTime()) / 60000));
+        if (isDayOuting) {
+          if (entryDate.getTime() > curfewDeadline.getTime() || isCurfewNightTimeIST(entryDate)) {
+            isLate = true;
+            delayMinutes = Math.max(1, Math.round((entryDate.getTime() - curfewDeadline.getTime()) / 60000));
+          }
+        } else {
+          // Hostel Leave: only late if returned after expected_in date
+          if (entryDate.getTime() > curfewDeadline.getTime()) {
+            isLate = true;
+            delayMinutes = Math.max(1, Math.round((entryDate.getTime() - curfewDeadline.getTime()) / 60000));
+          }
         }
       } else {
         // Outing In progress
-        if (now.getTime() > curfewDeadline.getTime() || isCurfewNightTimeIST(now)) {
-          isLate = true;
-          delayMinutes = Math.max(1, Math.round((now.getTime() - curfewDeadline.getTime()) / 60000));
+        if (isDayOuting) {
+          if (now.getTime() > curfewDeadline.getTime() || isCurfewNightTimeIST(now)) {
+            isLate = true;
+            delayMinutes = Math.max(1, Math.round((now.getTime() - curfewDeadline.getTime()) / 60000));
+          }
+        } else {
+          // Hostel Leave: only overdue if now is past approved return date
+          if (now.getTime() > curfewDeadline.getTime()) {
+            isLate = true;
+            delayMinutes = Math.max(1, Math.round((now.getTime() - curfewDeadline.getTime()) / 60000));
+          }
         }
       }
 

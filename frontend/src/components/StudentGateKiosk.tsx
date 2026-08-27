@@ -24,6 +24,7 @@ import { formatIST } from "../lib/dateIST";
 import { CustomSelect } from "./ui/CustomSelect";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { CAMPUS_GATES } from "../lib/constants";
+import { dataSync } from "../lib/dataSync";
 
 export function StudentGateKiosk() {
   const [selectedGate, setSelectedGate] = useState<string>(CAMPUS_GATES[0]);
@@ -168,6 +169,7 @@ export function StudentGateKiosk() {
 
       setLastScan(res);
       setRecentScans((prev) => [res, ...prev.slice(0, 9)]);
+      dataSync.notify("students");
 
       if (res.is_flagged) {
         playSound("siren");

@@ -243,6 +243,15 @@ async function main() {
     }
   }
 
+  function getCurfewISTForDate(baseDate: Date = new Date()): Date {
+    const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+    const istTime = new Date(baseDate.getTime() + IST_OFFSET_MS);
+    const y = istTime.getUTCFullYear();
+    const m = istTime.getUTCMonth();
+    const d = istTime.getUTCDate();
+    return new Date(Date.UTC(y, m, d, 16, 0, 0, 0));
+  }
+
   for (const s of studentsData) {
     const student = await prisma.student.upsert({
       where: { roll_number: s.roll_number },
@@ -252,9 +261,10 @@ async function main() {
 
     // Create sample movements / leaves
     if (s.status === "out_day") {
-      const isLate = Math.random() > 0.7;
-      const exitTime = new Date(Date.now() - (isLate ? 6 : 2) * 60 * 60 * 1000);
-      const expectedIn = new Date(Date.now() + (isLate ? -1 : 3) * 60 * 60 * 1000);
+      // Exit time today around 01:48 PM (13:48 IST)
+      const now = new Date();
+      const exitTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13, 48, 0);
+      const expectedIn = getCurfewISTForDate(exitTime);
 
       await prisma.studentMovement.create({
         data: {
@@ -264,7 +274,7 @@ async function main() {
           exit_gate: "Main Gate",
           expected_in: expectedIn,
           purpose: "Market / Dinner",
-          is_overdue: isLate
+          is_overdue: false
         }
       });
     } else if (s.status === "on_leave") {
