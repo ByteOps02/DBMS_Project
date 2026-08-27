@@ -150,9 +150,14 @@ export const useVisitStats = (user: User | null) => {
 
         let totalUsers = 0;
         if (role === "admin") {
-           const hosts = await api.hosts.list();
-           totalUsers = hosts.length;
+          try {
+            const hosts = await api.hosts.list();
+            totalUsers = hosts?.length || 0;
+          } catch {
+            totalUsers = 0;
+          }
         }
+
         statsData = [
           {
             name: "Ongoing Visits",

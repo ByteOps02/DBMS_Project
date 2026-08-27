@@ -21,6 +21,17 @@ type Department = {
   name: string;
 };
 
+const DEFAULT_DEPARTMENTS: Department[] = [
+  { id: "dept_cse", name: "Computer Science & Engineering (CSE)" },
+  { id: "dept_ece", name: "Electronics & Communication Engineering (ECE)" },
+  { id: "dept_csa", name: "AI & Machine Learning (CSA)" },
+  { id: "dept_bs", name: "Basic Sciences & Humanities" },
+  { id: "dept_tnp", name: "Training & Placement Cell (T&P)" },
+  { id: "dept_hostel", name: "Hostel & Estate Administration" },
+  { id: "dept_sec", name: "Campus Security & Safety" },
+  { id: "dept_admin", name: "General Administration & Dean Office" },
+];
+
 export function Signup() {
   const navigate = useNavigate();
   const signup = useAuthStore((state) => state.signup);
@@ -34,7 +45,7 @@ export function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [departmentId, setDepartmentId] = useState("");
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departments, setDepartments] = useState<Department[]>(DEFAULT_DEPARTMENTS);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
@@ -45,15 +56,18 @@ export function Signup() {
   const loadDepartments = async () => {
     try {
       const data = await api.departments.list();
-      setDepartments(data || []);
+      if (data && data.length > 0) {
+        setDepartments(data);
+      }
     } catch (err) {
-      console.error("Error loading departments:", err);
+      console.error("Error loading departments, using defaults:", err);
     }
   };
 
   useEffect(() => {
     loadDepartments();
   }, []);
+
 
   const calculatePasswordStrength = (pass: string) => {
     let score = 0;

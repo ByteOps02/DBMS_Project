@@ -274,15 +274,16 @@ export function Dashboard() {
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3 sm:gap-5">
           <div className="hidden xs:flex w-14 h-14 sm:w-[72px] sm:h-[72px] rounded-[2.2rem] bg-[#3b82f6] shadow-[0_8px_30px_rgb(59,130,246,0.3)] text-white items-center justify-center text-xl sm:text-3xl font-extrabold border-[3px] border-white dark:border-slate-800 shrink-0">
-            {getInitials(user?.name || "")}
+            {getInitials(user?.name === "System Administrator" ? "Admin" : (user?.name || "Admin"))}
           </div>
           <div className="flex flex-col justify-center min-w-0">
             <h1 className="text-2xl sm:text-3xl lg:text-[42px] font-black text-[#1e293b] dark:text-white tracking-tighter leading-none truncate">
               Welcome back,{" "}
               <span className="text-[#3b82f6] underline decoration-blue-500/20 underline-offset-4">
-                {user?.name?.split(" ")[0] || "Guest"}
+                {user?.name === "System Administrator" ? "Admin" : (user?.name || "Admin")}
               </span>
             </h1>
+
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-3">
               <div className="flex items-center gap-1.5">
                 <span className="relative flex h-2 w-2">

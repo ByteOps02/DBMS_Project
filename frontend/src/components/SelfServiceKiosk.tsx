@@ -8,16 +8,17 @@ import {
   Printer,
   RefreshCw,
   Clock,
-  Sparkles,
   ArrowRight,
   MonitorSmartphone,
   RotateCcw,
+
 } from "lucide-react";
 import QRCode from "qrcode";
 import toast from "react-hot-toast";
 import { api } from "../lib/api";
 import { BackButton } from "./BackButton";
 import { PageHeader } from "./PageHeader";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 
 type KioskCategory = "guest" | "courier" | "interview" | "vip";
 
@@ -174,19 +175,22 @@ export function SelfServiceKiosk() {
 
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 animate-fadeIn space-y-6">
-      {/* Top Header Row */}
-      <div className="flex items-center gap-3">
-        <BackButton />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-16 animate-fadeIn space-y-6 min-h-screen">
+      {/* Top Header Row with Back Button */}
+      <div className="flex items-center justify-between">
+        <BackButton to="/" className="mb-0 flex items-center gap-2" />
+        <ThemeSwitcher />
       </div>
 
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+
         <PageHeader
           icon={MonitorSmartphone}
           gradient="from-sky-500 via-blue-600 to-indigo-600"
-          title="Campus Self-Check-In Kiosk"
-          description="Touchscreen fast visitor registration, live webcam snapshot, and instant QR badge printing."
+          title="Reception Check-In Kiosk"
+          description="Touchscreen visitor self-registration, webcam photo capture, and instant QR badge printing."
         />
+
 
         <div className="flex items-center gap-3 shrink-0 self-end md:self-auto">
           <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-sm font-mono font-bold text-gray-700 dark:text-slate-300 shadow-sm">
@@ -541,9 +545,10 @@ export function SelfServiceKiosk() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4" />
+                    <Printer className="w-4 h-4" />
                     <span>Complete & Print Badge</span>
                   </>
+
                 )}
               </button>
             </div>

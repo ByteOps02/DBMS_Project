@@ -12,13 +12,13 @@ import { EmergencyBanner } from "./EmergencyBanner";
 
 
 function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .substring(0, 2)
-    .toUpperCase();
+  const cleanName = name === "System Administrator" ? "Admin" : name;
+  if (cleanName.length <= 2) return cleanName.toUpperCase();
+  const parts = cleanName.trim().split(/\s+/);
+  if (parts.length === 1) return cleanName.substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
+
 
 export function Layout() {
   const { user, logout, refreshProfile } = useAuthStore();
@@ -85,8 +85,9 @@ export function Layout() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-black text-gray-900 dark:text-white truncate">
-                    {user.name}
+                    {user.name === "System Administrator" ? "Admin" : user.name}
                   </p>
+
                   <p className="text-[11px] text-gray-400 dark:text-slate-400 capitalize font-semibold tracking-wide">
                     {user.role}
                   </p>
@@ -215,9 +216,10 @@ export function Layout() {
               </div>
               <div className="ml-3 overflow-hidden text-left flex-1">
                 <p className="text-sm font-black text-gray-900 dark:text-slate-100 truncate">
-                  {user.name}
+                  {user.name === "System Administrator" ? "Admin" : user.name}
                 </p>
                 <p className="text-xs text-gray-400 dark:text-slate-400 capitalize font-semibold">
+
                   {user.role}
                 </p>
               </div>

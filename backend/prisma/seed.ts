@@ -25,31 +25,83 @@ async function main() {
   }
 
   const defaultUsers = [
-    { email: "admin@gmail.com", password: "Admin@123", role: "admin", name: "Admin User" },
-    { email: "host@gmail.com", password: "Host@123", role: "host", name: "Host User" },
-    { email: "guard@gmail.com", password: "Guard@123", role: "guard", name: "Guard User" },
-    { email: "visitor@gmail.com", password: "Visitor@123", role: "visitor", name: "Visitor User" },
-  ] as const;
+    { email: "admin@iiitn.ac.in", password: "Admin@123", role: "admin" as const, name: "Admin" },
+    { email: "warden@iiitn.ac.in", password: "Warden@123", role: "warden" as const, name: "Chief Warden (Hostel Block A)" },
+
+    { email: "faculty@iiitn.ac.in", password: "Host@123", role: "host" as const, name: "Dr. Amit Sharma (CSE Faculty)" },
+    { email: "host@iiitn.ac.in", password: "Host@123", role: "host" as const, name: "Dr. Amit Sharma (CSE Faculty)" },
+    { email: "guard@iiitn.ac.in", password: "Guard@123", role: "guard" as const, name: "Main Gate Security Checkpoint" },
+    { email: "bt23cse026@iiitn.ac.in", password: "Student@123", role: "student" as const, name: "Ram Krishna", roll_number: "BT23CSE026" },
+    { email: "student@iiitn.ac.in", password: "Student@123", role: "student" as const, name: "Aarav Sharma", roll_number: "BT23CSE001" },
+    { email: "visitor@gmail.com", password: "Visitor@123", role: "visitor" as const, name: "Guest Visitor" },
+  ];
+
+  // Clear roll numbers on all hosts before seeding
+  await prisma.host.updateMany({
+    data: { roll_number: null },
+  });
 
   for (const u of defaultUsers) {
     const password_hash = await bcrypt.hash(u.password, 10);
-    const user = await prisma.host.upsert({
-      where: { email: u.email },
-      update: {
-        password_hash,
-        role: u.role,
-        is_verified: true,
-      },
-      create: {
-        email: u.email,
-        name: u.name,
-        password_hash,
-        role: u.role,
-        is_verified: true,
+    const existing = await prisma.host.findUnique({ where: { email: u.email } });
+    if (existing) {
+      await prisma.host.update({
+        where: { email: u.email },
+        data: {
+          name: u.name,
+          password_hash,
+          role: u.role,
+          is_verified: true,
+          ...(("roll_number" in u && u.roll_number) ? { roll_number: u.roll_number } : {}),
+        },
+      });
+    } else {
+      await prisma.host.create({
+        data: {
+          email: u.email,
+          name: u.name,
+          password_hash,
+          role: u.role,
+          is_verified: true,
+          roll_number: "roll_number" in u ? u.roll_number : null,
+        },
+      });
+    }
+    console.log(`User seeded: ${u.email} (${u.role})`);
+  }
+
+  // --- MIGRATE AND CLEAN UP OLD @gmail.com STAFF ACCOUNTS ---
+  try {
+    const adminIIITN = await prisma.host.findUnique({ where: { email: "admin@iiitn.ac.in" } });
+    const hostIIITN = await prisma.host.findUnique({ where: { email: "faculty@iiitn.ac.in" } }) 
+      || await prisma.host.findUnique({ where: { email: "host@iiitn.ac.in" } });
+
+    // Migrate any visits referencing old @gmail.com host accounts
+    const oldGmailHosts = await prisma.host.findMany({
+      where: {
+        email: { in: ["admin@gmail.com", "host@gmail.com", "guard@gmail.com", "warden@gmail.com", "student@gmail.com"] }
       }
     });
-    console.log(`User: ${user.email} (${user.role})`);
+
+    for (const oldH of oldGmailHosts) {
+      const targetHostId = oldH.role === "host" && hostIIITN ? hostIIITN.id : (adminIIITN?.id || oldH.id);
+      if (targetHostId !== oldH.id) {
+        await prisma.visit.updateMany({
+          where: { host_id: oldH.id },
+          data: { host_id: targetHostId }
+        });
+      }
+      // Safe to delete old @gmail account now
+      await prisma.host.delete({ where: { id: oldH.id } }).catch(() => {});
+      console.log(`Cleaned up obsolete staff account: ${oldH.email}`);
+    }
+  } catch (cleanErr) {
+    console.error("Cleanup notice:", cleanErr);
   }
+
+
+
+
 
   // --- SEED INDIAN STUDENTS ---
   console.log("Seeding Indian students dataset for Hostel Block A (10 Floors)...");

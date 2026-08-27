@@ -196,9 +196,10 @@ export function VisitLogs() {
         <PageHeader
           icon={ClipboardList}
           gradient="from-sky-500 to-blue-600"
-          title="Visit Logs"
-          description="View, filter, search, and export all visitor records."
+          title="Visitor Logs"
+          description="Audit trail of check-ins, departures, and active campus visitor records."
           right={
+
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
@@ -215,18 +216,19 @@ export function VisitLogs() {
               <button
                 onClick={handleExport}
                 disabled={exporting}
-                className="flex items-center justify-center gap-2 bg-slate-900 dark:bg-slate-800 text-white border border-transparent dark:border-slate-700 rounded-xl py-2 px-4 font-bold uppercase tracking-wider text-[10px] sm:text-xs active:scale-95 transition-all shadow-sm hover:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-50 shrink-0"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-sky-500 text-xs font-bold shadow-xs transition-all shrink-0 cursor-pointer disabled:opacity-50"
               >
                 {exporting ? (
-                  <Circle className="animate-spin w-3 h-3" />
+                  <Circle className="animate-spin w-4 h-4 text-sky-500" />
                 ) : (
-                  <Download className="w-3 h-3" />
+                  <Download className="w-4 h-4 text-sky-500" />
                 )}
-                Export CSV
+                <span>Export Visitor CSV</span>
               </button>
             </div>
           }
         />
+
       </div>
 
       <div className="mt-6 max-w-7xl mx-auto">

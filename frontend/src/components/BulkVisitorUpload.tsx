@@ -175,9 +175,10 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
         <PageHeader
           icon={UploadCloud}
           gradient="from-orange-500 to-amber-600"
-          title="Bulk Upload"
-          description="Upload multiple visitors at once using a CSV file. All visitors will be pending approval."
+          title="Bulk Import"
+          description="Import multiple visitor records at once using CSV or Excel spreadsheets."
         />
+
       </div>
 
       <div className="max-w-7xl mx-auto">
@@ -220,33 +221,34 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
               {errors.file && <p className="mt-1 text-sm text-red-600">{errors.file.message}</p>}
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="submit"
                 disabled={isSubmitting || uploading}
-                className="btn-primary flex-1 py-3"
+                className="btn-primary flex-1 !py-3 !rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md"
               >
                 {uploading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                    Uploading...
+                    <span>Uploading...</span>
                   </>
                 ) : (
                   <>
                     <Upload className="h-4 w-4" strokeWidth={2.5} />
-                    Upload Visitors
+                    <span>Upload Visitors</span>
                   </>
                 )}
               </button>
               <button
                 type="button"
                 onClick={downloadSampleCsv}
-                className="btn-secondary px-6 py-3"
+                className="btn-secondary !py-3 !px-6 !rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xs"
               >
-                <Download className="h-4 w-4" />
-                Download Template
+                <Download className="h-4 w-4 text-sky-500" />
+                <span>Download Template</span>
               </button>
             </div>
+
 
           </form>
         </div>

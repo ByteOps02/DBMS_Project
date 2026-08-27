@@ -249,11 +249,11 @@ export function FilteredVisits() {
           title={title}
           description={desc}
           right={
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               <input
-                className={`block w-full rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3 pl-10 pr-4 text-sm ${getFocusRingColor()} outline-none transition-all dark:text-white`}
-                placeholder="Quick search..."
+                className={`block w-full rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 pl-10 pr-4 text-xs sm:text-sm ${getFocusRingColor()} outline-none transition-all dark:text-white shadow-xs`}
+                placeholder="Search visitor, phone or vehicle..."
                 type="search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -263,54 +263,50 @@ export function FilteredVisits() {
         />
       </div>
 
-      <div className="mt-8 max-w-7xl mx-auto">
-        <div className="mt-4 flex flex-col min-h-[400px]">
-          <div className="-my-2 sm:-mx-6 lg:-mx-8 flex-1">
-            <div className="inline-block w-full py-2 align-middle md:px-6 lg:px-8 h-full">
-              <div className="glass-panel rounded-[2rem] overflow-hidden transition-all duration-300 h-full flex flex-col">
-                <div className="lg:hidden px-6 py-2 bg-sky-50/50 dark:bg-sky-900/10 border-b border-gray-100 dark:border-slate-800/50">
-                  <p className="text-[9px] font-black text-sky-600/60 dark:text-sky-400/60 uppercase tracking-widest flex items-center gap-1.5">
-                    <span className="animate-pulse">←</span> Swipe horizontally to see more details{" "}
-                    <span className="animate-pulse">→</span>
-                  </p>
-                </div>
-                <div className="flex-1 overflow-x-auto scrollbar-hide">
-                  <table className="w-full divide-y divide-gray-200 dark:divide-slate-700/50 flex-1 min-w-[1100px]">
-                    <thead>
-                      <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-slate-800/90 dark:to-slate-800/60">
-                        <th className="py-2.5 pl-4 pr-3 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0">
-                          Visitor
-                        </th>
-                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
-                          Guests
-                        </th>
-                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
-                          Vehicle
-                        </th>
-                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
-                          Phone
-                        </th>
-                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
-                          Entry Time
-                        </th>
-                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
-                          Exit Time
-                        </th>
-                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
-                          Entry Gate
-                        </th>
-                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
-                          Exit Gate
-                        </th>
-                        <th className="px-3 py-2.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest sticky top-0 whitespace-nowrap">
-                          Status
-                        </th>
-                        <th className="relative py-2.5 pl-2 pr-4 sm:pr-5 sticky top-0">
-                          <span className="sr-only">Actions</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white dark:bg-slate-900 dark:divide-slate-700/60">
+      <div className="mt-6 max-w-7xl mx-auto">
+        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+
+          <div className="lg:hidden px-6 py-2 bg-sky-50/50 dark:bg-sky-900/10 border-b border-gray-100 dark:border-slate-800/50">
+            <p className="text-[9px] font-black text-sky-600/60 dark:text-sky-400/60 uppercase tracking-widest flex items-center gap-1.5">
+              <span className="animate-pulse">←</span> Swipe horizontally to see more details{" "}
+              <span className="animate-pulse">→</span>
+            </p>
+          </div>
+          <div className="overflow-x-auto scrollbar-hide">
+            <table className="w-full divide-y divide-gray-200 dark:divide-slate-800 min-w-[950px]">
+              <thead>
+                <tr className="bg-gray-50/80 dark:bg-slate-800/60">
+                  <th className="py-3.5 pl-6 pr-3 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                    Visitor
+                  </th>
+                  <th className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                    Guests
+                  </th>
+                  <th className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                    Vehicle
+                  </th>
+                  <th className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                    Contact Phone
+                  </th>
+                  <th className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                    Entry Time
+                  </th>
+                  <th className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                    Exit Time
+                  </th>
+                  <th className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                    Gates
+                  </th>
+                  <th className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                    Status
+                  </th>
+                  <th className="py-3.5 pr-6 text-right text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-800/80 text-xs">
+
                       {loading ? (
                         <>
                           {[...Array(5)].map((_, i) => (
@@ -476,14 +472,10 @@ export function FilteredVisits() {
                         })
                       )}
                     </tbody>
-
                   </table>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
       {selectedVisit && (
         <VisitDetails
@@ -495,3 +487,4 @@ export function FilteredVisits() {
     </div>
   );
 }
+

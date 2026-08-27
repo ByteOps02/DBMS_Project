@@ -13,16 +13,17 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
   handlePrefetch,
 }) => {
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4">
       {stats.map((stat, index) => (
         <StatItem
           key={stat.name}
           {...stat}
           onClick={handleStatCardClick}
           onMouseEnter={handlePrefetch}
-          style={{ animationDelay: `${index * 0.1}s` }}
+          style={{ animationDelay: `${index * 0.05}s` }}
         />
       ))}
     </div>
   );
 };
+

@@ -77,6 +77,13 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
   })
     .then(async (res) => {
       if (!res.ok) {
+        if (res.status === 401 && !path.includes("/auth/")) {
+          localStorage.removeItem("vms_token");
+          localStorage.removeItem("vms_user_profile");
+          if (typeof window !== "undefined" && window.location.pathname.startsWith("/app")) {
+            window.location.href = "/login";
+          }
+        }
         let errorMessage = "API Error";
         try {
           const errorData = await res.json();
@@ -86,6 +93,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
         }
         throw new Error(errorMessage);
       }
+
       const text = await res.text();
       const data = text ? JSON.parse(text) : null;
       

@@ -5,23 +5,33 @@ import { requireAuth, AuthRequest } from '../middleware/auth.js';
 const router = Router();
 
 /**
- * Helper to calculate today's 09:30 PM curfew in IST (Asia/Kolkata)
+ * Helper to get strictly 09:30 PM (21:30) IST curfew for a specific date
  */
-function getTodayCurfewIST(): Date {
+function getCurfewISTForDate(baseDate: Date = new Date()): Date {
   const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-  const nowIST = new Date(Date.now() + IST_OFFSET_MS);
+  const istTime = new Date(baseDate.getTime() + IST_OFFSET_MS);
   
-  // Set to 21:30 (9:30 PM) IST
-  const curfewIST = new Date(nowIST);
-  curfewIST.setUTCHours(21 - 5, 30 - 30, 0, 0); // 16:00 UTC = 21:30 IST
+  // Year, Month, Date in IST
+  const y = istTime.getUTCFullYear();
+  const m = istTime.getUTCMonth();
+  const d = istTime.getUTCDate();
 
-  // If current IST time is already past 21:30, curfew is tomorrow 21:30 or +2 hours
-  if (Date.now() > curfewIST.getTime()) {
-    // Grace period for late night emergency movement
-    return new Date(Date.now() + 2 * 60 * 60 * 1000);
-  }
+  // 21:30 IST is 16:00 UTC (21.5 - 5.5 = 16)
+  return new Date(Date.UTC(y, m, d, 16, 0, 0, 0));
+}
 
-  return curfewIST;
+/**
+ * Helper to check if an IST timestamp is within the Night Curfew Window (21:30 to 06:00 IST)
+ */
+function isCurfewNightTimeIST(date: Date = new Date()): boolean {
+  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+  const istTime = new Date(date.getTime() + IST_OFFSET_MS);
+  const hours = istTime.getUTCHours();
+  const minutes = istTime.getUTCMinutes();
+  const totalMinutes = hours * 60 + minutes;
+
+  // 21:30 is 1290 minutes, 06:00 is 360 minutes
+  return totalMinutes >= 1290 || totalMinutes < 360;
 }
 
 /**
@@ -85,7 +95,7 @@ router.post('/scan-pass', requireAuth, async (req: AuthRequest, res) => {
     if (student.status === 'inside') {
       const activeLeave = student.leaves[0];
       let movementType = 'day_outing';
-      let expectedIn = getTodayCurfewIST();
+      let expectedIn = getCurfewISTForDate(now);
       let leaveId: string | undefined = undefined;
       let message = 'Day Outing Approved — Return before 09:30 PM';
 
@@ -143,11 +153,15 @@ router.post('/scan-pass', requireAuth, async (req: AuthRequest, res) => {
       orderBy: { created_at: 'desc' }
     });
 
-    const defaultExpectedIn = activeMovement ? new Date(activeMovement.expected_in) : getTodayCurfewIST();
+    const defaultExpectedIn = activeMovement ? new Date(activeMovement.expected_in) : getCurfewISTForDate(now);
     const effectiveExpectedIn = activeExtension ? new Date(activeExtension.requested_until) : defaultExpectedIn;
 
-    const isOverdue = now.getTime() > effectiveExpectedIn.getTime();
-    const delayMinutes = isOverdue ? Math.max(0, Math.floor((now.getTime() - effectiveExpectedIn.getTime()) / 60000)) : 0;
+    const isPastCurfew = now.getTime() > effectiveExpectedIn.getTime();
+    const isNightCurfew = isCurfewNightTimeIST(now) && !activeExtension;
+    const isOverdue = isPastCurfew || isNightCurfew;
+    const delayMinutes = isOverdue
+      ? Math.max(1, Math.floor((now.getTime() - effectiveExpectedIn.getTime()) / 60000))
+      : 0;
     
     // Strike Calculation: Increment strikes if overdue on a day outing
     const newStrikeCount = isOverdue ? student.late_strike_count + 1 : student.late_strike_count;
@@ -200,7 +214,7 @@ router.post('/scan-pass', requireAuth, async (req: AuthRequest, res) => {
 
     let message = 'Entry Verified — Welcome back to Campus!';
     if (isOverdue) {
-      message = `Curfew Violated (+${delayMinutes} mins late)! Strike ${newStrikeCount}/3 recorded.`;
+      message = `Curfew Violated (${delayMinutes > 0 ? `+${delayMinutes} mins late` : 'Night Curfew 09:30 PM–06:00 AM'})! Strike ${newStrikeCount}/3 recorded.`;
       if (isNowFlagged) {
         message = `🚨 HABITUAL DEFAULTER (3/3 Strikes)! Student must report to Hostel Warden Office.`;
       }
@@ -213,6 +227,7 @@ router.post('/scan-pass', requireAuth, async (req: AuthRequest, res) => {
       action: 'entry',
       movement_type: activeMovement?.movement_type || 'day_outing',
       message,
+
       expected_in: effectiveExpectedIn,
       is_overdue: isOverdue,
       curfew_delay_minutes: delayMinutes,
@@ -568,12 +583,47 @@ router.get('/movements', requireAuth, async (req: AuthRequest, res) => {
       take: Math.min(Number(limit), 200)
     });
 
-    res.json(movements);
+    const now = new Date();
+    const enriched = movements.map((m) => {
+      const isDayOuting = m.movement_type === 'day_outing';
+      // For Day Outing, curfew deadline is strictly 09:30 PM (21:30 IST) of the exit date
+      const curfewDeadline = isDayOuting
+        ? getCurfewISTForDate(new Date(m.exit_time))
+        : new Date(m.expected_in);
+
+      let isLate = false;
+      let delayMinutes = 0;
+
+      if (m.entry_time) {
+        const entryDate = new Date(m.entry_time);
+        if (entryDate.getTime() > curfewDeadline.getTime() || isCurfewNightTimeIST(entryDate)) {
+          isLate = true;
+          delayMinutes = Math.max(1, Math.round((entryDate.getTime() - curfewDeadline.getTime()) / 60000));
+        }
+      } else {
+        // Outing In progress
+        if (now.getTime() > curfewDeadline.getTime() || isCurfewNightTimeIST(now)) {
+          isLate = true;
+          delayMinutes = Math.max(1, Math.round((now.getTime() - curfewDeadline.getTime()) / 60000));
+        }
+      }
+
+      return {
+        ...m,
+        expected_in: curfewDeadline.toISOString(),
+        is_overdue: isLate,
+        curfew_delay_minutes: delayMinutes
+      };
+    });
+
+    res.json(enriched);
+
   } catch (err) {
     console.error('[API GET /students/movements]', err);
     res.status(500).json({ error: 'Failed to fetch movements log' });
   }
 });
+
 
 /**
  * 10. HOSTEL BLOCK A 10-FLOOR OCCUPANCY HEATMAP: GET /api/students/floor-census

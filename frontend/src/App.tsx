@@ -133,8 +133,11 @@ function App() {
               <Route path="/display" element={<PublicDisplay />} />
               <Route path="/request-visit" element={<UnifiedVisitRegistration />} />
               <Route path="/kiosk" element={<SelfServiceKiosk />} />
+              <Route path="/student-pass" element={<Navigate to="/app/student-pass" replace />} />
+
 
             <Route
+
               element={
                 <PrivateRoute>
                   <Layout />

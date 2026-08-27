@@ -17,25 +17,37 @@ export const navLinks = [
     href: "/app/dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
-    roles: ["admin", "host", "guard", "visitor", "student"],
+    roles: ["admin", "warden", "host", "guard", "visitor", "student"],
   },
   {
     href: "/app/hostel-hub",
-    label: "Hostel & Outings",
+    label: "Hostel Hub",
     icon: Building,
-    roles: ["admin", "host"],
+    roles: ["admin", "warden"],
   },
   {
     href: "/app/student-pass",
-    label: "Student GatePass",
+    label: "Student Pass",
     icon: GraduationCap,
-    roles: ["student", "visitor"],
+    roles: ["student", "warden", "admin"],
   },
   {
-    href: "/app/lost-and-found",
-    label: "Lost & Found",
-    icon: PackageSearch,
-    roles: ["admin", "host", "guard", "visitor", "student"],
+    href: "/app/register-visit",
+    label: "Register Visit",
+    icon: UserPlus,
+    roles: ["admin", "host", "guard", "visitor"],
+  },
+  {
+    href: "/app/scan",
+    label: "Gate Scanner",
+    icon: QrCode,
+    roles: ["admin", "guard"],
+  },
+  {
+    href: "/app/logs",
+    label: "Visitor Logs",
+    icon: ClipboardList,
+    roles: ["admin", "warden", "host", "guard", "visitor", "student"],
   },
   {
     href: "/app/kiosk",
@@ -44,43 +56,32 @@ export const navLinks = [
     roles: ["admin", "guard"],
   },
   {
-    href: "/app/logs",
-    label: "Visit Logs",
-    icon: ClipboardList,
-    roles: ["admin", "host", "guard", "visitor", "student"],
-  },
-  {
-    href: "/app/register-visit",
-    label: "Register Visit",
-    icon: UserPlus,
-    roles: ["admin", "host", "guard", "visitor"],
-  },
-
-  {
-    href: "/app/scan",
-    label: "Scan QR Code",
-    icon: QrCode,
-    roles: ["admin", "guard"],
+    href: "/app/lost-and-found",
+    label: "Lost & Found",
+    icon: PackageSearch,
+    roles: ["admin", "warden", "host", "guard", "visitor", "student"],
   },
   {
     href: "/app/blacklist",
-    label: "Blacklist Users",
+    label: "Security Watchlist",
     icon: ShieldAlert,
-    roles: ["admin", "guard"],
+    roles: ["admin", "warden", "guard"],
   },
   {
     href: "/app/bulk-visitor-upload",
-    label: "Bulk Upload",
+    label: "Bulk Import",
     icon: UploadCloud,
-    roles: ["admin", "host", "guard"],
+    roles: ["admin", "warden"],
   },
   {
     href: "/app/change-password",
-    label: "Change Password",
+    label: "Security Settings",
     icon: KeyRound,
-    roles: ["admin", "host", "guard", "visitor", "student"],
+    roles: ["admin", "warden", "host", "guard", "visitor", "student"],
   },
 ];
+
+
 
 
 

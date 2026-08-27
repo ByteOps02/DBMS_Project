@@ -28,13 +28,16 @@ const useDebounce = <T,>(value: T, delay: number): T => {
 
 const getRoleLabel = (role: string) => {
   const map: Record<string, string> = {
-    admin: "Admin",
-    guard: "Guard",
-    host: "Host",
-    visitor: "Visitor",
+    admin: "Administrator",
+    warden: "Hostel Warden",
+    host: "Faculty / Host",
+    guard: "Security Guard",
+    student: "Resident Student",
+    visitor: "Visitor / Guest",
   };
   return map[role] ?? role;
 };
+
 
 export function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -108,31 +111,31 @@ export function UserManagement() {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 pb-8">
-      <div className="max-w-7xl mx-auto">
-        <BackButton />
-        <PageHeader
-          icon={UsersIcon}
-          gradient="from-sky-500 to-blue-600"
-          title="Users"
-          description="Manage system users and their roles."
-        />
-      </div>
+    <div className="px-4 sm:px-6 lg:px-8 pb-12 animate-fadeIn max-w-7xl mx-auto">
+      <BackButton to="/app/dashboard" />
 
-      <div className="max-w-7xl mx-auto mt-6">
-        <div className="mb-4 relative w-full max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-          <input
-            id="user-search"
-            className="block w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2 pl-9 pr-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
-            placeholder="Search users..."
-            type="search"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      <PageHeader
+        icon={UsersIcon}
+        gradient="from-sky-500 to-blue-600"
+        title="User Directory & Access Control"
+        description="Manage campus administrative accounts, role assignments, and security permissions."
+        right={
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            <input
+              id="user-search"
+              className="block w-full rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 pl-10 pr-4 text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all shadow-xs"
+              placeholder="Search by name or email..."
+              type="search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        }
+      />
 
-        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl transition-all duration-300 h-full flex flex-col overflow-hidden">
+      <div className="mt-6">
+        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
           <div className="lg:hidden px-6 py-2 bg-sky-50/50 dark:bg-sky-900/10 border-b border-gray-100 dark:border-slate-800/50">
             <p className="text-[9px] font-black text-sky-600/60 dark:text-sky-400/60 uppercase tracking-widest flex items-center gap-1.5">
               <span className="animate-pulse">←</span> Swipe horizontally to see more details{" "}
@@ -140,39 +143,40 @@ export function UserManagement() {
             </p>
           </div>
           <div className="overflow-x-auto scrollbar-hide">
-            <table className="w-full divide-y divide-gray-200 dark:divide-slate-700 min-w-[800px]">
+            <table className="w-full divide-y divide-gray-200 dark:divide-slate-800 min-w-[800px]">
               <thead>
-                <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-slate-800 dark:to-slate-800/50">
+                <tr className="bg-gray-50/80 dark:bg-slate-800/60">
                   <th
                     scope="col"
-                    className="py-3.5 pl-4 pr-3 sm:pl-6 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest"
+                    className="py-3.5 pl-6 pr-3 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider"
                   >
-                    Name
+                    User
                   </th>
                   <th
                     scope="col"
-                    className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest hidden lg:table-cell"
+                    className="px-4 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider hidden lg:table-cell"
                   >
-                    Email
+                    Email Address
                   </th>
                   <th
                     scope="col"
-                    className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest hidden lg:table-cell"
+                    className="px-4 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider"
                   >
-                    Role
+                    System Role
                   </th>
                   <th
                     scope="col"
-                    className="px-3 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest hidden lg:table-cell"
+                    className="px-4 py-3.5 text-left text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider hidden sm:table-cell"
                   >
-                    Status
+                    Account Status
                   </th>
-                  <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                    <span className="sr-only">Actions</span>
+                  <th scope="col" className="relative py-3.5 pr-6 text-right text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                    Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-800/80 bg-white dark:bg-slate-900 text-xs">
+
                 {loading ? (
                   <>
                     {[...Array(5)].map((_, i) => (
@@ -224,13 +228,13 @@ export function UserManagement() {
                       className="hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors"
                       style={{ animationDelay: `${idx * 0.02}s` }}
                     >
-                      <td className="py-2.5 pl-4 pr-3 sm:pl-5 whitespace-nowrap">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-lg bg-sky-500 text-white flex items-center justify-center font-bold text-[11px] shrink-0 shadow-xs">
+                      <td className="py-3.5 pl-6 pr-3 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-600 dark:text-sky-400 flex items-center justify-center font-black text-xs shrink-0">
                             {user.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">
+                            <p className="font-bold text-gray-900 dark:text-white">
                               {user.name}
                             </p>
                             <div className="lg:hidden flex items-center gap-1.5 mt-0.5">
@@ -242,48 +246,54 @@ export function UserManagement() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-gray-500 dark:text-slate-400 hidden lg:table-cell whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 font-medium">
-                          <Mail className="h-3.5 w-3.5 text-gray-300 dark:text-slate-600 shrink-0" />
-                          {user.email}
+                      <td className="px-4 py-3.5 text-gray-600 dark:text-slate-300 hidden lg:table-cell whitespace-nowrap font-medium">
+                        <div className="flex items-center gap-1.5">
+                          <Mail className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                          <span>{user.email}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-2.5 hidden lg:table-cell whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border border-purple-100 dark:border-purple-800/40">
-                          <Shield className="w-3 h-3" /> {getRoleLabel(user.role)}
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50">
+                          <Shield className="w-3 h-3" />
+                          <span>{getRoleLabel(user.role)}</span>
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 hidden lg:table-cell whitespace-nowrap">
+                      <td className="px-4 py-3.5 hidden sm:table-cell whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${user.active ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/40" : "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/40"}`}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                            user.active
+                              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50"
+                              : "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50"
+                          }`}
                         >
                           <span
-                            className={`w-1.5 h-1.5 rounded-full ${user.active ? "bg-emerald-500" : "bg-red-500"}`}
+                            className={`w-1.5 h-1.5 rounded-full ${user.active ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
                           />
-                          {user.active ? "Active" : "Inactive"}
+                          <span>{user.active ? "Active" : "Inactive"}</span>
                         </span>
                       </td>
-                      <td className="py-2.5 pl-3 pr-4 sm:pr-5 text-right whitespace-nowrap">
+                      <td className="py-3.5 pr-6 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => setEditingUser(user)}
-                            className="p-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 dark:bg-sky-900/20 dark:hover:bg-sky-900/40 text-sky-600 dark:text-sky-400 transition-all active:scale-90"
+                            className="p-2 rounded-xl bg-gray-100 dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950/40 text-gray-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-all cursor-pointer"
                             title="Edit Role"
                           >
-                            <Edit3 className="h-3.5 w-3.5" strokeWidth={2} />
+                            <Edit3 className="h-3.5 w-3.5" strokeWidth={2.5} />
                           </button>
                           <button
                             onClick={() => handleDeleteUser(user.id)}
-                            className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-all active:scale-90"
-                            title="Delete"
+                            className="p-2 rounded-xl bg-gray-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/40 text-gray-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 transition-all cursor-pointer"
+                            title="Delete User"
                           >
-                            <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+                            <Trash2 className="h-3.5 w-3.5" strokeWidth={2.5} />
                           </button>
                         </div>
                       </td>
                     </tr>
                   ))
                 )}
+
               </tbody>
             </table>
           </div>
@@ -318,8 +328,9 @@ export function UserManagement() {
                 Select New Role
               </p>
               <div className="grid grid-cols-1 gap-2">
-                {["admin", "host", "guard", "visitor"].map((role) => (
+                {["admin", "warden", "host", "guard", "student", "visitor"].map((role) => (
                   <button
+
                     key={role}
                     onClick={() => handleUpdateRole(role)}
                     disabled={isUpdating}

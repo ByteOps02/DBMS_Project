@@ -14,12 +14,14 @@ enum UserRole {
   admin
   guard
   host
+  warden
   visitor
   student
 
   @@schema("public")
   @@map("user_role")
 }
+
 
 enum VisitStatus {
   pending

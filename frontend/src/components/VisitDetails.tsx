@@ -279,13 +279,14 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                   <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase leading-none">
                     Approved{" "}
                     {visit.approved_by ? (
-                      <span className="text-indigo-600 dark:text-indigo-400 lowercase">
-                        ({visit.approved_by === visit.host_id ? "by Host" : "by Admin/Guard"})
+                      <span className="text-indigo-600 dark:text-indigo-400 capitalize font-bold">
+                        ({visit.approved_by === visit.host_id ? "by Faculty Host" : "by Admin / Chief Warden"})
                       </span>
                     ) : (
                       ""
                     )}
                   </p>
+
                   <p className="text-[10px] font-bold text-gray-500 mt-0.5">
                     {formatIST(visit.approved_at)}
                   </p>

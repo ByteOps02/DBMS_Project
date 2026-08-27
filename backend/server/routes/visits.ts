@@ -354,19 +354,30 @@ router.get('/analytics/traffic-telemetry', requireAuth, async (req: AuthRequest,
     const currentCampusPopulation = insideStudents + activeVisitorsCount;
     const occupancyPercentage = Math.min(100, Math.round((currentCampusPopulation / campusSafeCapacity) * 100));
 
-    // 3. Hourly traffic distribution for today (06:00 to 22:00)
+    // 3. Hourly traffic distribution for today (24-Hour Cycle)
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const todayVisits = await prisma.visit.findMany({
-      where: {
-        OR: [
-          { check_in_time: { gte: todayStart } },
-          { check_out_time: { gte: todayStart } },
-        ],
-      },
-      select: { check_in_time: true, check_out_time: true },
-    });
+    const [todayVisits, todayStudentMovements] = await Promise.all([
+      prisma.visit.findMany({
+        where: {
+          OR: [
+            { check_in_time: { gte: todayStart } },
+            { check_out_time: { gte: todayStart } },
+          ],
+        },
+        select: { check_in_time: true, check_out_time: true },
+      }),
+      prisma.studentMovement.findMany({
+        where: {
+          OR: [
+            { entry_time: { gte: todayStart } },
+            { exit_time: { gte: todayStart } },
+          ],
+        },
+        select: { entry_time: true, exit_time: true },
+      }),
+    ]);
 
     const hourlyDistribution: Array<{ hour: string; entries: number; exits: number; isNight: boolean }> = [];
     for (let h = 0; h < 24; h += 2) {
@@ -375,6 +386,7 @@ router.get('/analytics/traffic-telemetry', requireAuth, async (req: AuthRequest,
       let exits = 0;
       const isNight = h < 6 || h >= 22;
 
+      // Visitor check-ins (In) & check-outs (Out)
       todayVisits.forEach((v) => {
         if (v.check_in_time) {
           const inHour = new Date(v.check_in_time).getHours();
@@ -386,8 +398,21 @@ router.get('/analytics/traffic-telemetry', requireAuth, async (req: AuthRequest,
         }
       });
 
+      // Student gate entries (In) & exits (Out)
+      todayStudentMovements.forEach((m) => {
+        if (m.entry_time) {
+          const inHour = new Date(m.entry_time).getHours();
+          if (inHour >= h && inHour < h + 2) entries++;
+        }
+        if (m.exit_time) {
+          const outHour = new Date(m.exit_time).getHours();
+          if (outHour >= h && outHour < h + 2) exits++;
+        }
+      });
+
       hourlyDistribution.push({ hour: label, entries, exits, isNight });
     }
+
 
 
     res.json({

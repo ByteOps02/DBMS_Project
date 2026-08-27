@@ -294,25 +294,28 @@ export function HostelHub() {
       <PageHeader
         icon={Building}
         gradient="from-indigo-600 to-sky-600"
-        title="Hostel Hub & Student Outings"
-        description="Live campus census, 10-floor occupancy heatmap, curfew defaulter 3-strike radar, and multi-day leave administration."
+        title="Hostel Block A Hub"
+        description="10-floor resident occupancy, night curfew radar, and student outing records."
         right={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
             <a
               href={api.students.getExportCensusUrl()}
               download
-              className="btn btn-secondary text-xs font-bold"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-sky-500 text-xs font-bold shadow-xs transition-all shrink-0 cursor-pointer"
             >
-              <Download className="w-4 h-4 text-sky-500" /> Night Roll-Call CSV
+              <Download className="w-4 h-4 text-sky-500" />
+              <span>Export Roll-Call CSV</span>
             </a>
             <button
               onClick={() => setShowUploadModal(true)}
-              className="btn btn-primary text-xs font-bold"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-sm shadow-sky-500/20 active:scale-95 transition-all shrink-0 cursor-pointer"
             >
-              <Upload className="w-4 h-4" /> Bulk CSV Import
+              <Upload className="w-4 h-4" />
+              <span>Bulk CSV Import</span>
             </button>
           </div>
         }
+
       />
 
       {/* Real-time Hostel Census Metric Cards */}
@@ -997,16 +1000,43 @@ export function HostelHub() {
                     {m.entry_time ? `${formatIST(m.entry_time)} (${m.entry_gate || "Main Gate"})` : "— In Progress"}
                   </td>
                   <td className="py-3 px-4 whitespace-nowrap">
-                    {m.is_overdue ? (
-                      <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 uppercase">
-                        Late Return (+{m.curfew_delay_minutes}m)
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 uppercase">
-                        Normal
-                      </span>
-                    )}
+                    {(() => {
+                      const formatLateDuration = (minutes?: number) => {
+                        if (!minutes || minutes <= 0) return "";
+                        const hrs = Math.floor(minutes / 60);
+                        const mins = minutes % 60;
+                        if (hrs === 0) return `+${mins}m`;
+                        if (mins === 0) return `+${hrs}h`;
+                        return `+${hrs}h ${mins}m`;
+                      };
+
+                      const delayFormatted = formatLateDuration(m.curfew_delay_minutes);
+
+                      if (!m.entry_time) {
+                        return m.is_overdue ? (
+                          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400 border border-red-500/30 uppercase animate-pulse">
+                            🚨 Overdue {delayFormatted ? `(${delayFormatted})` : ""}
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-400 border border-sky-500/30 uppercase">
+                            🟢 Active Outing
+                          </span>
+                        );
+                      }
+
+                      return m.is_overdue ? (
+                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400 border border-red-500/30 uppercase">
+                          Late Return {delayFormatted ? `(${delayFormatted})` : ""}
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-500/30 uppercase">
+                          Normal
+                        </span>
+                      );
+                    })()}
                   </td>
+
+
                 </tr>
               ))}
             </tbody>

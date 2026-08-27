@@ -231,9 +231,10 @@ export function ScanQrCode() {
         <PageHeader
           icon={QrCode}
           gradient="from-indigo-600 to-sky-600"
-          title="Security Scanner & Checkpoint Kiosk"
-          description="Instant identity verification, visitor processing, and 2000+ student campus outing management."
+          title="Gate Scanner & Checkpoint"
+          description="Camera QR scanning for visitor check-in/out and student outing validation."
         />
+
 
         {/* Premium Mode Switcher */}
         <div className="mt-6 flex justify-center sm:justify-start">

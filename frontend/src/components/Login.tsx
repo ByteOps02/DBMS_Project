@@ -13,7 +13,6 @@ import { toast } from "react-hot-toast";
 import { Logo } from "./Logo";
 import { BackButton } from "./BackButton";
 
-
 export function Login() {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuthStore();
@@ -29,6 +28,7 @@ export function Login() {
   const [isForgotLoading, setIsForgotLoading] = useState(false);
 
   const error = storeError || localError;
+
 
   useEffect(() => {
     if (isAuthenticated) navigate("/app/dashboard");
@@ -176,6 +176,8 @@ export function Login() {
                 >
                   Email address
                 </label>
+
+
                 <input
                   id="email"
                   name="email"

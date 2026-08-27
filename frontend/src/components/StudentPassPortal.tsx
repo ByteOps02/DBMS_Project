@@ -4,9 +4,9 @@ import {
   CalendarDays, 
   Send, 
   ShieldCheck, 
-  Sparkles,
   Printer,
   GraduationCap,
+
   ArrowRight,
   AlertCircle,
   Clock,
@@ -20,13 +20,15 @@ import { useAuthStore } from "../store/auth";
 import { toast } from "react-hot-toast";
 import { formatIST } from "../lib/dateIST";
 import { PageHeader } from "./PageHeader";
-import { SEOMeta } from "./SEOMeta";
 import { CustomSelect } from "./ui/CustomSelect";
+import { SEOMeta } from "./SEOMeta";
+import { BackButton } from "./BackButton";
 import QRCode from "qrcode";
 
 
 export function StudentPassPortal() {
   const { user } = useAuthStore();
+
   const [activeTab, setActiveTab] = useState<"pass" | "leave" | "vehicles">("pass");
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
 
@@ -250,12 +252,15 @@ export function StudentPassPortal() {
     <div className="px-4 sm:px-6 lg:px-8 pb-12 animate-fadeIn max-w-4xl mx-auto">
       <SEOMeta title="Student Campus Pass & Leave" />
 
+      <BackButton to={user ? "/app/dashboard" : "/"} />
+
       <PageHeader
         icon={QrCode}
         gradient="from-sky-500 to-indigo-600"
-        title="Student Digital ID & Outing Pass"
-        description="Your permanent campus identity pass for instant gate entry/exit, curfew extensions, and hostel leaves."
+        title="Student Outing Pass"
+        description="Digital QR gatepass, curfew extension requests, and approved hostel leaves."
       />
+
 
       {/* Live Curfew Countdown Widget */}
       {user?.role !== "visitor" && (
@@ -511,8 +516,9 @@ export function StudentPassPortal() {
           {/* Leave Form */}
           <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm space-y-4">
             <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-500" /> Apply for Multi-Day Leave
+              <CalendarDays className="w-4 h-4 text-indigo-500" /> Apply for Multi-Day Leave
             </h3>
+
 
             <form onSubmit={handleLeaveSubmit} className="space-y-4 text-xs">
               <div>
