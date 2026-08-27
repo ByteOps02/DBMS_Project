@@ -11,7 +11,7 @@ import {
   ArrowRight,
   MonitorSmartphone,
   RotateCcw,
-
+  UploadCloud,
 } from "lucide-react";
 import QRCode from "qrcode";
 import toast from "react-hot-toast";
@@ -41,9 +41,10 @@ export function SelfServiceKiosk() {
   const [createdVisit, setCreatedVisit] = useState<any | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
 
-
   // Camera video ref
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
 
   // Live IST Clock
@@ -65,29 +66,37 @@ export function SelfServiceKiosk() {
     return () => clearInterval(interval);
   }, []);
 
+  // Attach camera stream when video element renders
+  useEffect(() => {
+    if (isCameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [isCameraActive]);
+
   // Camera start / stop
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
       });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-        setIsCameraActive(true);
-      }
-    } catch {
-      toast.error("Unable to access webcam. Please upload or continue without photo.");
+      streamRef.current = stream;
+      setIsCameraActive(true);
+    } catch (err) {
+      console.warn("Camera access failed:", err);
+      toast.error("Camera access unavailable. You can upload a photo file directly.");
     }
   };
 
   const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((t) => t.stop());
-      videoRef.current.srcObject = null;
-      setIsCameraActive(false);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsCameraActive(false);
   };
 
   const capturePhoto = () => {
@@ -105,7 +114,21 @@ export function SelfServiceKiosk() {
     }
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoData(reader.result as string);
+        stopCamera();
+        toast.success("Photo uploaded successfully!");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCategorySelect = (cat: KioskCategory) => {
+
     setCategory(cat);
     if (cat === "courier") {
       setPurpose("Campus Courier / Logistics Parcel Delivery");
@@ -476,53 +499,97 @@ export function SelfServiceKiosk() {
               {/* Photo Capture Preview Block */}
               <div className="flex flex-col justify-end">
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-slate-300 mb-1.5">
-                  Visitor Photo Badge
+                  Visitor Photo Badge (Optional)
                 </label>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   {photoData ? (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 p-2 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
                       <img
                         src={photoData}
-                        alt="Captured"
-                        className="w-14 h-14 rounded-2xl object-cover border-2 border-emerald-500 shadow-sm"
+                        alt="Captured Badge"
+                        className="w-14 h-14 rounded-xl object-cover border-2 border-emerald-500 shadow-sm"
                       />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPhotoData(null);
-                          startCamera();
-                        }}
-                        className="btn btn-sm btn-secondary text-xs"
-                      >
-                        Retake Photo
-                      </button>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPhotoData(null);
+                            startCamera();
+                          }}
+                          className="btn btn-sm btn-secondary text-xs font-bold py-1 px-3"
+                        >
+                          Retake Photo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPhotoData(null);
+                            stopCamera();
+                          }}
+                          className="text-[11px] font-bold text-red-500 hover:text-red-600 text-left px-1"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   ) : isCameraActive ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-20 h-20 rounded-xl overflow-hidden bg-black border border-slate-700">
-                        <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-2xl bg-slate-950 border border-slate-700 shadow-xl">
+                      <div className="w-36 h-28 rounded-xl overflow-hidden bg-black border border-slate-700 relative">
+                        <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                        <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-red-600 text-white text-[9px] font-bold uppercase animate-pulse">
+                          LIVE
+                        </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={capturePhoto}
-                        className="btn btn-sm btn-primary text-xs"
-                      >
-                        Snap Photo
-                      </button>
+                      <div className="flex flex-col gap-2">
+                        <button
+                          type="button"
+                          onClick={capturePhoto}
+                          className="btn btn-sm btn-primary text-xs font-bold flex items-center gap-2 py-2 px-3 shadow-md"
+                        >
+                          <Camera className="w-4 h-4" />
+                          <span>📸 Snap Photo</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={stopCamera}
+                          className="btn btn-sm btn-secondary text-xs font-bold py-1 px-3"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={startCamera}
-                      className="btn btn-sm btn-secondary text-xs font-bold flex items-center gap-2 py-3 px-4"
-                    >
-                      <Camera className="w-4 h-4 text-sky-500" />
-                      <span>Take Photo for Badge</span>
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={startCamera}
+                        className="btn btn-sm btn-secondary text-xs font-bold flex items-center gap-2 py-2.5 px-4 shadow-xs"
+                      >
+                        <Camera className="w-4 h-4 text-sky-500" />
+                        <span>Take Photo for Badge</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="btn btn-sm btn-secondary text-xs font-bold flex items-center gap-2 py-2.5 px-3 shadow-xs"
+                      >
+                        <UploadCloud className="w-4 h-4 text-slate-400" />
+                        <span>Upload Photo</span>
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="user"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </div>
                   )}
                 </div>
               </div>
             </div>
+
 
             {/* Action Buttons */}
             <div className="pt-4 flex items-center justify-end gap-3">

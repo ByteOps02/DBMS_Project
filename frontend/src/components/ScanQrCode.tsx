@@ -25,13 +25,13 @@ import { CustomSelect } from "./ui/CustomSelect";
 import { StudentGateKiosk } from "./StudentGateKiosk";
 
 import type { Database } from "../lib/database.types";
+import { CAMPUS_GATES } from "../lib/constants";
 
 type Visit = Database["public"]["Tables"]["visits"]["Row"] & {
   visitor: Database["public"]["Tables"]["visitors"]["Row"];
   host: Database["public"]["Tables"]["hosts"]["Row"] | null;
 };
 
-const CAMPUS_GATES = ["Main Gate", "North Gate", "South Gate", "Administrative Block"];
 
 interface OptimisticVisit {
   name?: string;
@@ -51,7 +51,8 @@ export function ScanQrCode() {
   const { isAuthenticated, isLoading } = useAuthStore();
   const [checkingAuth, setCheckingAuth] = useState(true);
   
-  const [currentGate, setCurrentGate] = useState(CAMPUS_GATES[0]);
+  const [currentGate, setCurrentGate] = useState<string>(CAMPUS_GATES[0]);
+
   const [scannerReady, setScannerReady] = useState(false);
 
   const [scannerKey, setScannerKey] = useState(0);

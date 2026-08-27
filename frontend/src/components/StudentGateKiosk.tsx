@@ -21,16 +21,11 @@ import { toast } from "react-hot-toast";
 import { formatIST } from "../lib/dateIST";
 import { CustomSelect } from "./ui/CustomSelect";
 import { Html5Qrcode } from "html5-qrcode";
-
-const GATES = [
-  { value: "Main Gate", label: "Main Gate (Academic)" },
-  { value: "Hostel Gate", label: "Hostel Main Gate" },
-  { value: "North Gate", label: "North Boundary Gate" },
-  { value: "South Gate", label: "South Gate" },
-];
+import { CAMPUS_GATES } from "../lib/constants";
 
 export function StudentGateKiosk() {
-  const [selectedGate, setSelectedGate] = useState("Main Gate");
+  const [selectedGate, setSelectedGate] = useState<string>(CAMPUS_GATES[0]);
+
   const [scanInput, setScanInput] = useState("");
   const [processing, setProcessing] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -243,7 +238,8 @@ export function StudentGateKiosk() {
               <CustomSelect
                 value={selectedGate}
                 onChange={setSelectedGate}
-                options={GATES}
+                options={CAMPUS_GATES.map((gate) => ({ value: gate, label: gate }))}
+
                 className="!py-1.5 !px-3 text-xs sm:text-sm font-bold"
               />
             </div>

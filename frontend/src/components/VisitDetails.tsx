@@ -18,6 +18,7 @@ import { toast } from "react-hot-toast";
 import { formatIST } from "../lib/dateIST";
 import { api } from "../lib/api";
 import { CustomSelect } from "./ui/CustomSelect";
+import { CAMPUS_GATES } from "../lib/constants";
 
 import type { Database } from "../lib/database.types";
 
@@ -31,14 +32,14 @@ export type VisitWithDetails = Database["public"]["Tables"]["visits"]["Row"] & {
 };
 
 interface VisitDetailsProps {
+
   visit: VisitWithDetails;
   onClose: () => void;
   onUpdate?: () => void;
 }
 
-const CAMPUS_GATES = ["Main Gate", "North Gate", "South Gate", "Administrative Block"];
-
 export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
+
   const { user } = useAuthStore();
   const visitor = visit.visitor || visit.visitors;
   const [isBlacklisted, setIsBlacklisted] = useState(visitor?.is_blacklisted || false);
@@ -46,7 +47,8 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
   const [showBlacklistPrompt, setShowBlacklistPrompt] = useState(false);
   const [blacklistReason, setBlacklistReason] = useState("");
   const [showExitGatePrompt, setShowExitGatePrompt] = useState(false);
-  const [selectedExitGate, setSelectedExitGate] = useState(CAMPUS_GATES[0]);
+  const [selectedExitGate, setSelectedExitGate] = useState<string>(CAMPUS_GATES[0]);
+
 
   const isGuardOrAdmin = user?.role === "admin" || user?.role === "guard";
   const isHost = visit.host_id === user?.id;
