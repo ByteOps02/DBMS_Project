@@ -35,6 +35,18 @@ import { useDataSync, dataSync } from "../lib/dataSync";
 import { CustomSelect } from "./ui/CustomSelect";
 import Papa from "papaparse";
 
+function formatBranchName(branch?: string): string {
+  if (!branch) return "";
+  const b = branch.toUpperCase();
+  if (b.includes("HCI") || b.includes("HUMAN")) return "B.Tech HCI";
+  if (b.includes("CSA") || b.includes("ARTIFICIAL")) return "B.Tech CSA";
+  if (b.includes("ECE") || b.includes("ELECTRONIC")) return "B.Tech ECE";
+  if (b.includes("CSE") || b.includes("COMPUTER")) return "B.Tech CSE";
+  if (b.includes("MECH")) return "B.Tech ME";
+  if (b.includes("CIVIL")) return "B.Tech CE";
+  if (b.includes("EE") || b.includes("ELECTRICAL")) return "B.Tech EE";
+  return b.startsWith("B.TECH") ? branch : `B.Tech ${branch}`;
+}
 
 export function HostelHub() {
   const [activeTab, setActiveTab] = useState<"radar" | "heatmap" | "extensions" | "vehicles" | "leaves" | "directory" | "movements">("radar");
@@ -501,30 +513,30 @@ export function HostelHub() {
                 const isFlagged = item.student.is_flagged || strikeCount >= 3;
 
                 return (
-                  <div key={item.id} className="p-4 sm:p-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-red-50/20 dark:bg-red-950/10">
-                    <div className="flex items-center gap-3.5 min-w-0">
+                  <div key={item.id} className="p-4 sm:p-5 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-red-50/20 dark:bg-red-950/10 hover:bg-red-50/35 dark:hover:bg-red-950/20 transition-colors">
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
                       <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-sm text-white ${isFlagged ? "bg-purple-600 animate-pulse" : "bg-red-600"
                         }`}>
                         {item.student.name.charAt(0).toUpperCase()}
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-black text-gray-900 dark:text-white">{item.student.name}</p>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 uppercase">
+                          <p className="text-sm font-black text-gray-900 dark:text-white truncate">{item.student.name}</p>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 uppercase shrink-0">
                             Overdue
                           </span>
                           {isFlagged ? (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 uppercase flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 uppercase flex items-center gap-1 shrink-0">
                               🚨 Habitual Defaulter (3/3 Strikes)
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 uppercase">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 uppercase shrink-0">
                               ⚠️ Strike {strikeCount}/3
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 font-mono mt-0.5">
-                          {item.student.roll_number} • {item.student.hostel_block}, Rm {item.student.room_number} • B.Tech {item.student.branch}
+                        <p className="text-xs text-gray-500 font-mono mt-0.5 truncate">
+                          {item.student.roll_number} • {item.student.hostel_block}, Rm {item.student.room_number} • {formatBranchName(item.student.branch)}
                         </p>
                         <p className="text-[11px] text-red-600 dark:text-red-400 font-medium mt-1">
                           Exited: {formatIST(item.exit_time)} • Expected In: {formatIST(item.expected_in)}
@@ -532,23 +544,25 @@ export function HostelHub() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 self-end lg:self-auto">
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0 self-stretch xl:self-auto justify-start xl:justify-end">
                       <button
                         onClick={() => handleCheckInStudent(item.student.roll_number, item.student.name)}
-                        className="btn btn-sm btn-primary text-xs flex items-center gap-1.5 shadow-sm"
+                        className="btn btn-sm btn-primary text-xs flex items-center gap-1.5 shadow-sm whitespace-nowrap"
                         title="Log campus entry and update Inside Campus count"
                       >
                         <LogIn className="w-3.5 h-3.5" /> Check In / Return
                       </button>
                       <a
                         href={`tel:${item.student.phone}`}
-                        className="btn btn-sm btn-secondary text-xs"
+                        className="btn btn-sm btn-secondary text-xs flex items-center gap-1.5 whitespace-nowrap"
+                        title={`Call Student: ${item.student.phone}`}
                       >
                         <Phone className="w-3.5 h-3.5 text-sky-500" /> Student: {item.student.phone}
                       </a>
                       <a
                         href={`tel:${item.student.parent_phone}`}
-                        className="btn btn-sm btn-danger text-xs"
+                        className="btn btn-sm btn-danger text-xs flex items-center gap-1.5 whitespace-nowrap"
+                        title={`Call Parent: ${item.student.parent_phone}`}
                       >
                         <Phone className="w-3.5 h-3.5" /> Parent: {item.student.parent_phone}
                       </a>
@@ -556,7 +570,7 @@ export function HostelHub() {
                         <button
                           onClick={() => handleResetStrikes(item.student.id, item.student.name)}
                           title="Pardon / Reset Curfew Strikes"
-                          className="btn btn-sm btn-outline text-xs text-gray-600 dark:text-slate-300"
+                          className="btn btn-sm btn-outline text-xs text-gray-600 dark:text-slate-300 flex items-center gap-1.5 whitespace-nowrap hover:text-amber-600 hover:border-amber-400"
                         >
                           <RotateCcw className="w-3 h-3 text-amber-500" /> Reset Strikes
                         </button>
@@ -945,14 +959,7 @@ export function HostelHub() {
                       {st.hostel_block}, Rm {st.room_number}
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap text-gray-700 dark:text-slate-300 font-medium">
-                      {(() => {
-                        const b = (st.branch || "").toUpperCase();
-                        if (b.includes("HCI") || b.includes("HUMAN")) return "B.Tech HCI";
-                        if (b.includes("CSA") || b.includes("ARTIFICIAL")) return "B.Tech CSA";
-                        if (b.includes("ECE") || b.includes("ELECTRONIC")) return "B.Tech ECE";
-                        if (b.includes("CSE") || b.includes("COMPUTER")) return "B.Tech CSE";
-                        return b.startsWith("B.TECH") ? b : `B.Tech ${st.branch}`;
-                      })()}
+                      {formatBranchName(st.branch)}
                     </td>
 
 
