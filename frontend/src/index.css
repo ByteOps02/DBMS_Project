@@ -615,33 +615,47 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 #student-qr-reader,
 #qr-reader {
   width: 100% !important;
+  height: 100% !important;
   border: none !important;
   background: transparent !important;
   overflow: hidden !important;
   position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 #student-qr-reader video,
 #qr-reader video {
   width: 100% !important;
   height: 100% !important;
-  min-height: 240px !important;
-  max-height: 380px !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
   object-fit: cover !important;
-  border-radius: 1rem !important;
+  border-radius: 1.5rem !important;
 }
 
 #student-qr-reader img,
-#qr-reader img {
+#qr-reader img,
+#student-qr-reader #qr-shaded-region,
+#qr-reader #qr-shaded-region,
+#student-qr-reader svg,
+#qr-reader svg {
   display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 #student-qr-reader__scan_region,
 #qr-reader__scan_region {
-  min-height: 220px !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  border: none !important;
 }
 
 #student-qr-reader__dashboard_section,

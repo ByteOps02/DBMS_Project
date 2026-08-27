@@ -14,7 +14,12 @@ import {
   GraduationCap,
   Users,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Camera,
+  X,
+  Volume2,
+  VolumeX,
+  Zap
 } from "lucide-react";
 
 import { BackButton } from "./BackButton";
@@ -46,6 +51,7 @@ export function ScanQrCode() {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isScanningRef = useRef(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
+  const [manualInput, setManualInput] = useState("");
   const [visit, setVisit] = useState<Visit | null>(null);
   const [optimisticVisit, setOptimisticVisit] = useState<OptimisticVisit | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,9 +59,55 @@ export function ScanQrCode() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   
   const [currentGate, setCurrentGate] = useState<string>(CAMPUS_GATES[0]);
-  const [scannerReady, setScannerReady] = useState(false);
-  const [scannerKey, setScannerKey] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Camera State for External Visitors
+  const [isCameraActive, setIsCameraActive] = useState(true);
+  const [isCameraLoading, setIsCameraLoading] = useState(false);
+  const [availableCameras, setAvailableCameras] = useState<Array<{ id: string; label: string }>>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
+  const [isTorchOn, setIsTorchOn] = useState(false);
+  const [torchSupported, setTorchSupported] = useState(false);
+
+  const manualInputRef = useRef<HTMLInputElement>(null);
+
+  // Play audio chimes
+  const playSound = useCallback((type: "success" | "warning" | "error") => {
+    if (!soundEnabled) return;
+    try {
+      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === "success") {
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1); // A5
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.3);
+      } else if (type === "warning") {
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        osc.frequency.setValueAtTime(370, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.4);
+      } else {
+        osc.frequency.setValueAtTime(220, ctx.currentTime);
+        osc.frequency.setValueAtTime(180, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.5);
+      }
+    } catch {
+      // AudioContext unavailable
+    }
+  }, [soundEnabled]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -70,7 +122,21 @@ export function ScanQrCode() {
 
   // Visitor Scanner Lifecycle with robust camera device discovery & fallback
   useEffect(() => {
-    if (!isAuthenticated || checkingAuth || visit || scannerMode !== "visitors") return;
+    if (!isAuthenticated || checkingAuth || visit || scannerMode !== "visitors" || !isCameraActive) {
+      if (scannerRef.current) {
+        try {
+          if (isScanningRef.current) {
+            scannerRef.current.stop();
+          }
+          scannerRef.current.clear();
+        } catch {
+          // ignore
+        }
+        scannerRef.current = null;
+        isScanningRef.current = false;
+      }
+      return;
+    }
 
     let isMounted = true;
     const qrCodeDivId = "qr-reader";
@@ -91,14 +157,17 @@ export function ScanQrCode() {
     };
 
     const startScanner = async () => {
-      setScannerReady(false);
+      setIsCameraLoading(true);
       setError(null);
 
       await new Promise((resolve) => setTimeout(resolve, 80));
       if (!isMounted) return;
 
       const container = document.getElementById(qrCodeDivId);
-      if (!container) return;
+      if (!container) {
+        if (isMounted) setIsCameraLoading(false);
+        return;
+      }
 
       await stopScanner();
 
@@ -111,6 +180,7 @@ export function ScanQrCode() {
               id: d.id,
               label: d.label || `Camera ${index + 1}`
             }));
+            if (isMounted) setAvailableCameras(devices);
           }
         } catch {
           // ignore
@@ -121,26 +191,26 @@ export function ScanQrCode() {
           verbose: false,
         });
 
+        // Config: use full video scan so html5-qrcode does not inject ugly shaded regions
         const scanConfig = {
-          fps: 25, 
-          qrbox: (viewfinderWidth: number, viewHeight: number) => {
-            const minEdge = Math.min(viewfinderWidth, viewHeight);
-            const size = Math.floor(minEdge * 0.72);
-            return { width: size, height: size };
-          },
+          fps: 25,
           aspectRatio: 1.0,
         };
 
-        let cameraTarget: any = { facingMode: "environment" };
-        const backCam = devices.find(d => 
-          d.label.toLowerCase().includes("back") || 
-          d.label.toLowerCase().includes("environment") ||
-          d.label.toLowerCase().includes("rear")
-        );
-        if (backCam) {
-          cameraTarget = backCam.id;
-        } else if (devices.length > 0) {
-          cameraTarget = devices[0].id;
+        let cameraTarget: any = selectedCameraId;
+        if (!cameraTarget) {
+          const backCam = devices.find(d => 
+            d.label.toLowerCase().includes("back") || 
+            d.label.toLowerCase().includes("environment") ||
+            d.label.toLowerCase().includes("rear")
+          );
+          if (backCam) {
+            cameraTarget = backCam.id;
+          } else if (devices.length > 0) {
+            cameraTarget = devices[0].id;
+          } else {
+            cameraTarget = { facingMode: "environment" };
+          }
         }
 
         let started = false;
@@ -208,12 +278,23 @@ export function ScanQrCode() {
         if (isMounted) {
           scannerRef.current = scanner;
           isScanningRef.current = true;
-          setScannerReady(true);
+          setError(null);
+
+          try {
+            const capabilities = scanner.getRunningTrackCameraCapabilities();
+            setTorchSupported(Boolean(capabilities?.torchFeature?.()?.isSupported?.()));
+          } catch {
+            setTorchSupported(false);
+          }
         }
       } catch (err: unknown) {
         if (isMounted) {
           console.error("Scanner error", err);
           setError(err instanceof Error ? err.message : "Camera initialization failed. Please check permissions.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsCameraLoading(false);
         }
       }
     };
@@ -224,8 +305,9 @@ export function ScanQrCode() {
       isMounted = false;
       stopScanner();
     };
-  }, [isAuthenticated, checkingAuth, visit, scannerKey, scannerMode]);
+  }, [isAuthenticated, checkingAuth, visit, isCameraActive, selectedCameraId, scannerMode]);
 
+  // Process Scanned or Manually Submitted Visitor Pass
   useEffect(() => {
     if (!scanResult || !isAuthenticated) return;
 
@@ -238,7 +320,7 @@ export function ScanQrCode() {
         let visitId: string;
         try {
           const parsed = JSON.parse(scanResult);
-          visitId = parsed.vId || parsed.visitId;
+          visitId = parsed.vId || parsed.visitId || parsed.id;
 
           setOptimisticVisit({
             name: parsed.n || parsed.name,
@@ -254,29 +336,30 @@ export function ScanQrCode() {
         const visitData = await api.visits.get(visitId);
         if (!visitData) throw new Error("Visit record not found in database");
 
-        const visit = visitData as Visit;
-        if (visit.visitor?.is_blacklisted) {
+        const currentVisit = visitData as Visit;
+        if (currentVisit.visitor?.is_blacklisted) {
+          playSound("error");
           setError(
-            `SECURITY ALERT: Visitor is on the campus blacklist. Reason: ${visit.visitor.blacklist_reason || "Security violation"}`
+            `SECURITY ALERT: Visitor is on the campus blacklist. Reason: ${currentVisit.visitor.blacklist_reason || "Security violation"}`
           );
-          setVisit(visit);
+          setVisit(currentVisit);
           return;
         }
         const now = new Date();
         if (
-          visit.status !== "approved" &&
-          visit.status !== "checked_in" &&
-          visit.status !== "completed"
+          currentVisit.status !== "approved" &&
+          currentVisit.status !== "checked_in" &&
+          currentVisit.status !== "completed"
         ) {
-          throw new Error(`Invalid status: Visit is currently '${visit.status}'.`);
+          throw new Error(`Invalid status: Visit is currently '${currentVisit.status}'.`);
         }
 
-        if (visit.valid_until && new Date(visit.valid_until) < now) {
+        if (currentVisit.valid_until && new Date(currentVisit.valid_until) < now) {
           throw new Error("Expired Pass: This visit registration is no longer valid.");
         }
         if (
-          visit.status === "approved" ||
-          (visit.pass_type === "multi_day" && visit.status === "completed")
+          currentVisit.status === "approved" ||
+          (currentVisit.pass_type === "multi_day" && currentVisit.status === "completed")
         ) {
           const updated = await api.visits.update(visitId, {
             check_in_time: now.toISOString(),
@@ -284,19 +367,22 @@ export function ScanQrCode() {
             entry_gate: currentGate,
             updated_at: now.toISOString(),
           });
+          playSound("success");
           toast.success("Visitor Checked-in successfully");
           setVisit(updated as Visit);
-        } else if (visit.status === "checked_in") {
+        } else if (currentVisit.status === "checked_in") {
           const updated = await api.visits.update(visitId, {
             check_out_time: now.toISOString(),
             status: "completed",
             exit_gate: currentGate,
             updated_at: now.toISOString(),
           });
+          playSound("success");
           toast.success("Visitor Checked-out successfully");
           setVisit(updated as Visit);
         }
       } catch (err: unknown) {
+        playSound("error");
         const msg = err instanceof Error ? err.message : "Security verification failed";
         setError(msg);
         toast.error(msg);
@@ -306,16 +392,33 @@ export function ScanQrCode() {
     };
 
     processVisit();
-  }, [scanResult, isAuthenticated, currentGate]);
+  }, [scanResult, isAuthenticated, currentGate, playSound]);
 
   const handleScanAnother = useCallback(() => {
     setScanResult(null);
+    setManualInput("");
     setVisit(null);
     setOptimisticVisit(null);
     setError(null);
-    setScannerReady(false);
-    setScannerKey((prev) => prev + 1);
   }, []);
+
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualInput.trim() || isVerifying) return;
+    setScanResult(manualInput.trim());
+  };
+
+  const toggleTorch = async () => {
+    if (!scannerRef.current || !torchSupported) return;
+    try {
+      await (scannerRef.current as any).applyVideoConstraints({
+        advanced: [{ torch: !isTorchOn }]
+      });
+      setIsTorchOn(!isTorchOn);
+    } catch {
+      toast.error("Torch control not available");
+    }
+  };
 
   if (checkingAuth)
     return (
@@ -377,61 +480,240 @@ export function ScanQrCode() {
       ) : (
         <div className="mt-6 space-y-6 print:m-0 print:space-y-0">
           {!visit && !optimisticVisit && (
-            <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm relative z-30">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/50 rounded-xl text-indigo-600 dark:text-indigo-400 shrink-0">
-                  <MapPin className="w-5 h-5" />
+            <>
+              {/* Top Command Bar */}
+              <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 relative z-30">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl text-indigo-600 dark:text-indigo-400 shrink-0">
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-[200px]">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase text-gray-400 dark:text-slate-500 tracking-wider">
+                        Active Visitor Checkpoint
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase border border-emerald-500/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                        Live Gate
+                      </span>
+                    </div>
+                    <div className="w-full sm:w-64 mt-1">
+                      <CustomSelect
+                        value={currentGate}
+                        onChange={setCurrentGate}
+                        options={CAMPUS_GATES.map((g) => ({ value: g, label: g }))}
+                        className="!py-1.5 !px-3 font-semibold text-xs sm:text-sm shadow-xs"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span className="block text-xs font-bold uppercase text-gray-400 dark:text-slate-500 tracking-wider">
-                    Active Visitor Checkpoint
-                  </span>
-                  <span className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
-                    {currentGate}
-                  </span>
-                </div>
-              </div>
-              <div className="w-full sm:w-60">
-                <CustomSelect
-                  value={currentGate}
-                  onChange={setCurrentGate}
-                  options={CAMPUS_GATES.map((g) => ({ value: g, label: g }))}
-                  className="!py-2 !px-3 font-semibold text-sm shadow-xs"
-                />
-              </div>
-            </div>
-          )}
 
-          {!visit && !optimisticVisit && (
-            <div className="flex flex-col items-center justify-center p-6 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-md">
-              <div className="bg-slate-950 rounded-3xl overflow-hidden relative w-full max-w-sm sm:max-w-md aspect-square shadow-2xl border-2 border-indigo-500/40 ring-4 ring-indigo-500/10 flex items-center justify-center">
-                <div id="qr-reader" className="w-full h-full"></div>
-                {!scannerReady && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 text-white gap-3 p-4 text-center">
-                    <ScanLine className="w-12 h-12 animate-pulse text-indigo-400" />
-                    <p className="font-bold tracking-widest uppercase text-xs opacity-80">
-                      Initializing Camera Scanner...
-                    </p>
-                    <p className="text-[11px] text-slate-400 max-w-[240px]">
-                      Please allow camera permissions if prompted
-                    </p>
-                  </div>
-                )}
-                {scannerReady && (
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-indigo-400 to-transparent shadow-[0_0_12px_#818cf8] animate-scan-laser" />
-                    <div className="absolute top-4 left-4 w-7 h-7 border-t-4 border-l-4 border-indigo-400 rounded-tl-lg" />
-                    <div className="absolute top-4 right-4 w-7 h-7 border-t-4 border-r-4 border-indigo-400 rounded-tr-lg" />
-                    <div className="absolute bottom-4 left-4 w-7 h-7 border-b-4 border-l-4 border-indigo-400 rounded-bl-lg" />
-                    <div className="absolute bottom-4 right-4 w-7 h-7 border-b-4 border-r-4 border-indigo-400 rounded-br-lg" />
-                  </div>
-                )}
+                <div className="flex flex-wrap items-center gap-2.5 self-stretch sm:self-auto justify-end shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    className={`btn btn-sm text-xs font-bold py-2 px-3 shadow-xs flex-1 sm:flex-initial justify-center ${
+                      soundEnabled
+                        ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                        : "btn-secondary"
+                    }`}
+                    title="Toggle Audio Feedback"
+                  >
+                    {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-500" /> : <VolumeX className="w-4 h-4 text-gray-400" />}
+                    <span>{soundEnabled ? "Audio ON" : "Muted"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsCameraActive(!isCameraActive)}
+                    className={`btn btn-sm text-xs font-bold py-2 px-4 shadow-xs flex-1 sm:flex-initial justify-center transition-all ${
+                      isCameraActive 
+                        ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/30 border-rose-500" 
+                        : "btn-primary shadow-indigo-500/20"
+                    }`}
+                  >
+                    {isCameraActive ? <X className="w-4 h-4" /> : <Camera className="w-4 h-4" />}
+                    <span>{isCameraActive ? "Close Camera" : "Camera Scanner"}</span>
+                  </button>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-4 text-center flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                <span>Point camera at the visitor's Pass QR Code displayed on mobile or printed badge</span>
-              </p>
-            </div>
+
+              {/* Camera Scanner Viewfinder */}
+              {isCameraActive && (
+                <div className="p-4 sm:p-6 rounded-3xl bg-slate-950 border-2 border-indigo-500/30 flex flex-col items-center justify-center animate-fadeIn shadow-2xl relative overflow-hidden">
+                  {/* Top Bar inside Camera */}
+                  <div className="w-full flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800/80">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping inline-block" />
+                      <span className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                        <Camera className="w-4 h-4" /> Live Visitor QR Camera
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {availableCameras.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentIndex = availableCameras.findIndex(c => c.id === selectedCameraId);
+                            const nextIndex = (currentIndex + 1) % availableCameras.length;
+                            setSelectedCameraId(availableCameras[nextIndex].id);
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center gap-1.5 border border-slate-700 transition-all"
+                          title="Switch Camera Device"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Switch Camera</span>
+                        </button>
+                      )}
+
+                      {torchSupported && (
+                        <button
+                          type="button"
+                          onClick={toggleTorch}
+                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all ${
+                            isTorchOn
+                              ? "bg-amber-400 text-slate-950 border-amber-300 shadow-md shadow-amber-400/30"
+                              : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
+                          }`}
+                          title="Toggle Flashlight"
+                        >
+                          <Zap className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">{isTorchOn ? "Flash ON" : "Flash OFF"}</span>
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setIsCameraActive(false)}
+                        className="p-1.5 rounded-xl bg-slate-800/80 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border border-slate-700 transition-all"
+                        title="Close Camera"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Camera Viewport Box */}
+                  <div className="w-full max-w-sm aspect-square relative rounded-2xl overflow-hidden border-2 border-indigo-500/50 ring-4 ring-indigo-500/10 shadow-2xl bg-black flex items-center justify-center">
+                    <div id="qr-reader" className="w-full h-full"></div>
+
+                    {isCameraLoading && (
+                      <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center text-white gap-3 p-4 text-center z-10">
+                        <ScanLine className="w-10 h-10 animate-pulse text-indigo-400" />
+                        <p className="text-xs font-bold uppercase tracking-widest text-slate-300">
+                          Connecting to Camera...
+                        </p>
+                        <p className="text-[11px] text-slate-500 max-w-[240px]">
+                          Please allow camera access when prompted by your browser
+                        </p>
+                      </div>
+                    )}
+
+                    {error && (
+                      <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center text-white gap-3 p-6 text-center z-20">
+                        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                          <AlertTriangle className="w-8 h-8" />
+                        </div>
+                        <p className="text-xs font-bold text-amber-300 leading-relaxed max-w-[260px]">
+                          {error}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setError(null);
+                            setIsCameraLoading(true);
+                            setSelectedCameraId(null);
+                          }}
+                          className="btn btn-sm btn-primary text-xs font-bold !px-4 !py-2 mt-1 shadow-lg"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" /> Retry Camera
+                        </button>
+                      </div>
+                    )}
+
+                    {!isCameraLoading && !error && (
+                      <div className="absolute inset-0 pointer-events-none">
+                        {/* Laser scan line */}
+                        <div className="absolute left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-indigo-400 to-transparent shadow-[0_0_12px_#818cf8] animate-scan-laser" />
+                        {/* Target Corners */}
+                        <div className="absolute top-3 left-3 w-7 h-7 border-t-4 border-l-4 border-indigo-400 rounded-tl-lg" />
+                        <div className="absolute top-3 right-3 w-7 h-7 border-t-4 border-r-4 border-indigo-400 rounded-tr-lg" />
+                        <div className="absolute bottom-3 left-3 w-7 h-7 border-b-4 border-l-4 border-indigo-400 rounded-bl-lg" />
+                        <div className="absolute bottom-3 right-3 w-7 h-7 border-b-4 border-r-4 border-indigo-400 rounded-br-lg" />
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-slate-400 font-medium mt-3.5 text-center flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <span>Point camera directly at the Visitor Pass QR Code displayed on mobile or printed badge</span>
+                  </p>
+                </div>
+              )}
+
+              {/* Fast-Track Manual Pass Entry / Laser Scanner Input Bar */}
+              <div className="p-1 rounded-3xl bg-gradient-to-r from-indigo-500/30 via-sky-500/30 to-purple-500/30 shadow-xl">
+                <div className="p-5 sm:p-6 rounded-[1.4rem] bg-white dark:bg-slate-900 space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <QrCode className="w-4 h-4 text-indigo-500 animate-pulse" />
+                      Fast-Track Visitor Pass Scanner (QR / Pass ID / Code)
+                    </label>
+                    <span className="hidden sm:inline-flex text-[11px] font-mono text-gray-400">
+                      Auto-detects Check-In & Check-Out
+                    </span>
+                  </div>
+
+                  <form onSubmit={handleManualSubmit} className="flex flex-col sm:flex-row items-stretch gap-2.5">
+                    <div className="relative flex-1">
+                      <input
+                        ref={manualInputRef}
+                        type="text"
+                        value={manualInput}
+                        onChange={(e) => setManualInput(e.target.value)}
+                        disabled={isVerifying}
+                        placeholder="Scan Pass QR or enter Pass ID..."
+                        className="w-full py-3.5 pl-4 pr-10 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 rounded-2xl text-sm sm:text-base font-mono font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:font-sans placeholder:font-normal placeholder:text-gray-400 shadow-inner"
+                      />
+                      {manualInput && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setManualInput("");
+                            manualInputRef.current?.focus();
+                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-lg transition-colors"
+                          title="Clear input"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isVerifying || !manualInput.trim()}
+                      className="btn btn-primary py-3.5 px-6 text-xs sm:text-sm font-bold uppercase tracking-wider shadow-md shrink-0 justify-center min-w-[150px]"
+                    >
+                      {isVerifying ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>Verifying...</span>
+                        </>
+                      ) : (
+                        <span>Verify Visitor</span>
+                      )}
+                    </button>
+                  </form>
+
+                  <p className="text-xs text-gray-400 dark:text-slate-500 font-medium flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
+                    Continuous USB/Bluetooth laser scanner or keyboard entry ready.
+                  </p>
+                </div>
+              </div>
+            </>
           )}
 
           {error && (
@@ -439,7 +721,7 @@ export function ScanQrCode() {
               <AlertTriangle className="w-8 h-8 text-red-600 shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-black text-red-900 dark:text-red-400 uppercase tracking-tight">
-                  Scanner Alert / Verification Error
+                  Access Denied / Verification Error
                 </h3>
                 <p className="text-sm text-red-700 dark:text-red-300 font-medium leading-relaxed mt-1">
                   {error}
@@ -450,7 +732,7 @@ export function ScanQrCode() {
                   className="btn-danger mt-4 !py-2 !px-4 flex items-center gap-2"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Restart Scanner</span>
+                  <span>Scan Next / Restart</span>
                 </button>
               </div>
             </div>
