@@ -17,7 +17,7 @@ import lostAndFoundRoutes from './routes/lostAndFound.js';
 const app = express();
 
 // CORS
-const rawOrigins = process.env.FRONTEND_URL ?? 'http://localhost:5174';
+const rawOrigins = process.env.FRONTEND_URL ?? 'http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:3000';
 const allowedOrigins = rawOrigins.split(',').map((o) => o.trim());
 
 app.use(
@@ -25,7 +25,13 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, curl, Postman)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+
+      // Dynamically allow any localhost or 127.0.0.1 port in development
+      const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      if (isLocalhost || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
       callback(new Error(`CORS: origin "${origin}" is not allowed`));
     },
     credentials: true,

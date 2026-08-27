@@ -52,22 +52,35 @@ export function StudentPassPortal() {
     label: "Calculating..."
   });
 
-  // Calculate IST Curfew Countdown
+  // Calculate IST Curfew Countdown (09:30 PM / 21:30 IST)
   useEffect(() => {
     const updateCountdown = () => {
-      const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-      const nowIST = new Date(Date.now() + IST_OFFSET_MS);
+      const now = new Date();
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Kolkata",
+        hour: "numeric",
+        minute: "numeric",
+        hour12: false
+      });
+      const parts = formatter.formatToParts(now);
+      let hour = 0;
+      let minute = 0;
+      for (const p of parts) {
+        if (p.type === "hour") hour = parseInt(p.value, 10);
+        if (p.type === "minute") minute = parseInt(p.value, 10);
+      }
+      if (hour === 24) hour = 0;
 
-      const targetIST = new Date(nowIST);
-      targetIST.setUTCHours(21 - 5, 30 - 30, 0, 0); // 21:30 IST
+      // Current time in IST represented as minutes from midnight
+      const currentISTMinutes = hour * 60 + minute;
+      const curfewISTMinutes = 21 * 60 + 30; // 21:30 IST is 1290 mins
 
-      const diffMs = targetIST.getTime() - nowIST.getTime();
-      if (diffMs <= 0) {
+      const diffMinutes = curfewISTMinutes - currentISTMinutes;
+      if (diffMinutes <= 0) {
         setCurfewCountdown({ hours: 0, mins: 0, isPast: true, label: "Curfew Active (09:30 PM Past)" });
       } else {
-        const totalMins = Math.floor(diffMs / 60000);
-        const hours = Math.floor(totalMins / 60);
-        const mins = totalMins % 60;
+        const hours = Math.floor(diffMinutes / 60);
+        const mins = diffMinutes % 60;
         setCurfewCountdown({
           hours,
           mins,
@@ -78,7 +91,7 @@ export function StudentPassPortal() {
     };
 
     updateCountdown();
-    const interval = setInterval(updateCountdown, 30000);
+    const interval = setInterval(updateCountdown, 10000);
     return () => clearInterval(interval);
   }, []);
 
