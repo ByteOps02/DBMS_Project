@@ -92,11 +92,10 @@ export function FilteredVisits() {
           title: "Ongoing Visits",
           desc: "Live monitoring of visitors currently on campus.",
           icon: Activity,
-          gradient: "from-sky-500 to-indigo-600",
+          gradient: "from-teal-500 to-emerald-600",
           emptyClasses: {
-            outer:
-              "from-sky-100 to-sky-50 dark:from-sky-900/30 dark:to-sky-800/10 ring-sky-200 dark:ring-sky-900/50",
-            icon: "text-sky-500 dark:text-sky-400",
+            outer: "bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 border border-teal-500/20",
+            icon: "text-teal-600 dark:text-teal-400",
           },
         };
       case "pending":
@@ -104,11 +103,10 @@ export function FilteredVisits() {
           title: "Pending Approvals",
           desc: "Applications waiting for administrative clearance.",
           icon: Clock3,
-          gradient: "from-amber-500 to-orange-600",
+          gradient: "from-amber-500 to-orange-500",
           emptyClasses: {
-            outer:
-              "from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-800/10 ring-amber-200 dark:ring-amber-900/50",
-            icon: "text-amber-500 dark:text-amber-400",
+            outer: "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-500/20",
+            icon: "text-amber-600 dark:text-amber-400",
           },
         };
       case "approved":
@@ -116,11 +114,10 @@ export function FilteredVisits() {
           title: "Approved Visits",
           desc: "Visits cleared by administration for today.",
           icon: CalendarCheck2,
-          gradient: "from-emerald-500 to-teal-600",
+          gradient: "from-emerald-500 to-green-600",
           emptyClasses: {
-            outer:
-              "from-emerald-100 to-emerald-50 dark:from-emerald-900/30 dark:to-emerald-800/10 ring-emerald-200 dark:ring-emerald-900/50",
-            icon: "text-emerald-500 dark:text-emerald-400",
+            outer: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
+            icon: "text-emerald-600 dark:text-emerald-400",
           },
         };
       case "completed":
@@ -128,23 +125,21 @@ export function FilteredVisits() {
           title: "Completed Visits",
           desc: "Archive of visitors who have checked out today.",
           icon: CheckCheck,
-          gradient: "from-purple-500 to-indigo-600",
+          gradient: "from-violet-500 to-purple-600",
           emptyClasses: {
-            outer:
-              "from-purple-100 to-purple-50 dark:from-purple-900/30 dark:to-purple-800/10 ring-purple-200 dark:ring-purple-900/50",
-            icon: "text-purple-500 dark:text-purple-400",
+            outer: "bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-500/20",
+            icon: "text-purple-600 dark:text-purple-400",
           },
         };
       case "cancelled_denied":
         return {
-          title: "Cancelled/Denied Visits",
-          desc: "Applications that were cancelled or denied access.",
+          title: "Cancelled / Denied Visits",
+          desc: "Applications that were cancelled or denied campus access.",
           icon: ShieldAlert,
           gradient: "from-rose-500 to-red-600",
           emptyClasses: {
-            outer:
-              "from-rose-100 to-rose-50 dark:from-rose-900/30 dark:to-rose-800/10 ring-rose-200 dark:ring-rose-900/50",
-            icon: "text-rose-500 dark:text-rose-400",
+            outer: "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-500/20",
+            icon: "text-red-600 dark:text-red-400",
           },
         };
 
@@ -153,17 +148,16 @@ export function FilteredVisits() {
           title: "Visit Log",
           desc: "Filtered view of campus activity.",
           icon: Inbox,
-          gradient: "from-slate-700 to-slate-900",
+          gradient: "from-sky-500 to-blue-600",
           emptyClasses: {
-            outer:
-              "from-gray-100 to-gray-50 dark:from-slate-800 dark:to-slate-700/50 ring-gray-200 dark:ring-slate-700",
-            icon: "text-gray-400 dark:text-slate-400",
+            outer: "bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-500/20",
+            icon: "text-sky-600 dark:text-sky-400",
           },
         };
     }
   };
 
-  const { title, desc, icon: StatusIcon, gradient } = getStatusDetails();
+  const { title, desc, icon: StatusIcon, gradient, emptyClasses } = getStatusDetails();
 
   const getFocusRingColor = () => {
     switch (status) {
@@ -349,18 +343,16 @@ export function FilteredVisits() {
                         </>
                       ) : visits.length === 0 ? (
                         <tr>
-                          <td colSpan={10} className="px-6 py-24 text-center">
-                            <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
-                              <div className="bg-gradient-to-tr from-gray-100 to-gray-50 dark:from-slate-800 dark:to-slate-700/50 p-5 rounded-[2rem] mb-6 shadow-inner ring-1 ring-gray-200 dark:ring-slate-700">
-                                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm">
-                                  <Inbox className="w-8 h-8 text-gray-400 dark:text-slate-400" />
-                                </div>
+                          <td colSpan={10} className="py-16 text-center">
+                            <div className="flex flex-col items-center gap-3 max-w-sm mx-auto">
+                              <div className={`p-4 rounded-2xl ${emptyClasses.outer}`}>
+                                <StatusIcon className="w-8 h-8" />
                               </div>
-                              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 uppercase tracking-tight">
-                                No Records Found
-                              </h3>
-                              <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
-                                Try adjusting your search or filters.
+                              <h4 className="text-base font-black text-gray-900 dark:text-white">
+                                No {title} Found
+                              </h4>
+                              <p className="text-xs text-gray-500 dark:text-slate-400">
+                                {desc}
                               </p>
                             </div>
                           </td>

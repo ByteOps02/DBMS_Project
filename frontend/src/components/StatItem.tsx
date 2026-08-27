@@ -1,7 +1,6 @@
 import React from "react";
 import { TrendingUp, ArrowUpRight } from "lucide-react";
 
-
 export type StatItemProps = {
   name: string;
   value: string | number;
@@ -13,6 +12,7 @@ export type StatItemProps = {
   style?: React.CSSProperties;
   className?: string;
 };
+
 const CARD_THEMES: Record<
   string,
   {
@@ -145,8 +145,6 @@ export const StatItem = React.memo(
           </span>
         </div>
 
-        
-        {/* Animated bottom border on hover mimicking the active state in the screenshot */}
         <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-0 group-hover:w-full bg-gradient-to-r ${theme.gradient} rounded-t-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-20`} />
       </div>
     );

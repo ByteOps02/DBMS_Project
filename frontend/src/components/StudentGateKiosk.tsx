@@ -15,7 +15,6 @@ import {
   Bike,
   CheckCircle2,
   Zap,
-  Sparkles,
   Search
 } from "lucide-react";
 
@@ -542,9 +541,8 @@ export function StudentGateKiosk() {
             )}
           </div>
 
-          <p className="text-xs text-slate-400 font-medium mt-3.5 text-center flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span>Align Student Pass QR Code within the viewfinder for instant verification</span>
+          <p className="text-xs text-slate-400 font-medium mt-3.5 text-center">
+            Align Student Pass QR Code within the viewfinder for instant verification
           </p>
         </div>
       )}

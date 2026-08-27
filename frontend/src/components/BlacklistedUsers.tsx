@@ -272,8 +272,8 @@ export function BlacklistedUsers() {
                 <tr>
                   <td colSpan={5} className="py-16 text-center">
                     <div className="flex flex-col items-center gap-3 max-w-sm mx-auto">
-                      <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        <ShieldCheck className="w-8 h-8" />
+                      <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-500/20">
+                        <ShieldAlert className="w-8 h-8" />
                       </div>
                       <h4 className="text-base font-black text-gray-900 dark:text-white">
                         Security Watchlist is Clear

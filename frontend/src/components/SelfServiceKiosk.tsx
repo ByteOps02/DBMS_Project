@@ -246,145 +246,117 @@ export function SelfServiceKiosk() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 pt-2">
             {/* General Guest */}
             <div
               onClick={() => handleCategorySelect("guest")}
-              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl sm:rounded-[1.5rem] overflow-hidden group relative flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-xl hover:border-sky-500/50 cursor-pointer"
+              className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-sky-500/30 bg-sky-50/20 dark:bg-sky-950/20 shadow-sm hover:shadow-md hover:border-sky-500/60 transition-all cursor-pointer flex flex-col justify-between group"
             >
-              <div className="p-5 relative z-10 flex-1 flex flex-col">
-                <div className="flex items-start justify-between">
-                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-[0_12px_28px_-6px_rgba(59,130,246,0.5)] text-white">
-                    <UserCheck className="h-6 w-6" strokeWidth={2.5} />
-                  </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400">
-                    General
-                  </span>
-                </div>
-
-                <div className="mt-5 space-y-1.5">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-sky-500 transition-colors">
+              <div>
+                <div className="flex items-center justify-between text-sky-500 mb-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
                     General Visitor
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
-                    Meeting faculty, students, academic departments, or campus tour.
-                  </p>
+                  </span>
+                  <UserCheck className="w-5 h-5 text-sky-500 shrink-0" />
                 </div>
+                <p className="text-xl sm:text-2xl font-black text-sky-600 dark:text-sky-400 my-1">
+                  General Entry
+                </p>
+                <p className="text-xs font-medium text-gray-500 dark:text-slate-400 leading-relaxed">
+                  Meeting faculty, students, academic departments, or campus tour.
+                </p>
               </div>
 
-              <div className="px-5 py-3.5 bg-slate-50/50 dark:bg-slate-800/40 border-t border-gray-100 dark:border-slate-800 relative z-10 flex items-center justify-between">
-                <span className="text-xs font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1">
-                  Continue <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-sky-500/15 dark:border-sky-500/25 text-xs font-bold text-sky-600 dark:text-sky-400">
+                <span className="flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                  Continue <ArrowRight className="w-3.5 h-3.5" />
                 </span>
                 <span className="text-[10px] font-bold uppercase text-gray-400">Instant Pass</span>
               </div>
-
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-0 group-hover:w-full bg-gradient-to-r from-sky-500 to-blue-600 rounded-t-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-20" />
             </div>
 
             {/* Courier & Delivery */}
             <div
               onClick={() => handleCategorySelect("courier")}
-              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl sm:rounded-[1.5rem] overflow-hidden group relative flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-xl hover:border-amber-500/50 cursor-pointer"
+              className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-500/30 bg-amber-50/20 dark:bg-amber-950/20 shadow-sm hover:shadow-md hover:border-amber-500/60 transition-all cursor-pointer flex flex-col justify-between group"
             >
-              <div className="p-5 relative z-10 flex-1 flex flex-col">
-                <div className="flex items-start justify-between">
-                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-[0_12px_28px_-6px_rgba(249,115,22,0.5)] text-white">
-                    <Package className="h-6 w-6" strokeWidth={2.5} />
-                  </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-                    Delivery
-                  </span>
-                </div>
-
-                <div className="mt-5 space-y-1.5">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-amber-500 transition-colors">
+              <div>
+                <div className="flex items-center justify-between text-amber-500 mb-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
                     Courier Drop-Off
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
-                    Amazon, Flipkart, Swiggy, Speed Post, or logistics parcel delivery.
-                  </p>
+                  </span>
+                  <Package className="w-5 h-5 text-amber-500 shrink-0" />
                 </div>
+                <p className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 my-1">
+                  Fast Delivery
+                </p>
+                <p className="text-xs font-medium text-gray-500 dark:text-slate-400 leading-relaxed">
+                  Amazon, Flipkart, Swiggy, Speed Post, or logistics parcel delivery.
+                </p>
               </div>
 
-              <div className="px-5 py-3.5 bg-slate-50/50 dark:bg-slate-800/40 border-t border-gray-100 dark:border-slate-800 relative z-10 flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                  Fast Drop-Off <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-amber-500/15 dark:border-amber-500/25 text-xs font-bold text-amber-600 dark:text-amber-400">
+                <span className="flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                  Fast Drop-Off <ArrowRight className="w-3.5 h-3.5" />
                 </span>
                 <span className="text-[10px] font-bold uppercase text-gray-400">Quick Gate</span>
               </div>
-
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-0 group-hover:w-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-t-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-20" />
             </div>
 
             {/* Candidate / Job Interview */}
             <div
               onClick={() => handleCategorySelect("interview")}
-              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl sm:rounded-[1.5rem] overflow-hidden group relative flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-xl hover:border-purple-500/50 cursor-pointer"
+              className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-indigo-500/30 bg-indigo-50/20 dark:bg-indigo-950/20 shadow-sm hover:shadow-md hover:border-indigo-500/60 transition-all cursor-pointer flex flex-col justify-between group"
             >
-              <div className="p-5 relative z-10 flex-1 flex flex-col">
-                <div className="flex items-start justify-between">
-                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-[0_12px_28px_-6px_rgba(168,85,247,0.5)] text-white">
-                    <Briefcase className="h-6 w-6" strokeWidth={2.5} />
-                  </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
-                    Interview
-                  </span>
-                </div>
-
-                <div className="mt-5 space-y-1.5">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-purple-500 transition-colors">
+              <div>
+                <div className="flex items-center justify-between text-indigo-500 mb-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
                     Candidate Interview
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
-                    Attending recruitment, academic viva, or placement rounds.
-                  </p>
+                  </span>
+                  <Briefcase className="w-5 h-5 text-indigo-500 shrink-0" />
                 </div>
+                <p className="text-xl sm:text-2xl font-black text-indigo-600 dark:text-indigo-400 my-1">
+                  Recruitment
+                </p>
+                <p className="text-xs font-medium text-gray-500 dark:text-slate-400 leading-relaxed">
+                  Attending recruitment, academic viva, or placement rounds.
+                </p>
               </div>
 
-              <div className="px-5 py-3.5 bg-slate-50/50 dark:bg-slate-800/40 border-t border-gray-100 dark:border-slate-800 relative z-10 flex items-center justify-between">
-                <span className="text-xs font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1">
-                  Candidate Entry <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-indigo-500/15 dark:border-indigo-500/25 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                <span className="flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                  Candidate Entry <ArrowRight className="w-3.5 h-3.5" />
                 </span>
                 <span className="text-[10px] font-bold uppercase text-gray-400">HR / Placement</span>
               </div>
-
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-0 group-hover:w-full bg-gradient-to-r from-violet-500 to-purple-600 rounded-t-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-20" />
             </div>
 
             {/* VIP & Academic Dignitary */}
             <div
               onClick={() => handleCategorySelect("vip")}
-              className="bg-white dark:bg-slate-900 border border-amber-300/60 dark:border-amber-500/30 rounded-2xl sm:rounded-[1.5rem] overflow-hidden group relative flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-xl hover:border-amber-400 cursor-pointer"
+              className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-purple-500/40 bg-purple-50/30 dark:bg-purple-950/30 shadow-sm hover:shadow-md hover:border-purple-500/70 transition-all cursor-pointer flex flex-col justify-between group"
             >
-              <div className="p-5 relative z-10 flex-1 flex flex-col">
-                <div className="flex items-start justify-between">
-                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-500 shadow-[0_12px_28px_-6px_rgba(245,158,11,0.6)] text-white">
-                    <Crown className="h-6 w-6" strokeWidth={2.5} />
-                  </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-400/30">
-                    👑 VIP Fast-Pass
-                  </span>
-                </div>
-
-                <div className="mt-5 space-y-1.5">
-                  <h3 className="text-lg font-bold text-amber-600 dark:text-amber-400 transition-colors">
+              <div>
+                <div className="flex items-center justify-between text-purple-500 mb-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
                     VIP & Dignitary
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
-                    Board of Governors, Guest Speakers, Officials, and Recruiters.
-                  </p>
+                  </span>
+                  <Crown className="w-5 h-5 text-purple-500 shrink-0" />
                 </div>
+                <p className="text-xl sm:text-2xl font-black text-purple-600 dark:text-purple-400 my-1">
+                  VIP Fast-Pass
+                </p>
+                <p className="text-xs font-medium text-gray-500 dark:text-slate-400 leading-relaxed">
+                  Board of Governors, Guest Speakers, Officials, and Recruiters.
+                </p>
               </div>
 
-              <div className="px-5 py-3.5 bg-amber-50/40 dark:bg-amber-950/20 border-t border-amber-100 dark:border-amber-900/30 relative z-10 flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                  Priority Clearance <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-purple-500/15 dark:border-purple-500/25 text-xs font-bold text-purple-600 dark:text-purple-400">
+                <span className="flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                  Priority Clearance <ArrowRight className="w-3.5 h-3.5" />
                 </span>
-                <span className="text-[10px] font-bold uppercase text-amber-600">VIP Bay</span>
+                <span className="text-[10px] font-bold uppercase text-purple-600 dark:text-purple-400">VIP Bay</span>
               </div>
-
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-0 group-hover:w-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-t-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-20" />
             </div>
           </div>
         </div>

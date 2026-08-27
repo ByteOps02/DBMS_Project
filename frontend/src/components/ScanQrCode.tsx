@@ -14,7 +14,6 @@ import {
   GraduationCap,
   Users,
   RefreshCw,
-  Sparkles,
   Camera,
   X,
   Volume2,
@@ -640,9 +639,8 @@ export function ScanQrCode() {
                     )}
                   </div>
 
-                  <p className="text-xs text-slate-400 font-medium mt-3.5 text-center flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                    <span>Point camera directly at Visitor Pass QR Code on mobile or printed badge</span>
+                  <p className="text-xs text-slate-400 font-medium mt-3.5 text-center">
+                    Point camera directly at Visitor Pass QR Code on mobile or printed badge
                   </p>
                 </div>
               )}

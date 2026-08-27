@@ -215,42 +215,42 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
               </p>
             </div>
 
-            <div className="col-span-2 sm:col-span-1 p-3.5 rounded-[1rem] bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/80 dark:to-slate-900/80 border border-gray-200/50 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-shadow">
-              <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-blue-400" /> Valid From
+            <div className="col-span-2 sm:col-span-1 p-3.5 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 shadow-xs">
+              <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-sky-500" /> Valid From
               </span>
-              <p className="text-[11px] font-bold text-gray-800 dark:text-slate-200">
+              <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">
                 {visit.valid_from ? formatIST(visit.valid_from) : "N/A"}
               </p>
             </div>
-            <div className="col-span-2 sm:col-span-1 p-3.5 rounded-[1rem] bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/80 dark:to-slate-900/80 border border-gray-200/50 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-shadow">
-              <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-purple-400" /> Valid Until
+            <div className="col-span-2 sm:col-span-1 p-3.5 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 shadow-xs">
+              <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-purple-500" /> Valid Until
               </span>
-              <p className="text-[11px] font-bold text-gray-800 dark:text-slate-200">
+              <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">
                 {visit.valid_until ? formatIST(visit.valid_until) : "N/A"}
               </p>
             </div>
 
-            <div className="col-span-2 p-3.5 rounded-[1rem] bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/80 dark:to-slate-900/80 border border-gray-200/50 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-shadow">
-              <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                <User className="w-3.5 h-3.5 text-blue-400" /> Host
+            <div className="col-span-2 p-3.5 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 shadow-xs">
+              <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-sky-500" /> Host
               </span>
-              <p className="text-xs font-bold text-gray-800 dark:text-slate-200">
+              <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">
                 {visit.host?.name || "Campus Administration"}
               </p>
             </div>
             {visit.vehicle_number && (
-              <div className="col-span-2 p-3.5 rounded-[1rem] bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/80 dark:to-slate-900/80 border border-gray-200/50 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-shadow">
-                <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                  <Car className="w-3.5 h-3.5 text-orange-400" /> Vehicle
+              <div className="col-span-2 p-3.5 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 shadow-xs">
+                <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <Car className="w-3.5 h-3.5 text-amber-500" /> Vehicle
                 </span>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-xs font-bold text-gray-800 dark:text-slate-200">
+                  <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">
                     {visit.vehicle_number}
                   </p>
                   {visit.vehicle_type && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-orange-700 dark:text-orange-400 text-[9px] font-black uppercase tracking-widest border border-orange-100 dark:border-orange-800/40">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-amber-700 dark:text-amber-400 text-xs font-bold uppercase tracking-wider border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-950/40">
                       {visit.vehicle_type}
                     </span>
                   )}
@@ -260,8 +260,8 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-2 px-1">
-              <History className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              <History className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                 Activity Log
               </span>
             </div>
