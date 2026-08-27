@@ -12,7 +12,8 @@ import {
   Car,
   ScanLine,
   ChevronDown,
-  Laptop
+  Laptop,
+  UserPlus
 } from "lucide-react";
 
 import { ThemeSwitcher } from "./ThemeSwitcher";
@@ -182,9 +183,10 @@ const Home = () => {
           </button>
           <button
             onClick={() => navigate("/signup")}
-            className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800 transition-all shadow-xs"
+            className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800 transition-all flex items-center gap-1.5 shadow-xs"
           >
-            Sign Up
+            <UserPlus className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+            <span>Sign Up</span>
           </button>
           <button
             onClick={() => navigate("/login")}
@@ -254,31 +256,6 @@ const Home = () => {
           <p className="text-sm sm:text-base text-white/90 font-medium max-w-xl mx-auto drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]">
             Digital gatepass, Hostel Block A census, reception kiosks, and 24-hour campus security.
           </p>
-
-          {/* Action Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <button
-              onClick={() => navigate("/login")}
-              className="btn-primary !py-2.5 !px-6 !text-sm !rounded-xl !shadow-xl flex items-center gap-2 font-bold"
-            >
-              <span>Log In</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => navigate("/kiosk")}
-              className="btn !py-2.5 !px-5 !text-sm !rounded-xl border border-white/80 bg-white/20 backdrop-blur-md text-white hover:bg-white hover:text-slate-900 font-bold transition-all flex items-center gap-2"
-            >
-              <Laptop className="w-4 h-4 text-sky-200" />
-              <span>Reception Kiosk</span>
-            </button>
-            <button
-              onClick={() => navigate("/app/student-pass")}
-              className="btn !py-2.5 !px-5 !text-sm !rounded-xl border border-white/80 bg-white/20 backdrop-blur-md text-white hover:bg-white hover:text-slate-900 font-bold transition-all flex items-center gap-2"
-            >
-              <GraduationCap className="w-4 h-4 text-purple-200" />
-              <span>Student Pass</span>
-            </button>
-          </div>
         </div>
       </div>
 
