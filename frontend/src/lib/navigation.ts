@@ -35,8 +35,9 @@ export const navLinks = [
     href: "/app/register-visit",
     label: "Register Visit",
     icon: UserPlus,
-    roles: ["admin", "host", "guard", "visitor"],
+    roles: ["admin", "warden", "host", "guard", "visitor"],
   },
+
   {
     href: "/app/scan",
     label: "Gate Scanner",

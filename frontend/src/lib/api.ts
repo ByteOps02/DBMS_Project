@@ -283,6 +283,8 @@ export const api = {
       host_id?: string | null;
       purpose: string;
       status?: string;
+      approved_at?: string;
+      approved_by?: string | null;
       valid_until?: string;
       valid_from?: string;
       expected_out_time?: string;
@@ -292,6 +294,7 @@ export const api = {
       pass_type?: string;
     }): Promise<Row<"visits">> =>
       apiFetch("/visits", { method: "POST", body: JSON.stringify(data) }),
+
 
     update: (
       id: string,

@@ -43,7 +43,7 @@ export type Database = {
           name: string;
           email: string;
           department_id: string;
-          role: "admin" | "guard" | "host" | "visitor";
+          role: "admin" | "warden" | "guard" | "host" | "visitor" | "student";
           active: boolean;
           created_at: string;
           updated_at: string;
@@ -52,8 +52,8 @@ export type Database = {
           id?: string;
           name: string;
           email: string;
-          department_id: string;
-          role?: "admin" | "guard" | "host" | "visitor";
+          department_id?: string;
+          role?: "admin" | "warden" | "guard" | "host" | "visitor" | "student";
           active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -63,7 +63,7 @@ export type Database = {
           name?: string;
           email?: string;
           department_id?: string;
-          role?: "admin" | "guard" | "host" | "visitor";
+          role?: "admin" | "warden" | "guard" | "host" | "visitor" | "student";
           active?: boolean;
           created_at?: string;
           updated_at?: string;

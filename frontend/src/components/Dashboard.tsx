@@ -140,14 +140,20 @@ export function Dashboard() {
     hourlyDistribution: Array<{ hour: string; entries: number; exits: number }>;
   } | null>(null);
 
+  const isAuthorityRole = user?.role === "admin" || user?.role === "guard" || user?.role === "warden";
+
   const fetchTelemetry = useCallback(async () => {
+    if (!user || (user.role !== "admin" && user.role !== "guard" && user.role !== "warden")) {
+      return;
+    }
     try {
       const data = await api.visits.getTrafficTelemetry();
       setTelemetry(data);
     } catch {
       // ignore telemetry errors
     }
-  }, []);
+  }, [user]);
+
 
   const handleDispatchEscort = async (visitId: string, visitorName?: string) => {
     try {
@@ -380,9 +386,10 @@ export function Dashboard() {
         )}
       </div>
 
-      {/* Live Campus Population Capacity & Peak Traffic Telemetry */}
-      {telemetry && (
+      {/* Live Campus Population Capacity & Peak Traffic Telemetry (Admin, Guard, Warden only) */}
+      {telemetry && isAuthorityRole && (
         <div className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
           {/* Capacity Progress Meter */}
           <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
             <div>

@@ -51,56 +51,104 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
       created_to,
     } = req.query as Record<string, string>;
 
-    type WhereClause = Record<string, any>;
-    const where: WhereClause = {};
-    if (authUser.role === 'host') {
-      where.host_id = authUser.id;
+    const andConditions: any[] = [];
+
+    // Role-based visibility scoping:
+    // - admin, guard, warden: Can see ALL visitor logs across the campus
+    // - host: Can ONLY see visits where they are the designated host
+    // - visitor: Can ONLY see visits created with their email address or username
+    // - student: Can ONLY see visits associated with their account/host ID
+    if (authUser.role === 'admin' || authUser.role === 'guard' || authUser.role === 'warden') {
+      // Full campus visibility
+    } else if (authUser.role === 'host') {
+      andConditions.push({ host_id: authUser.id });
     } else if (authUser.role === 'visitor') {
       const visitorProfiles = await prisma.visitor.findMany({
-        where: { email: { equals: authUser.email, mode: 'insensitive' } },
+        where: {
+          OR: [
+            { email: { equals: authUser.email, mode: 'insensitive' } },
+            { name: { equals: authUser.name, mode: 'insensitive' } },
+          ],
+        },
         select: { id: true },
       });
       const visitorIds = visitorProfiles.map((v: { id: string }) => v.id);
-      where.visitor_id = visitorIds.length > 0
-        ? { in: visitorIds }
-        : { equals: '00000000-0000-0000-0000-000000000000' };
+      andConditions.push({
+        OR: [
+          ...(visitorIds.length > 0 ? [{ visitor_id: { in: visitorIds } }] : []),
+          { visitor: { email: { equals: authUser.email, mode: 'insensitive' } } },
+          { visitor: { name: { equals: authUser.name, mode: 'insensitive' } } },
+        ],
+      });
+    } else if (authUser.role === 'student') {
+      const visitorProfiles = await prisma.visitor.findMany({
+        where: {
+          OR: [
+            { email: { equals: authUser.email, mode: 'insensitive' } },
+            { name: { equals: authUser.name, mode: 'insensitive' } },
+          ],
+        },
+        select: { id: true },
+      });
+      const visitorIds = visitorProfiles.map((v: { id: string }) => v.id);
+      andConditions.push({
+        OR: [
+          { host_id: authUser.id },
+          ...(visitorIds.length > 0 ? [{ visitor_id: { in: visitorIds } }] : []),
+          { visitor: { email: { equals: authUser.email, mode: 'insensitive' } } },
+          { visitor: { name: { equals: authUser.name, mode: 'insensitive' } } },
+        ],
+      });
     }
-    if (status) where.status = status;
+
+    if (status) andConditions.push({ status });
     if (statuses) {
       const statusArray = statuses.split(',').filter(Boolean);
-      where.status = { in: statusArray };
+      andConditions.push({ status: { in: statusArray } });
     }
-    if (qHostId) where.host_id = qHostId;
+    if (qHostId) andConditions.push({ host_id: qHostId });
     
     if (approved_from || approved_to) {
-      where.approved_at = {
-        ...(approved_from ? { gte: new Date(approved_from) } : {}),
-        ...(approved_to ? { lt: new Date(approved_to) } : {}),
-      };
+      andConditions.push({
+        approved_at: {
+          ...(approved_from ? { gte: new Date(approved_from) } : {}),
+          ...(approved_to ? { lt: new Date(approved_to) } : {}),
+        },
+      });
     }
     if (checkout_from || checkout_to) {
-      where.check_out_time = {
-        ...(checkout_from ? { gte: new Date(checkout_from) } : {}),
-        ...(checkout_to ? { lt: new Date(checkout_to) } : {}),
-      };
+      andConditions.push({
+        check_out_time: {
+          ...(checkout_from ? { gte: new Date(checkout_from) } : {}),
+          ...(checkout_to ? { lt: new Date(checkout_to) } : {}),
+        },
+      });
     }
     if (created_from || created_to) {
-      where.created_at = {
-        ...(created_from ? { gte: new Date(created_from) } : {}),
-        ...(created_to ? { lte: new Date(created_to) } : {}),
-      };
+      andConditions.push({
+        created_at: {
+          ...(created_from ? { gte: new Date(created_from) } : {}),
+          ...(created_to ? { lte: new Date(created_to) } : {}),
+        },
+      });
     }
     if (date) {
       const start = new Date(date); start.setHours(0, 0, 0, 0);
       const end = new Date(date); end.setHours(23, 59, 59, 999);
-      where.created_at = { gte: start, lte: end };
+      andConditions.push({ created_at: { gte: start, lte: end } });
     }
     if (search) {
-      where.OR = [
-        { purpose: { contains: search, mode: 'insensitive' } },
-        { visitor: { name: { contains: search, mode: 'insensitive' } } },
-      ];
+      andConditions.push({
+        OR: [
+          { purpose: { contains: search, mode: 'insensitive' } },
+          { visitor: { name: { contains: search, mode: 'insensitive' } } },
+          { visitor: { email: { contains: search, mode: 'insensitive' } } },
+          { vehicle_number: { contains: search, mode: 'insensitive' } },
+        ],
+      });
     }
+
+    const where = andConditions.length > 0 ? { AND: andConditions } : {};
 
     const take = limit ? Math.min(Number(limit), 200) : 50;
     const skip = offset ? Number(offset) : 0;
@@ -115,6 +163,7 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
       take,
       skip,
     });
+
 
     res.status(200).json(visits);
   } catch (err: unknown) {
@@ -153,7 +202,9 @@ router.post('/', optionalAuth, async (req: AuthRequest, res) => {
         visitor_id: body.visitor_id,
         host_id: body.host_id ?? null,
         purpose: body.purpose,
-        status: (body.status as 'pending') ?? 'pending',
+        status: (body.status as 'pending' | 'approved') ?? 'pending',
+        approved_at: body.approved_at ? new Date(body.approved_at) : (body.status === 'approved' ? new Date() : null),
+        approved_by: body.approved_by ?? (body.status === 'approved' && req.user?.id ? req.user.id : null),
         valid_until: body.valid_until ? new Date(body.valid_until) : null,
         valid_from: body.valid_from ? new Date(body.valid_from) : new Date(),
         expected_out_time: body.expected_out_time ? new Date(body.expected_out_time) : null,
@@ -164,6 +215,7 @@ router.post('/', optionalAuth, async (req: AuthRequest, res) => {
       },
       include: { visitor: true, host: true }
     });
+
 
     console.log('[DEBUG] Visit created successfully:', visit.id);
     console.log('[DEBUG] visit.visitor exists?', !!visit.visitor);
@@ -319,10 +371,16 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res) => {
  */
 router.get('/analytics/traffic-telemetry', requireAuth, async (req: AuthRequest, res) => {
   try {
+    const authUser = req.user!;
+    if (!['admin', 'guard', 'warden'].includes(authUser.role)) {
+      return res.status(403).json({ error: 'Forbidden: Restricted to Security Authorities (Admin, Guard, Warden)' });
+    }
+
     // 1. Live inside students
     const insideStudents = await prisma.student.count({
       where: { status: 'inside' },
     });
+
     const outStudents = await prisma.student.count({
       where: { status: 'out_day' },
     });

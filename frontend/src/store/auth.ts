@@ -3,9 +3,10 @@ import { api, API_BASE } from "../lib/api";
 import log from "../lib/logger";
 
 
-export type UserRole = "admin" | "guard" | "host" | "visitor" | "student";
+export type UserRole = "admin" | "warden" | "guard" | "host" | "visitor" | "student";
 
 export interface User {
+
   id: string;
   name: string;
   email: string;

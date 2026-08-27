@@ -119,16 +119,15 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
     try {
       log.info("[UnifiedVisit] Starting advanced registration for role:", userRole);
 
-      const effectiveHostEmail = isVisitor ? formData.hostEmail : user?.email;
-      let approverId = null;
+      const effectiveHostEmail = isVisitor ? formData.hostEmail : (user?.email || formData.hostEmail);
+      let approverId = (user?.role === "host" || user?.role === "admin" || user?.role === "warden") ? user.id : null;
 
-      if (effectiveHostEmail && effectiveHostEmail.trim() !== "") {
+      if (!approverId && effectiveHostEmail && effectiveHostEmail.trim() !== "") {
         const hosts = await api.hosts.list(effectiveHostEmail.trim());
         const approver = hosts.find(h => h.email.toLowerCase() === effectiveHostEmail.trim().toLowerCase());
-
-        if (!approver) throw new Error(`Approver not found with email: ${effectiveHostEmail}`);
-        approverId = approver.id;
+        if (approver) approverId = approver.id;
       }
+
       let photoUrl = null;
       if (formData.photo?.[0]) {
         photoUrl = await uploadToStorage(formData.photo[0]);
@@ -159,12 +158,17 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
       const validUntil = formData.validUntil ? new Date(formData.validUntil) : new Date(visitDate);
       if (formData.passType === "single_day") validUntil.setHours(23, 59, 59);
 
+      const isStaffRegistered = user?.role === "host" || user?.role === "admin" || user?.role === "warden";
+      const initialStatus = isStaffRegistered ? "approved" : "pending";
+
       await api.visits.create({
         id: visitId,
         visitor_id: visitorId,
         host_id: approverId,
         purpose: formData.purpose,
-        status: "pending",
+        status: initialStatus,
+        approved_at: isStaffRegistered ? new Date().toISOString() : undefined,
+        approved_by: isStaffRegistered ? user?.id : undefined,
         valid_until: validUntil.toISOString(),
         valid_from: visitDate.toISOString(),
         expected_out_time: validUntil.toISOString(),
@@ -173,6 +177,7 @@ export function useVisitRegistration(formMethods: UseFormReturn<UnifiedVisitForm
         additional_guests: Number(formData.additionalGuests) || 0,
         pass_type: formData.passType,
       });
+
       const qrData = JSON.stringify({
         vId: visitId,
         n: formData.name,

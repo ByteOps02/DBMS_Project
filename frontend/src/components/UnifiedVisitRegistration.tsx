@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "../store/auth";
 import { useVisitRegistration, type UnifiedVisitFormData } from "../hooks/useVisitRegistration";
@@ -25,12 +27,21 @@ import { CustomSelect } from "./ui/CustomSelect";
 
 export function UnifiedVisitRegistration() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user?.role === "student") {
+      navigate("/app/student-pass");
+    }
+  }, [user?.role, navigate]);
+
   const formMethods = useForm<UnifiedVisitFormData>({
     defaultValues: {
       passType: "single_day",
       additionalGuests: 0,
     },
   });
+
 
   const {
     register,
