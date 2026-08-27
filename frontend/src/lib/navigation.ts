@@ -2,7 +2,7 @@ import {
   LayoutDashboard,
   UserPlus,
   QrCode,
-  UploadCloud,
+  DownloadCloud,
   KeyRound,
   ClipboardList,
   ShieldAlert,
@@ -71,7 +71,7 @@ export const navLinks = [
   {
     href: "/app/bulk-visitor-upload",
     label: "Bulk Import",
-    icon: UploadCloud,
+    icon: DownloadCloud,
     roles: ["admin", "warden"],
   },
   {

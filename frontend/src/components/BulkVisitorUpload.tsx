@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Upload, FileSpreadsheet, Download, AlertCircle, UploadCloud } from "lucide-react";
+import { FileSpreadsheet, Download, AlertCircle, DownloadCloud } from "lucide-react";
 import { BackButton } from "./BackButton";
 import { PageHeader } from "./PageHeader";
 import { useForm } from "react-hook-form";
@@ -173,7 +173,7 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
         <BackButton />
 
         <PageHeader
-          icon={UploadCloud}
+          icon={DownloadCloud}
           gradient="from-orange-500 to-amber-600"
           title="Bulk Import"
           description="Import multiple visitor records at once using CSV or Excel spreadsheets."
@@ -234,7 +234,7 @@ Bob Wilson,bob@example.com,+1122334455,Maintenance,2024-03-17,1,KA-01-XY-5678,Bi
                   </>
                 ) : (
                   <>
-                    <Upload className="h-4 w-4" strokeWidth={2.5} />
+                    <Download className="h-4 w-4" strokeWidth={2.5} />
                     <span>Upload Visitors</span>
                   </>
                 )}

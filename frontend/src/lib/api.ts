@@ -628,7 +628,38 @@ export const api = {
     resetStrikes: (id: string) =>
       apiFetch(`/students/${id}/reset-strikes`, { method: "POST" }),
 
-    getExportCensusUrl: () => `${API_BASE}/api/students/export-census`,
+    getExportCensusUrl: () => {
+      const token = localStorage.getItem("vms_token");
+      return token ? `${API_BASE}/api/students/export-census?token=${encodeURIComponent(token)}` : `${API_BASE}/api/students/export-census`;
+    },
+
+    exportCensusCsv: async () => {
+      const token = localStorage.getItem("vms_token");
+      const headers = new Headers();
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+      const res = await fetch(`${API_BASE}/api/students/export-census`, {
+        headers,
+      });
+      if (!res.ok) {
+        let err = "Failed to export night census CSV";
+        try {
+          const j = await res.json();
+          if (j.error) err = j.error;
+        } catch {}
+        throw new Error(err);
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Hostel_Night_Census_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    },
 
     listMovements: (params?: { student_id?: string; limit?: number }) => {
       const qs = new URLSearchParams();

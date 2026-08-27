@@ -17,11 +17,16 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_development_on
 export const requireAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'UNAUTHORIZED: Missing Bearer token' });
+    let token: string | undefined;
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.slice(7);
+    } else if (typeof req.query.token === 'string') {
+      token = req.query.token;
     }
 
-    const token = authHeader.slice(7);
+    if (!token) {
+      return res.status(401).json({ error: 'UNAUTHORIZED: Missing Bearer token' });
+    }
     
     let payload: jwt.JwtPayload;
     try {

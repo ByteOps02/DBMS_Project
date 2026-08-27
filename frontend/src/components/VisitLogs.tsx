@@ -6,7 +6,7 @@ import {
   Inbox,
   Calendar,
   Filter,
-  Download,
+  Upload,
   Circle,
   ClipboardList,
   Users,
@@ -263,7 +263,7 @@ export function VisitLogs() {
                 {exporting ? (
                   <Circle className="animate-spin w-4 h-4 text-sky-500" />
                 ) : (
-                  <Download className="w-4 h-4 text-sky-500" />
+                  <Upload className="w-4 h-4 text-sky-500" />
                 )}
                 <span>Export Visitor CSV</span>
               </button>

@@ -23,7 +23,8 @@ import {
   Plus,
   Trash2,
   Pencil,
-  X
+  X,
+  Circle
 } from "lucide-react";
 
 import { api } from "../lib/api";
@@ -97,9 +98,23 @@ export function HostelHub() {
   const [movementGateFilter, setMovementGateFilter] = useState("");
   const [movementStatusFilter, setMovementStatusFilter] = useState("");
 
-  // Bulk Upload Modal
+  // Bulk Upload Modal & Export Census State
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [exportingCensus, setExportingCensus] = useState(false);
+
+  // Census Export Handler
+  const handleExportCensus = async () => {
+    try {
+      setExportingCensus(true);
+      await api.students.exportCensusCsv();
+      toast.success("Hostel Roll-Call Census exported successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to export census");
+    } finally {
+      setExportingCensus(false);
+    }
+  };
 
   // Fetch All Data
   const fetchAllData = useCallback(async () => {
@@ -329,19 +344,25 @@ export function HostelHub() {
         description="10-floor resident occupancy, night curfew radar, and student outing records."
         right={
           <div className="flex flex-wrap items-center gap-2.5">
-            <a
-              href={api.students.getExportCensusUrl()}
-              download
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-sky-500 text-xs font-bold shadow-xs transition-all shrink-0 cursor-pointer"
-            >
-              <Download className="w-4 h-4 text-sky-500" />
-              <span>Export Roll-Call CSV</span>
-            </a>
             <button
+              type="button"
+              onClick={handleExportCensus}
+              disabled={exportingCensus}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-sky-500 text-xs font-bold shadow-xs transition-all shrink-0 cursor-pointer disabled:opacity-50"
+            >
+              {exportingCensus ? (
+                <Circle className="animate-spin w-4 h-4 text-sky-500" />
+              ) : (
+                <Upload className="w-4 h-4 text-sky-500" />
+              )}
+              <span>Export Roll-Call CSV</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setShowUploadModal(true)}
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-sm shadow-sky-500/20 active:scale-95 transition-all shrink-0 cursor-pointer"
             >
-              <Upload className="w-4 h-4" />
+              <Download className="w-4 h-4" />
               <span>Bulk CSV Import</span>
             </button>
           </div>
@@ -1511,7 +1532,7 @@ export function HostelHub() {
                 id="csv-file-input"
               />
               <label htmlFor="csv-file-input" className="cursor-pointer flex flex-col items-center">
-                <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                <Download className="w-8 h-8 text-gray-400 mb-2" />
                 <span className="text-xs font-bold text-gray-900 dark:text-white">
                   {uploading ? "Processing CSV..." : "Click to select CSV File"}
                 </span>
