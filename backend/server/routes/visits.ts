@@ -1,7 +1,15 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth, optionalAuth, AuthRequest } from '../middleware/auth.js';
-import { sendVisitRequestReceivedEmail, sendVisitApprovedEmail, sendVisitDeniedEmail, VisitEmailData } from '../lib/email.js';
+import {
+  sendVisitRequestReceivedEmail,
+  sendVisitApprovedEmail,
+  sendVisitDeniedEmail,
+  sendVisitCheckInEmail,
+  sendVisitCheckOutEmail,
+  VisitEmailData,
+} from '../lib/email.js';
+
 
 const router = Router();
 router.get('/public', async (req, res) => {
@@ -218,11 +226,8 @@ router.post('/', optionalAuth, async (req: AuthRequest, res) => {
 
 
     console.log('[DEBUG] Visit created successfully:', visit.id);
-    console.log('[DEBUG] visit.visitor exists?', !!visit.visitor);
-    console.log('[DEBUG] visit.host exists?', !!visit.host);
 
     if (visit.visitor) {
-      console.log('[DEBUG] Triggering sendVisitRequestReceivedEmail for:', visit.visitor.email);
       const emailData: VisitEmailData = {
         visitorName: visit.visitor.name,
         visitorEmail: visit.visitor.email,
@@ -233,10 +238,22 @@ router.post('/', optionalAuth, async (req: AuthRequest, res) => {
         validUntil: visit.valid_until ? visit.valid_until.toISOString().split('T')[0] : '',
         vehicleNumber: visit.vehicle_number || 'None',
         hostName: visit.host?.name || 'Campus Administration',
+        approvedBy: visit.status === 'approved' ? (visit.host?.name || (req.user as any)?.name || 'Campus Authority') : undefined,
       };
-      sendVisitRequestReceivedEmail(emailData)
-        .then(() => console.log('[DEBUG] sendVisitRequestReceivedEmail promise resolved'))
-        .catch(err => console.error('[DEBUG] Email error:', err));
+
+      if (visit.status === 'approved') {
+        // Staff-registered or pre-approved visit -> Send Visit Approved with Active QR code email!
+        console.log('[DEBUG] Triggering sendVisitApprovedEmail for pre-approved visit:', visit.visitor.email);
+        sendVisitApprovedEmail(emailData)
+          .then(() => console.log('[DEBUG] sendVisitApprovedEmail promise resolved'))
+          .catch(err => console.error('[DEBUG] Email error:', err));
+      } else {
+        // Pending visitor request -> Send Request Received email
+        console.log('[DEBUG] Triggering sendVisitRequestReceivedEmail for:', visit.visitor.email);
+        sendVisitRequestReceivedEmail(emailData)
+          .then(() => console.log('[DEBUG] sendVisitRequestReceivedEmail promise resolved'))
+          .catch(err => console.error('[DEBUG] Email error:', err));
+      }
     } else {
       console.log('[DEBUG] Skipping email because visitor is null. Visitor:', !!visit.visitor);
     }
@@ -252,13 +269,13 @@ router.post('/bulk', requireAuth, async (req: AuthRequest, res) => {
     const authUser = req.user!;
     const { approverEmail, visitors } = req.body;
 
-    if (!['admin', 'guard', 'host'].includes(authUser.role)) {
+    if (!['admin', 'guard', 'host', 'warden'].includes(authUser.role)) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
     const approver = await prisma.host.findUnique({
       where: { email: approverEmail.trim().toLowerCase() },
-      select: { id: true },
+      select: { id: true, name: true },
     });
 
     if (!approver) {
@@ -282,12 +299,14 @@ router.post('/bulk', requireAuth, async (req: AuthRequest, res) => {
         });
       }
 
-      await prisma.visit.create({
+      const newVisit = await prisma.visit.create({
         data: {
           visitor_id: visitor.id,
           host_id: approver.id,
           purpose: vData.purpose || "N/A",
-          status: "pending",
+          status: "approved",
+          approved_at: new Date(),
+          approved_by: authUser.id,
           valid_from: vData.valid_from ? new Date(vData.valid_from) : new Date(),
           valid_until: vData.valid_until ? new Date(vData.valid_until) : null,
           additional_guests: vData.additional_guests || 0,
@@ -296,6 +315,21 @@ router.post('/bulk', requireAuth, async (req: AuthRequest, res) => {
           pass_type: vData.pass_type || "single_day",
         }
       });
+
+      // Send approved QR email for bulk visitors
+      sendVisitApprovedEmail({
+        visitorName: visitor.name,
+        visitorEmail: visitor.email,
+        visitId: newVisit.id,
+        purpose: newVisit.purpose,
+        passType: newVisit.pass_type,
+        validFrom: newVisit.valid_from ? newVisit.valid_from.toISOString().split('T')[0] : '',
+        validUntil: newVisit.valid_until ? newVisit.valid_until.toISOString().split('T')[0] : '',
+        vehicleNumber: newVisit.vehicle_number || 'None',
+        hostName: approver.name || 'Campus Administration',
+        approvedBy: authUser.name || 'Campus Authority',
+      }).catch(err => console.error('Bulk email error:', err));
+
       createdCount++;
     }
 
@@ -311,8 +345,12 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res) => {
     const id = req.params.id as string;
     const body = req.body;
 
-    const allowedRoles = ['admin', 'guard'];
-    const oldVisit = await prisma.visit.findUnique({ where: { id }, select: { host_id: true, status: true } });
+    const allowedRoles = ['admin', 'guard', 'warden', 'host'];
+    const oldVisit = await prisma.visit.findUnique({
+      where: { id },
+      select: { host_id: true, status: true, check_in_time: true, check_out_time: true },
+    });
+
     if (!allowedRoles.includes(authUser.role)) {
       if (oldVisit?.host_id !== authUser.id) {
         return res.status(403).json({ error: 'Forbidden' });
@@ -332,11 +370,11 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res) => {
       },
       include: {
         visitor: true,
-        host: true
-      }
+        host: true,
+      },
     });
 
-    if (body.status && oldVisit && oldVisit.status !== body.status && updated.visitor) {
+    if (updated.visitor) {
       const emailData: VisitEmailData = {
         visitorName: updated.visitor.name,
         visitorEmail: updated.visitor.email,
@@ -349,12 +387,33 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res) => {
         hostName: updated.host?.name || 'Campus Administration',
       };
 
-      if (body.status === 'approved') {
-        emailData.approvedBy = (authUser as any).name || authUser.email || 'Campus Administration';
-        sendVisitApprovedEmail(emailData).catch(err => console.error('Email error:', err));
-      } else if (body.status === 'denied') {
-        emailData.deniedBy = (authUser as any).name || authUser.email || 'Campus Administration';
-        sendVisitDeniedEmail(emailData).catch(err => console.error('Email error:', err));
+      // 1. Status change emails
+      if (body.status && oldVisit && oldVisit.status !== body.status) {
+        if (body.status === 'approved') {
+          emailData.approvedBy = (authUser as any).name || authUser.email || 'Campus Administration';
+          sendVisitApprovedEmail(emailData).catch(err => console.error('Email error:', err));
+        } else if (body.status === 'denied' || body.status === 'cancelled') {
+          emailData.deniedBy = (authUser as any).name || authUser.email || 'Campus Administration';
+          sendVisitDeniedEmail(emailData).catch(err => console.error('Email error:', err));
+        }
+      }
+
+      // 2. Gate Check-In Email
+      if (body.check_in_time && !oldVisit?.check_in_time) {
+        sendVisitCheckInEmail({
+          ...emailData,
+          checkInTime: new Date(body.check_in_time).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }),
+          entryGate: updated.entry_gate || 'Main Security Gate',
+        }).catch(err => console.error('CheckIn email error:', err));
+      }
+
+      // 3. Gate Check-Out Email
+      if (body.check_out_time && !oldVisit?.check_out_time) {
+        sendVisitCheckOutEmail({
+          ...emailData,
+          checkOutTime: new Date(body.check_out_time).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }),
+          exitGate: updated.exit_gate || 'Main Exit Gate',
+        }).catch(err => console.error('CheckOut email error:', err));
       }
     }
 
@@ -364,6 +423,7 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res) => {
     res.status(500).json({ error: 'Failed to update visit', details: err instanceof Error ? err.message : String(err) });
   }
 });
+
 
 /**
  * GET /api/visits/traffic-telemetry

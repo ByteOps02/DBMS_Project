@@ -168,3 +168,55 @@ export const sendVisitDeniedEmail = async (data: VisitEmailData) => {
     if (error) console.error('[Email] Denied error:', error);
   } catch (err) { console.error('[Email] sendVisitDeniedEmail error:', err); }
 };
+
+export const sendVisitCheckInEmail = async (data: VisitEmailData & { checkInTime?: string; entryGate?: string }) => {
+  if (!process.env.RESEND_API_KEY) return;
+  try {
+    const body = `
+<tr><td style="background:#0284c7;padding:32px 28px;text-align:center;">
+  <p style="margin:0 0 6px;font-size:22px;">&#128712;</p>
+  <h1 style="margin:0;font-size:20px;font-weight:700;color:#fff;">Checked In Successfully</h1>
+  <p style="margin:8px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">Welcome to IIIT Nagpur Campus</p>
+</td></tr>
+<tr><td style="padding:28px;">
+  <p style="margin:0 0 20px;font-size:14px;color:#555;line-height:1.7;">Hi <strong>${data.visitorName}</strong>, your gate entry has been recorded at <strong>${data.entryGate || 'Main Security Gate'}</strong>.</p>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;">
+    ${row('Reference ID', `<span style="font-family:monospace;font-size:12px;">${data.visitId}</span>`)}
+    ${row('Check-In Time', data.checkInTime || new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }))}
+    ${row('Host', data.hostName)}
+    ${row('Purpose', data.purpose)}
+    ${row('Gate', data.entryGate || 'Main Gate Checkpoint')}
+    ${row('Status', '<span style="color:#0284c7;">&#10003;&nbsp; On Campus</span>')}
+  </table>
+  <p style="margin:0;font-size:12px;color:#888;line-height:1.6;">Please keep your badge/pass accessible until departure.</p>
+</td></tr>`;
+    const { error } = await resend.emails.send({ from: getFromEmail(), to: data.visitorEmail, subject: `Campus Check-In Confirmed | Ref: ${data.visitId}`, html: wrap('Check-In Confirmed', body) });
+    if (error) console.error('[Email] CheckIn error:', error);
+  } catch (err) { console.error('[Email] sendVisitCheckInEmail error:', err); }
+};
+
+export const sendVisitCheckOutEmail = async (data: VisitEmailData & { checkOutTime?: string; exitGate?: string }) => {
+  if (!process.env.RESEND_API_KEY) return;
+  try {
+    const body = `
+<tr><td style="background:#475569;padding:32px 28px;text-align:center;">
+  <p style="margin:0 0 6px;font-size:22px;">&#128075;</p>
+  <h1 style="margin:0;font-size:20px;font-weight:700;color:#fff;">Checked Out &middot; Visit Completed</h1>
+  <p style="margin:8px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">Thank you for visiting IIIT Nagpur</p>
+</td></tr>
+<tr><td style="padding:28px;">
+  <p style="margin:0 0 20px;font-size:14px;color:#555;line-height:1.7;">Hi <strong>${data.visitorName}</strong>, your departure was successfully recorded at <strong>${data.exitGate || 'Main Exit Gate'}</strong>. Your gate pass is now closed.</p>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;">
+    ${row('Reference ID', `<span style="font-family:monospace;font-size:12px;">${data.visitId}</span>`)}
+    ${row('Check-Out Time', data.checkOutTime || new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }))}
+    ${row('Host', data.hostName)}
+    ${row('Gate', data.exitGate || 'Main Exit Checkpoint')}
+    ${row('Status', '<span style="color:#475569;">&#10003;&nbsp; Completed</span>')}
+  </table>
+  <p style="margin:0;font-size:12px;color:#888;">We hope you had a pleasant experience on campus.</p>
+</td></tr>`;
+    const { error } = await resend.emails.send({ from: getFromEmail(), to: data.visitorEmail, subject: `Visit Completed (Check-Out) | Ref: ${data.visitId}`, html: wrap('Visit Completed', body) });
+    if (error) console.error('[Email] CheckOut error:', error);
+  } catch (err) { console.error('[Email] sendVisitCheckOutEmail error:', err); }
+};
+
