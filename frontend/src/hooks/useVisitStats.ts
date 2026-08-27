@@ -108,10 +108,13 @@ export const useVisitStats = (user: User | null) => {
         const start = new Date(todayStart).getTime();
         const end = new Date(todayEnd).getTime();
 
-        const allVisits = await api.visits.list({
-          ...(role === "host" ? { host_id: user.id } : {}),
-          ...(force ? { _t: Date.now() } : {})
-        });
+        const [allVisits, hosts] = await Promise.all([
+          api.visits.list({
+            ...(role === "host" ? { host_id: user.id } : {}),
+            ...(force ? { _t: Date.now() } : {})
+          }),
+          role === "admin" ? api.hosts.list().catch(() => []) : Promise.resolve([])
+        ]);
 
         let ongoingCount = 0;
         let approvedToday = 0;
@@ -148,15 +151,7 @@ export const useVisitStats = (user: User | null) => {
           }
         });
 
-        let totalUsers = 0;
-        if (role === "admin") {
-          try {
-            const hosts = await api.hosts.list();
-            totalUsers = hosts?.length || 0;
-          } catch {
-            totalUsers = 0;
-          }
-        }
+        const totalUsers = hosts?.length || 0;
 
         statsData = [
           {
