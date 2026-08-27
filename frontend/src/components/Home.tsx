@@ -181,6 +181,12 @@ const Home = () => {
             Request Visit
           </button>
           <button
+            onClick={() => navigate("/signup")}
+            className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800 transition-all shadow-xs"
+          >
+            Sign Up
+          </button>
+          <button
             onClick={() => navigate("/login")}
             className="btn-primary !py-1.5 !px-5 !text-xs sm:!text-sm !rounded-xl !shadow-md"
           >

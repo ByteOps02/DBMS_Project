@@ -6,10 +6,7 @@ import { LogOut, X } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { navLinks } from "../lib/navigation";
 import { Logo } from "./Logo";
-import { ClaimStudentPassModal } from "./ClaimStudentPassModal";
 import { EmergencyBanner } from "./EmergencyBanner";
-
-
 
 function getInitials(name: string) {
   const cleanName = name === "System Administrator" ? "Admin" : name;
@@ -19,13 +16,11 @@ function getInitials(name: string) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-
 export function Layout() {
   const { user, logout, refreshProfile } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showClaimModal, setShowClaimModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -106,7 +101,6 @@ export function Layout() {
                 const isDashboard = link.href === "/app/dashboard";
                 const isDashboardChild = isDashboard && location.pathname.startsWith("/app/visits");
                 const isActive = location.pathname === link.href || isDashboardChild;
-                const isStudentClaimLink = link.href === "/app/student-pass" && user?.role === "visitor";
 
                 return (
                   <Link
@@ -120,13 +114,7 @@ export function Layout() {
                   >
                     <link.icon className="h-4 w-4" strokeWidth={isActive ? 2.5 : 2} />
                     <span className="text-sm">{link.label}</span>
-                    {isStudentClaimLink ? (
-                      <span className="ml-auto px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
-                        Claim
-                      </span>
-                    ) : (
-                      isActive && <span className="ml-auto w-1.5 h-1.5 bg-sky-500 rounded-full" />
-                    )}
+                    {isActive && <span className="ml-auto w-1.5 h-1.5 bg-sky-500 rounded-full" />}
                   </Link>
                 );
               })}
@@ -164,7 +152,6 @@ export function Layout() {
             const isDashboard = link.href === "/app/dashboard";
             const isDashboardChild = isDashboard && location.pathname.startsWith("/app/visits");
             const isActive = location.pathname === link.href || isDashboardChild;
-            const isStudentClaimLink = link.href === "/app/student-pass" && user?.role === "visitor";
 
             return (
               <Link
@@ -190,11 +177,8 @@ export function Layout() {
                   strokeWidth={isActive ? 2.5 : 2}
                 />
                 <span className="relative z-10 text-sm">{link.label}</span>
-
-                {isStudentClaimLink && (
-                  <span className="relative z-10 ml-auto px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 group-hover:bg-sky-500/25 transition-colors">
-                    Claim
-                  </span>
+                {isActive && (
+                  <span className="ml-auto relative z-10 w-1.5 h-1.5 bg-sky-500 rounded-full" />
                 )}
               </Link>
             );
@@ -210,16 +194,15 @@ export function Layout() {
           </div>
 
           {user && (
-            <div className="flex items-center p-3 rounded-2xl glass border border-white/60 dark:border-slate-700/40 relative group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 text-white flex items-center justify-center font-bold text-sm shadow-md shrink-0">
+            <div className="flex items-center p-2 rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-white/60 dark:border-slate-800/60">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 text-white flex items-center justify-center font-bold text-xs shadow-inner shrink-0">
                 {getInitials(user.name)}
               </div>
-              <div className="ml-3 overflow-hidden text-left flex-1">
-                <p className="text-sm font-black text-gray-900 dark:text-slate-100 truncate">
+              <div className="flex-1 min-w-0 ml-3">
+                <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
                   {user.name === "System Administrator" ? "Admin" : user.name}
                 </p>
                 <p className="text-xs text-gray-400 dark:text-slate-400 capitalize font-semibold">
-
                   {user.role}
                 </p>
               </div>
@@ -234,12 +217,6 @@ export function Layout() {
           )}
         </div>
       </aside>
-
-      {/* Global Claim Student Pass Modal */}
-      <ClaimStudentPassModal
-        isOpen={showClaimModal}
-        onClose={() => setShowClaimModal(false)}
-      />
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <EmergencyBanner />

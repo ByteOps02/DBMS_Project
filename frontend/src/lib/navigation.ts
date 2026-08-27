@@ -29,7 +29,7 @@ export const navLinks = [
     href: "/app/student-pass",
     label: "Student Pass",
     icon: GraduationCap,
-    roles: ["student", "warden", "admin"],
+    roles: ["student"],
   },
   {
     href: "/app/register-visit",

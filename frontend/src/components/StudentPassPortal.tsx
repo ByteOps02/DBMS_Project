@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   QrCode, 
   CalendarDays, 
@@ -6,14 +7,10 @@ import {
   ShieldCheck, 
   Printer,
   GraduationCap,
-
-  ArrowRight,
-  AlertCircle,
   Clock,
   Bike,
   X
 } from "lucide-react";
-
 
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/auth";
@@ -25,9 +22,9 @@ import { SEOMeta } from "./SEOMeta";
 import { BackButton } from "./BackButton";
 import QRCode from "qrcode";
 
-
 export function StudentPassPortal() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<"pass" | "leave" | "vehicles">("pass");
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
@@ -85,26 +82,21 @@ export function StudentPassPortal() {
     return () => clearInterval(interval);
   }, []);
 
-
-  // Claim State for Visitors
-  const [claimRoll, setClaimRoll] = useState("");
-  const [claiming, setClaiming] = useState(false);
-  const [claimError, setClaimError] = useState<string | null>(null);
-
   // Student Profile state
   const [studentInfo, setStudentInfo] = useState({
-    roll_number: user?.roll_number || "BT23CSE026",
-    name: user?.name || "Ram Krishna",
-    email: user?.email || "bt23cse026@iiitn.ac.in",
+    roll_number: user?.roll_number || "",
+    name: user?.name || "",
+    email: user?.email || "",
     hostel_block: "Hostel Block A",
-    room_number: "926",
+    room_number: "",
     branch: "CSE",
-    phone: "9823456789",
+    phone: "",
     status: "inside"
   });
 
-  // Attempt to fetch current logged in student record
+  // Fetch current logged in student record
   useEffect(() => {
+    if (user?.role !== "student") return;
     const searchParam = user?.roll_number || user?.email;
     if (searchParam) {
       api.students.list({ search: searchParam, limit: 1 })
@@ -116,9 +108,9 @@ export function StudentPassPortal() {
               name: s.name,
               email: s.email,
               hostel_block: s.hostel_block || "Hostel Block A",
-              room_number: s.room_number,
-              branch: s.branch,
-              phone: s.phone || "9823456789",
+              room_number: s.room_number || "",
+              branch: s.branch || "CSE",
+              phone: s.phone || "",
               status: s.status
             });
           }
@@ -126,47 +118,6 @@ export function StudentPassPortal() {
         .catch(() => {});
     }
   }, [user]);
-
-  // Handle inline visitor claim
-  const handleClaimPass = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!claimRoll.trim()) {
-      setClaimError("Please enter your College Roll Number.");
-      return;
-    }
-
-    setClaiming(true);
-    setClaimError(null);
-
-    try {
-      const res = await api.students.claimPass(claimRoll.trim().toUpperCase());
-
-      // Update auth store with new student token and profile
-      localStorage.setItem("vms_token", res.token);
-      localStorage.setItem("vms_user_profile", JSON.stringify(res.user));
-      useAuthStore.setState({ user: res.user, isAuthenticated: true, error: null });
-
-      if (res.student) {
-        setStudentInfo({
-          roll_number: res.student.roll_number,
-          name: res.student.name,
-          email: res.student.email,
-          hostel_block: res.student.hostel_block || "Hostel Block A",
-          room_number: res.student.room_number,
-          branch: res.student.branch,
-          phone: res.student.phone || "9823456789",
-          status: res.student.status
-        });
-      }
-
-      toast.success(res.message || "🎉 Student GatePass permanently activated!");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to claim student pass";
-      setClaimError(msg);
-    } finally {
-      setClaiming(false);
-    }
-  };
 
 
 
@@ -262,123 +213,64 @@ export function StudentPassPortal() {
       />
 
 
-      {/* Live Curfew Countdown Widget */}
-      {user?.role !== "visitor" && (
-        <div className={`mt-5 p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs ${
-          curfewCountdown.isPast
-            ? "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-400"
-            : curfewCountdown.hours < 2
-            ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
-            : "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
-        }`}>
-          <div className="flex items-center gap-3.5">
-            <div className={`p-3 rounded-2xl text-white shadow-sm ${curfewCountdown.isPast ? "bg-red-600 animate-pulse" : "bg-emerald-600"}`}>
-              <Clock className="w-6 h-6" />
-            </div>
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
-                Daily Hostel Curfew Status (09:30 PM IST)
-              </span>
-              <p className="text-base font-black text-gray-900 dark:text-white mt-0.5">
-                {curfewCountdown.label}
-              </p>
-            </div>
+      {user?.role !== "student" ? (
+        <div className="mt-8 p-8 sm:p-10 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-xl text-center space-y-4">
+          <div className="w-16 h-16 rounded-3xl bg-sky-50 dark:bg-sky-950/40 text-sky-500 flex items-center justify-center mx-auto shadow-inner">
+            <GraduationCap className="w-8 h-8" />
           </div>
-
-          <button
-            onClick={() => setShowExtensionModal(true)}
-            className="btn btn-sm btn-secondary text-xs font-bold whitespace-nowrap self-end sm:self-auto shadow-xs"
-          >
-            <Clock className="w-4 h-4 text-amber-500" /> Request Late Extension
-          </button>
-        </div>
-      )}
-
-      {/* If current user is a visitor, show the Activation & Claim Portal */}
-      {user?.role === "visitor" ? (
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-          {/* Left: Activation Form */}
-          <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-xl space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white shadow-md">
-                <GraduationCap className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-xs font-bold uppercase tracking-widest text-sky-600 dark:text-sky-400">
-                  Student Verification
-                </span>
-                <h2 className="text-xl font-black text-gray-900 dark:text-white mt-0.5">
-                  Activate Resident Pass
-                </h2>
-              </div>
-            </div>
-
-            <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">
-              Are you an enrolled resident student of <strong>Hostel Block A</strong>? Enter your official College Roll Number to verify against the hostel directory and unlock your permanent digital pass.
-            </p>
-
-            {claimError && (
-              <div className="p-3.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-2xl text-xs text-red-600 dark:text-red-400 flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{claimError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleClaimPass} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 ml-1">
-                  College Roll Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  value={claimRoll}
-                  onChange={(e) => setClaimRoll(e.target.value.toUpperCase())}
-                  placeholder="e.g. BT23CSE026"
-                  className="w-full px-4 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 text-sm font-mono font-bold text-gray-900 dark:text-white uppercase tracking-wider outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all placeholder:text-gray-400"
-                />
-                <p className="text-xs text-gray-500 mt-1.5 ml-1 flex items-center gap-1 font-medium">
-                  <ShieldCheck className="w-4 h-4 text-sky-500" /> Matches against official college census records
-                </p>
-              </div>
-
-              <button
-                type="submit"
-                disabled={claiming || !claimRoll.trim()}
-                className="w-full btn btn-primary text-sm font-bold py-3 flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20"
-              >
-                {claiming ? "Verifying Record..." : (
-                  <>
-                    Verify & Unlock My Pass <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-
-          {/* Right: Pass Preview Mockup */}
-          <div className="flex flex-col items-center justify-center opacity-85 hover:opacity-100 transition-opacity">
-            <div className="w-full max-w-sm rounded-[2rem] bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 shadow-2xl border border-indigo-500/30 relative overflow-hidden">
-              <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold uppercase tracking-wider">
-                Verification Required
-              </div>
-              <div className="border-b border-white/10 pb-3 mb-4">
-                <span className="text-xs font-bold uppercase tracking-widest text-sky-400">
-                  Indian Institute of Information Technology
-                </span>
-                <h3 className="text-sm font-black tracking-tight mt-0.5">RESIDENT STUDENT ID</h3>
-              </div>
-              <div className="h-36 rounded-2xl bg-white/5 border border-dashed border-white/20 flex flex-col items-center justify-center text-center p-4">
-                <ShieldCheck className="w-8 h-8 text-sky-400 mb-2 animate-pulse" />
-                <p className="text-sm font-bold text-white">Enter Roll Number to Unlock</p>
-                <p className="text-xs text-gray-400 mt-0.5">Permanent QR pass generated automatically</p>
-              </div>
-            </div>
+          <h2 className="text-xl font-black text-gray-900 dark:text-white">
+            Student Pass Portal is Exclusive to Students
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+            This digital gatepass portal is only available for accounts with the <strong>Student</strong> role. Staff roles (Admin, Hostel Warden, Security Guard, Host) and visitors manage passes and records through their respective dedicated portals.
+          </p>
+          <div className="pt-2">
+            <button
+              onClick={() => navigate("/app/dashboard")}
+              className="btn btn-primary text-xs font-bold px-6 py-2.5 rounded-xl shadow-md"
+            >
+              Return to Dashboard
+            </button>
           </div>
         </div>
       ) : (
         <>
+          {/* Live Curfew Countdown Widget */}
+          <div
+            className={`mt-5 p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs ${
+              curfewCountdown.isPast
+                ? "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-400"
+                : curfewCountdown.hours < 2
+                ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
+                : "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
+            }`}
+          >
+            <div className="flex items-center gap-3.5">
+              <div
+                className={`p-3 rounded-2xl text-white shadow-sm ${
+                  curfewCountdown.isPast ? "bg-red-600 animate-pulse" : "bg-emerald-600"
+                }`}
+              >
+                <Clock className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                  Daily Hostel Curfew Status (09:30 PM IST)
+                </span>
+                <p className="text-base font-black text-gray-900 dark:text-white mt-0.5">
+                  {curfewCountdown.label}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowExtensionModal(true)}
+              className="btn btn-sm btn-secondary text-xs font-bold whitespace-nowrap self-end sm:self-auto shadow-xs"
+            >
+              <Clock className="w-4 h-4 text-amber-500" /> Request Late Extension
+            </button>
+          </div>
+
           {/* Tabs */}
           <div className="flex border-b border-gray-200 dark:border-slate-800 mt-6 space-x-2 sm:space-x-4 overflow-x-auto">
             <button
@@ -417,7 +309,7 @@ export function StudentPassPortal() {
         </>
       )}
 
-      {user?.role !== "visitor" && activeTab === "pass" && (
+      {user?.role === "student" && activeTab === "pass" && (
         <div className="mt-8 flex flex-col items-center">
           {/* Digital ID Card */}
           <div className="w-full max-w-sm rounded-[2rem] bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-7 shadow-2xl border border-indigo-500/30 relative overflow-hidden">

@@ -909,7 +909,11 @@ export function HostelHub() {
                   <tr key={st.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/30">
                     <td className="py-3 px-4 whitespace-nowrap">
                       <div className="font-bold text-gray-900 dark:text-white text-sm">{st.name}</div>
-                      <div className="font-mono text-gray-400 text-xs">{st.roll_number}</div>
+                      <div className="font-mono text-xs flex items-center gap-1.5 mt-0.5">
+                        <span className="font-bold text-sky-600 dark:text-sky-400">{st.roll_number}</span>
+                        <span className="text-gray-300 dark:text-slate-600">•</span>
+                        <span className="text-gray-500 dark:text-slate-400">{st.email}</span>
+                      </div>
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap text-gray-700 dark:text-slate-300 font-medium">
                       {st.hostel_block}, Rm {st.room_number}

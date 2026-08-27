@@ -459,7 +459,7 @@ export function Dashboard() {
                 Activate Your Resident Student GatePass
               </h3>
               <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                Enter your College Roll Number to verify against the hostel directory and get your permanent ID pass.
+                Enter your College Roll Number. Once verified against your account email in the Student Directory, your account will switch to Student with your official name.
               </p>
             </div>
           </div>

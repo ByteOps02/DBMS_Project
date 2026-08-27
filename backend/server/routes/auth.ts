@@ -36,6 +36,7 @@ router.post('/signup', async (req, res) => {
     let cleanRoll: string | null = null;
 
     // --- STUDENT DIRECTORY VERIFICATION ---
+    let userName = name;
     if (role === 'student') {
       if (!roll_number || typeof roll_number !== 'string' || !roll_number.trim()) {
         return res.status(400).json({ error: 'College Roll Number is required for student registration.' });
@@ -54,6 +55,14 @@ router.post('/signup', async (req, res) => {
         });
       }
 
+      // Check if account email matches the student directory email
+      const studentEmail = (studentProfile.email || '').toLowerCase().trim();
+      if (studentEmail && studentEmail !== cleanEmail) {
+        return res.status(400).json({
+          error: `Verification Failed: Email address (${cleanEmail}) does not match the official student email registered in directory (${studentEmail}) for Roll Number "${cleanRoll}".`,
+        });
+      }
+
       // Check if another account already claimed this roll number
       const existingRollUser = await prisma.host.findUnique({
         where: { roll_number: cleanRoll },
@@ -66,6 +75,7 @@ router.post('/signup', async (req, res) => {
       }
 
       assignedRole = 'student';
+      userName = studentProfile.name; // Always enforce the official name from Student Directory
     } else if (role === 'host' || role === 'guard' || role === 'admin') {
       // If signing up as staff / host
       assignedRole = role === 'host' ? 'host' : 'visitor';
@@ -80,7 +90,7 @@ router.post('/signup', async (req, res) => {
     const host = await prisma.host.create({
       data: {
         email: cleanEmail,
-        name,
+        name: userName,
         password_hash,
         department_id: department_id || null,
         roll_number: cleanRoll,
@@ -306,7 +316,7 @@ router.post('/google', async (req, res) => {
           data: {
             google_id,
             is_verified: true,
-            ...(matchedStudent ? { role: 'student', roll_number: matchedStudent.roll_number } : {})
+            ...(matchedStudent ? { role: 'student', roll_number: matchedStudent.roll_number, name: matchedStudent.name } : {})
           },
         });
       }
@@ -314,7 +324,7 @@ router.post('/google', async (req, res) => {
       host = await prisma.host.create({
         data: {
           email: cleanEmail,
-          name: name || matchedStudent?.name || 'Google User',
+          name: matchedStudent ? matchedStudent.name : (name || 'Google User'),
           google_id,
           role: matchedStudent ? 'student' : 'visitor',
           roll_number: matchedStudent?.roll_number || null,
@@ -362,12 +372,22 @@ router.post('/claim-student', requireAuth, async (req: AuthRequest, res) => {
     });
 
     if (!student) {
-      return res.status(400).json({
-        error: `Verification Failed: Roll Number "${cleanRoll}" is not found in the official College Student Directory. Please contact Hostel Administration.`
+      return res.status(404).json({
+        error: `Not found in Student Directory: Roll Number "${cleanRoll}" is not registered in the student directory. Please contact the Hostel Warden / Administration Office.`
       });
     }
 
-    // 2. Check if already claimed by another user account
+    // 2. Email verification: Logged-in user's email MUST match the official student directory email
+    const userEmail = (req.user?.email || '').toLowerCase().trim();
+    const studentEmail = (student.email || '').toLowerCase().trim();
+
+    if (!userEmail || !studentEmail || userEmail !== studentEmail) {
+      return res.status(403).json({
+        error: `Email Verification Failed: Your account email (${userEmail || 'unknown'}) does not match the official student directory email (${studentEmail}) registered for Roll Number "${cleanRoll}". Student pass can only be claimed if your account email matches the student directory.`
+      });
+    }
+
+    // 3. Check if already claimed by another user account
     const existingClaim = await prisma.host.findFirst({
       where: {
         roll_number: cleanRoll,
@@ -381,21 +401,22 @@ router.post('/claim-student', requireAuth, async (req: AuthRequest, res) => {
       });
     }
 
-    // 3. Upgrade user account to permanent student role
+    // 4. Upgrade user account to permanent student role and adopt official name from Student Directory
     const updatedUser = await prisma.host.update({
       where: { id: req.user!.id },
       data: {
         role: 'student',
-        roll_number: cleanRoll
+        roll_number: cleanRoll,
+        name: student.name // Guarantee student pass shows the official name in directory, not signup/Google auth name
       }
     });
 
-    // 4. Issue new token with student role
+    // 5. Issue new token with student role
     const token = jwt.sign({ userId: updatedUser.id, role: updatedUser.role }, JWT_SECRET, { expiresIn: '7d' });
 
     res.json({
       success: true,
-      message: `Successfully verified as Resident Student (${student.name}, ${student.roll_number}). Student GatePass is now activated!`,
+      message: `Successfully verified as Resident Student (${student.name}, ${student.roll_number}). Your role has been switched to Student and your Student GatePass is active!`,
       token,
       user: {
         id: updatedUser.id,
