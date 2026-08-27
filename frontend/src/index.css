@@ -610,6 +610,65 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 /* ═══════════════════════════════════════
+   QR CAMERA SCANNER STYLES
+   ═══════════════════════════════════════ */
+#student-qr-reader,
+#qr-reader {
+  width: 100% !important;
+  border: none !important;
+  background: transparent !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+#student-qr-reader video,
+#qr-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 240px !important;
+  max-height: 380px !important;
+  object-fit: cover !important;
+  border-radius: 1rem !important;
+}
+
+#student-qr-reader img,
+#qr-reader img {
+  display: none !important;
+}
+
+#student-qr-reader__scan_region,
+#qr-reader__scan_region {
+  min-height: 220px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#student-qr-reader__dashboard_section,
+#qr-reader__dashboard_section {
+  display: none !important;
+}
+
+@keyframes scan-laser-anim {
+  0% {
+    top: 8%;
+    opacity: 0.8;
+  }
+  50% {
+    top: 88%;
+    opacity: 1;
+  }
+  100% {
+    top: 8%;
+    opacity: 0.8;
+  }
+}
+
+.animate-scan-laser {
+  animation: scan-laser-anim 2.2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════
     PRINT STYLES
     ═══════════════════════════════════════ */
 @media print {
