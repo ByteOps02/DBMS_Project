@@ -30,7 +30,7 @@ The system is built as a modular client-server application:
                             +--------v-------+
                             | Gate Optical   |
                             | QR Scanner     |
-                            | 4 Checkpoints  |
+                            | 2 Checkpoints  |
                             +----------------+
 ```
 
@@ -91,11 +91,9 @@ The platform enforces Role-Based Access Control (RBAC) across 6 distinct user ac
 
 - Supports both camera scanning and hardware 2D barcode/QR scanners.
 - Toggle between **Student Gate Kiosk** and **Visitor Pass Scanner**.
-- Standardized across 4 campus checkpoints:
-  1. `Main Gate (Academic)`
-  2. `Hostel Main Gate`
-  3. `North Boundary Gate`
-  4. `South Gate`
+- Standardized across campus checkpoints:
+  1. `Main Gate`
+  2. `Hostel Gate`
 - Includes real-time vehicle license plate lookup.
 
 ---
@@ -114,6 +112,11 @@ The platform enforces Role-Based Access Control (RBAC) across 6 distinct user ac
 
 ## API Endpoints
 
+### System Health & Diagnostics (`/api/health`)
+- `GET /api/health` - Comprehensive system health check, latency benchmarks, memory metrics, and real-time status of all subsystem modules (`database`, `auth`, `students`, `visits`, `telemetry`, `vehicles`, `lost_and_found`, `cloudinary`, `email`)
+- `GET /api/health/ping` - Fast liveness probe (`{"status": "ok", "message": "pong"}`)
+- `GET /api/health/ready` - Readiness probe verifying database connectivity and query latency in milliseconds
+
 ### Authentication (`/api/auth`)
 - `POST /api/auth/login` - Authenticate with email/password
 - `POST /api/auth/signup` - Register a new account with role & department
@@ -121,24 +124,38 @@ The platform enforces Role-Based Access Control (RBAC) across 6 distinct user ac
 - `POST /api/auth/verify-otp` - Verify 6-digit email OTP
 - `POST /api/auth/forgot-password` - Request password reset OTP
 - `POST /api/auth/reset-password` - Reset password with verified OTP
+- `GET /api/auth/me` - Fetch authenticated user profile and permissions
 
-### Visits (`/api/visits`)
-- `GET /api/visits` - List visits (filtered by role scope, status, dates, search)
+### Visits & Gate Telemetry (`/api/visits`)
+- `GET /api/visits` - List visits (scoped by role: student, visitor, host, guard, admin, warden)
 - `POST /api/visits` - Create single visit pass (auto-approved if created by staff)
 - `POST /api/visits/bulk` - Batch upload visits via CSV
 - `POST /api/visits/self-service-kiosk` - Walk-in kiosk registration with thermal badge
 - `GET /api/visits/analytics/traffic-telemetry` - Live census, capacity meter, and 24h traffic
-- `GET /api/visits/:id` - Fetch visit details
-- `PATCH /api/visits/:id` - Update status, check-in, check-out, or exit gate
+- `GET /api/visits/:id` - Fetch visit details and student movement telemetry
+- `PATCH /api/visits/:id` - Update status, check-in, check-out, entry/exit gate (`Main Gate`, `Hostel Gate`)
 - `PATCH /api/visits/:id/escort` - Dispatch security escort for overstayed visitor
 
-### Students & Movements (`/api/students`)
-- `GET /api/students` - List student records and current status
-- `POST /api/students/scan` - Process student gatepass QR scan (entry/exit)
-- `POST /api/students/passes` - Apply for Day Outing or Multi-Day Leave
+### Students & Hostel Census (`/api/students`)
+- `GET /api/students` - List student directory records with roll numbers and room numbers
+- `POST /api/students/scan-pass` - High-speed gate optical scanner validation (sub-50ms execution)
+- `GET /api/students/floor-census` - 10-floor room occupancy heatmap matrix for Hostel Block A
+- `GET /api/students/census` - Overall hostel census statistics (`inside`, `out_day`, `on_leave`, `overdue`)
+- `GET /api/students/overdue` - List overdue students past the 09:30 PM curfew
+- `GET /api/students/movements` - Query real-time gate telemetry movements
+- `POST /api/students/passes` - Apply for Day Outing or Multi-Day Vacation/Medical Leave
 - `PATCH /api/students/passes/:id` - Approve or reject student leave pass
-- `POST /api/students/curfew-extension` - Request curfew extension
-- `GET /api/students/hostel-census` - 10-floor room census data for Hostel Block A
+- `POST /api/students/curfew-extension` - Submit curfew extension request
+- `POST /api/students/:id/reset-strikes` - Warden pardon / reset disciplinary curfew strikes
+
+### Additional Campus Modules
+- `GET /api/visitors` - List visitor registry and manage blacklist (`PATCH /api/visitors/:id`)
+- `GET /api/hosts` - List registered faculty and staff hosts
+- `GET /api/departments` - List institutional academic and administrative departments
+- `GET /api/vehicles` - List and register campus parking vehicle passes (`POST /api/vehicles`)
+- `GET /api/lost-and-found` - Search catalog recovered lost items (`POST /api/lost-and-found`)
+- `POST /api/emergency/broadcast` - Trigger campus-wide SOS emergency alert broadcast
+- `POST /api/upload` - Secure multipart image upload to Cloudinary
 
 ---
 
@@ -170,45 +187,6 @@ The application uses PostgreSQL with Prisma ORM. Key models include:
 | **Storage** | Cloudinary & Multer | ID proof and badge image uploads |
 | **QR Engine** | `html5-qrcode`, `qrcode` | Camera-based barcode scanner and QR generator |
 | **PWA** | `vite-plugin-pwa` | Offline service worker and mobile installability |
-
----
-
-## Project Structure
-
-```
-Visitor-Management-System/
-├── backend/
-│   ├── prisma/
-│   │   ├── schema.prisma             # PostgreSQL database schema
-│   │   └── seed.ts                   # Database seed script & test users
-│   ├── server/
-│   │   ├── lib/                      # Email client, Prisma, logger
-│   │   ├── middleware/               # JWT authentication & role authorization
-│   │   ├── routes/                   # API route handlers
-│   │   │   ├── auth.ts               # Login, signup, OTP, password reset
-│   │   │   ├── visits.ts             # Visits CRUD, telemetry, kiosk
-│   │   │   ├── students.ts           # Passes, curfew audits, hostel census
-│   │   │   ├── emergency.ts          # SOS broadcast alerts
-│   │   │   └── lostAndFound.ts       # Lost and found registry
-│   │   └── index.ts                  # Express server entry point
-│   └── package.json
-└── frontend/
-    ├── src/
-    │   ├── components/               # Page views, dashboards, modals
-    │   │   ├── Dashboard.tsx         # Role dashboard & live telemetry
-    │   │   ├── StudentPassPortal.tsx # Outing passes & student gatepass ID
-    │   │   ├── HostelHub.tsx         # 10-floor residential room matrix
-    │   │   ├── SelfServiceKiosk.tsx  # Walk-in touch reception & photo snap
-    │   │   ├── ScanQrCode.tsx        # Optical QR scanner (Students/Visitors)
-    │   │   ├── StudentGateKiosk.tsx  # Student pass scanner & curfew logic
-    │   │   ├── UnifiedVisitRegistration.tsx # Staff visitor invitation portal
-    │   │   └── VisitLogs.tsx         # Scoped audit log with CSV export
-    │   ├── hooks/                    # Custom React hooks
-    │   ├── lib/                      # API client, date helpers, constants
-    │   ├── store/                    # Zustand auth store
-    │   └── App.tsx                   # Route definitions
-    └── package.json
-```
 
 ---
 

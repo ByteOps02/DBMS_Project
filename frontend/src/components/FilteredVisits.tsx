@@ -7,7 +7,6 @@ import {
   Search,
   CalendarCheck2,
   CheckCheck,
-  ShieldAlert,
   Activity,
   ChevronRight,
   Clock3,
@@ -78,9 +77,10 @@ const useDebounce = <T,>(value: T, delay: number): T => {
 export function FilteredVisits() {
   const { status } = useParams<{ status: string }>();
   const { user } = useAuthStore();
+  const cacheKey = user ? `vms_filtered_${status}_${user.id}_${user.role}` : `vms_filtered_${status}`;
 
-  const [visits, setVisits] = useState<Visit[]>(() => api.uiCache.get(`vms_filtered_${status}`) || []);
-  const [loading, setLoading] = useState(!api.uiCache.has(`vms_filtered_${status}`));
+  const [visits, setVisits] = useState<Visit[]>(() => api.uiCache.get(cacheKey) || []);
+  const [loading, setLoading] = useState(!api.uiCache.has(cacheKey));
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -114,7 +114,7 @@ export function FilteredVisits() {
           title: "Approved Visits",
           desc: "Visits cleared by administration for today.",
           icon: CalendarCheck2,
-          gradient: "from-emerald-500 to-green-600",
+          gradient: "from-emerald-500 to-teal-600",
           emptyClasses: {
             outer: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
             icon: "text-emerald-600 dark:text-emerald-400",
@@ -125,33 +125,33 @@ export function FilteredVisits() {
           title: "Completed Visits",
           desc: "Archive of visitors who have checked out today.",
           icon: CheckCheck,
-          gradient: "from-violet-500 to-purple-600",
+          gradient: "from-sky-500 to-blue-600",
           emptyClasses: {
-            outer: "bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-500/20",
-            icon: "text-purple-600 dark:text-purple-400",
+            outer: "bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-500/20",
+            icon: "text-sky-600 dark:text-sky-400",
           },
         };
       case "cancelled_denied":
         return {
           title: "Cancelled / Denied Visits",
-          desc: "Applications that were cancelled or denied campus access.",
-          icon: ShieldAlert,
+          desc: "Visits that were rejected or cancelled today.",
+          icon: Ban,
           gradient: "from-rose-500 to-red-600",
           emptyClasses: {
-            outer: "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-500/20",
-            icon: "text-red-600 dark:text-red-400",
+            outer: "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-500/20",
+            icon: "text-rose-600 dark:text-rose-400",
           },
         };
 
       default:
         return {
-          title: "Visit Log",
-          desc: "Filtered view of campus activity.",
+          title: "Visitor Logs",
+          desc: "Showing filtered visitor records.",
           icon: Inbox,
-          gradient: "from-sky-500 to-blue-600",
+          gradient: "from-slate-500 to-gray-600",
           emptyClasses: {
-            outer: "bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-500/20",
-            icon: "text-sky-600 dark:text-sky-400",
+            outer: "bg-gray-50 dark:bg-slate-900 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-800",
+            icon: "text-gray-400 dark:text-slate-500",
           },
         };
     }
@@ -162,13 +162,13 @@ export function FilteredVisits() {
   const getFocusRingColor = () => {
     switch (status) {
       case "checked_in":
-        return "focus:ring-sky-500/20";
+        return "focus:ring-teal-500/20";
       case "pending":
         return "focus:ring-amber-500/20";
       case "approved":
         return "focus:ring-emerald-500/20";
       case "completed":
-        return "focus:ring-purple-500/20";
+        return "focus:ring-sky-500/20";
       case "cancelled_denied":
         return "focus:ring-rose-500/20";
       default:
@@ -176,10 +176,17 @@ export function FilteredVisits() {
     }
   };
 
-  const fetchVisits = useCallback(async () => {
-    if (!status || !user) return;
+  const formatGateName = (gate?: string | null) => {
+    if (!gate) return null;
+    const lower = gate.toLowerCase();
+    if (lower.includes("hostel")) return "Hostel Gate";
+    return "Main Gate";
+  };
 
-    const isCached = api.uiCache.has(`vms_filtered_${status}`);
+  const fetchVisits = useCallback(async () => {
+    if (!status || !user || !localStorage.getItem("vms_token")) return;
+
+    const isCached = api.uiCache.has(cacheKey);
     if (!isCached && !debouncedSearchTerm) setLoading(true);
 
     try {
@@ -201,17 +208,20 @@ export function FilteredVisits() {
         limit: 200,
       });
 
-      setVisits(data as unknown as Visit[]);
+      const rawList = Array.isArray(data) ? data : [];
+      setVisits(rawList as unknown as Visit[]);
       if (!debouncedSearchTerm) {
-        api.uiCache.set(`vms_filtered_${status}`, data);
+        api.uiCache.set(cacheKey, rawList);
       }
     } catch (err) {
       log.error(`[FilteredVisits] Fetch error for status ${status}:`, err);
-      toast.error("Failed to load visits. Please try again.");
+      if (localStorage.getItem("vms_token")) {
+        toast.error("Failed to load visits. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
-  }, [status, user, debouncedSearchTerm]);
+  }, [status, user, cacheKey, debouncedSearchTerm]);
 
   // Real-time synchronization subscription
   useDataSync(["visits", "all"], () => {
@@ -431,7 +441,7 @@ export function FilteredVisits() {
                               <td className="whitespace-nowrap px-3 py-2.5 text-xs">
                                 {visit.entry_gate ? (
                                   <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium text-gray-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-800/80 ring-1 ring-gray-200/80 dark:ring-slate-700/50">
-                                    {visit.entry_gate}
+                                    {formatGateName(visit.entry_gate)}
                                   </span>
                                 ) : (
                                   <span className="text-gray-300 dark:text-slate-600">—</span>
@@ -440,7 +450,7 @@ export function FilteredVisits() {
                               <td className="whitespace-nowrap px-3 py-2.5 text-xs">
                                 {visit.exit_gate ? (
                                   <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium text-gray-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-800/80 ring-1 ring-gray-200/80 dark:ring-slate-700/50">
-                                    {visit.exit_gate}
+                                    {formatGateName(visit.exit_gate)}
                                   </span>
                                 ) : (
                                   <span className="text-gray-300 dark:text-slate-600">—</span>

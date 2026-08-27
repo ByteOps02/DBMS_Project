@@ -38,8 +38,9 @@ export type VisitLog = Database["public"]["Tables"]["visits"]["Row"] & {
 };
 export function VisitLogs() {
   const { user } = useAuthStore();
-  const [logs, setLogs] = useState<VisitLog[]>(() => api.uiCache.get("vms_all_logs") || []);
-  const [loading, setLoading] = useState(!api.uiCache.has("vms_all_logs"));
+  const cacheKey = user ? `vms_all_logs_${user.id}_${user.role}` : "vms_all_logs";
+  const [logs, setLogs] = useState<VisitLog[]>(() => api.uiCache.get(cacheKey) || []);
+  const [loading, setLoading] = useState(!api.uiCache.has(cacheKey));
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,12 +52,19 @@ export function VisitLogs() {
   const PAGE_SIZE = 50; // Fetch 50 rows at a time — fast first load, load-more for the rest
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
+  const formatGateName = (gate?: string | null) => {
+    if (!gate) return null;
+    const lower = gate.toLowerCase();
+    if (lower.includes("hostel")) return "Hostel Gate";
+    return "Main Gate";
+  };
+
   const fetchVisits = useCallback(
     async (isLoadMore = false) => {
-      if (!user) return;
+      if (!user || !localStorage.getItem("vms_token")) return;
 
       const currentPage = isLoadMore ? page + 1 : 1;
-      if (!isLoadMore && logs.length === 0 && !api.uiCache.has("vms_all_logs")) setLoading(true);
+      if (!isLoadMore && logs.length === 0 && !api.uiCache.has(cacheKey)) setLoading(true);
       if (isLoadMore) setLoadingMore(true);
 
       try {
@@ -83,13 +91,31 @@ export function VisitLogs() {
         }
 
         const data = await api.visits.list(params);
+        const rawList = Array.isArray(data) ? data : [];
         
         // Map backend's 'visitor' and 'host' to 'visitors' and 'hosts' for compatibility with UI
-        const result = (data as unknown as VisitLog[]).map(v => ({
+        let result = (rawList as unknown as VisitLog[]).map(v => ({
           ...v,
           visitors: v.visitor,
           hosts: v.host,
         }));
+
+        // Defensive scoping for student and visitor roles
+        if (user.role === "student") {
+          result = result.filter(
+            (v) =>
+              (v.visitor?.email?.toLowerCase() === user.email?.toLowerCase() &&
+                (!user.name || v.visitor?.name?.toLowerCase() === user.name?.toLowerCase())) ||
+              v.purpose?.includes("[GATE TELEMETRY]")
+          );
+        } else if (user.role === "visitor") {
+          result = result.filter(
+            (v) =>
+              v.visitor?.email?.toLowerCase() === user.email?.toLowerCase() &&
+              (!user.name || v.visitor?.name?.toLowerCase() === user.name?.toLowerCase())
+          );
+        }
+
         setHasMore(result.length === PAGE_SIZE);
 
         if (isLoadMore) {
@@ -99,18 +125,21 @@ export function VisitLogs() {
           setLogs(result);
           setStatusPage(1);
           if (!debouncedSearchTerm && !statusFilter && !dateFilter) {
-            api.uiCache.set("vms_all_logs", result);
+            api.uiCache.set(cacheKey, result);
           }
         }
       } catch (err) {
         logger.error("[VisitLogs] Fetch error:", err);
-        toast.error("Failed to load visit logs");
+        // Only toast error if user is still authenticated and not navigating away
+        if (localStorage.getItem("vms_token")) {
+          toast.error("Failed to load visit logs");
+        }
       } finally {
         setLoading(false);
         setLoadingMore(false);
       }
     },
-    [user, debouncedSearchTerm, statusFilter, dateFilter, page, logs.length]
+    [user, cacheKey, debouncedSearchTerm, statusFilter, dateFilter, page, logs.length]
   );
 
   // Real-time synchronization subscription
@@ -151,11 +180,22 @@ export function VisitLogs() {
 
       const data = await api.visits.list(params);
       
-      const exportData = (data as unknown as VisitLog[]).map(v => ({
+      let exportData = (data as unknown as VisitLog[]).map(v => ({
         ...v,
         visitors: v.visitor,
         hosts: v.host,
       }));
+      if (user?.role === "student") {
+        exportData = exportData.filter(
+          (v) =>
+            v.visitor?.email?.toLowerCase() === user.email?.toLowerCase() ||
+            v.purpose?.includes("[GATE TELEMETRY]")
+        );
+      } else if (user?.role === "visitor") {
+        exportData = exportData.filter(
+          (v) => v.visitor?.email?.toLowerCase() === user.email?.toLowerCase()
+        );
+      }
       const rows = (exportData as unknown as VisitLog[]) || [];
 
       const csvData = rows.map((logItem) => ({
@@ -168,6 +208,8 @@ export function VisitLogs() {
         Status: getStatusConfig(logItem.status).label,
         "Check-in": logItem.check_in_time ? formatIST(new Date(logItem.check_in_time)) : "-",
         "Check-out": logItem.check_out_time ? formatIST(new Date(logItem.check_out_time)) : "-",
+        "Entry Gate": formatGateName(logItem.entry_gate) || "-",
+        "Exit Gate": formatGateName(logItem.exit_gate) || "-",
         Created: logItem.created_at ? formatIST(new Date(logItem.created_at)) : "-",
       }));
       const Papa = (await import("papaparse")).default;
@@ -440,7 +482,7 @@ export function VisitLogs() {
                               <td className="whitespace-nowrap px-3 py-2.5 text-xs">
                                 {logItem.entry_gate ? (
                                   <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium text-gray-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-800/80 ring-1 ring-gray-200/80 dark:ring-slate-700/50">
-                                    {logItem.entry_gate}
+                                    {formatGateName(logItem.entry_gate)}
                                   </span>
                                 ) : (
                                   <span className="text-gray-300 dark:text-slate-600">—</span>
@@ -449,7 +491,7 @@ export function VisitLogs() {
                               <td className="whitespace-nowrap px-3 py-2.5 text-xs">
                                 {logItem.exit_gate ? (
                                   <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium text-gray-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-800/80 ring-1 ring-gray-200/80 dark:ring-slate-700/50">
-                                    {logItem.exit_gate}
+                                    {formatGateName(logItem.exit_gate)}
                                   </span>
                                 ) : (
                                   <span className="text-gray-300 dark:text-slate-600">—</span>

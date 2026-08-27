@@ -42,13 +42,22 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
 
   const { user } = useAuthStore();
   const visitor = visit.visitor || visit.visitors;
+  const isStudentMovement = Boolean(
+    visit.id?.startsWith("mov-") || visit.purpose?.includes("[GATE TELEMETRY]")
+  );
   const [isBlacklisted, setIsBlacklisted] = useState(visitor?.is_blacklisted || false);
   const [loading, setLoading] = useState(false);
   const [showBlacklistPrompt, setShowBlacklistPrompt] = useState(false);
   const [blacklistReason, setBlacklistReason] = useState("");
-  const [showExitGatePrompt, setShowExitGatePrompt] = useState(false);
-  const [selectedExitGate, setSelectedExitGate] = useState<string>(CAMPUS_GATES[0]);
+  const [showGatePrompt, setShowGatePrompt] = useState(false);
+  const [selectedGate, setSelectedGate] = useState<string>(CAMPUS_GATES[0]);
 
+  const formatGateName = (gate?: string | null) => {
+    if (!gate) return null;
+    const lower = gate.toLowerCase();
+    if (lower.includes("hostel")) return "Hostel Gate";
+    return "Main Gate";
+  };
 
   const isGuardOrAdmin = user?.role === "admin" || user?.role === "guard";
   const isHost = visit.host_id === user?.id;
@@ -124,14 +133,23 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
     setLoading(true);
     try {
       const now = new Date().toISOString();
-      await api.visits.update(visit.id, {
-        status: "completed",
-        check_out_time: now,
-        updated_at: now,
-        exit_gate: selectedExitGate,
-      });
-
-      toast.success(`Visit Completed via ${selectedExitGate}`);
+      if (isStudentMovement) {
+        await api.visits.update(visit.id, {
+          status: "completed",
+          check_in_time: now,
+          entry_gate: selectedGate,
+          updated_at: now,
+        });
+        toast.success(`Student Entry / Return Recorded via ${selectedGate}`);
+      } else {
+        await api.visits.update(visit.id, {
+          status: "completed",
+          check_out_time: now,
+          exit_gate: selectedGate,
+          updated_at: now,
+        });
+        toast.success(`Visit Completed via ${selectedGate}`);
+      }
       if (onUpdate) onUpdate();
       onClose();
     } catch (err: unknown) {
@@ -305,41 +323,83 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                   </p>
                 </div>
               )}
-              {visit.check_in_time && (
-                <div className="relative">
-                  <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-slate-900" />
-                  <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase leading-none">
-                    Check-in{" "}
-                    {visit.entry_gate ? (
-                      <span className="text-emerald-600 dark:text-emerald-400 lowercase">
-                        ({visit.entry_gate})
-                      </span>
-                    ) : (
-                      ""
-                    )}
-                  </p>
-                  <p className="text-[10px] font-bold text-gray-500 mt-0.5">
-                    {formatIST(visit.check_in_time)}
-                  </p>
-                </div>
-              )}
-              {visit.check_out_time && (
-                <div className="relative">
-                  <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-purple-500 ring-4 ring-white dark:ring-slate-900" />
-                  <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase leading-none">
-                    Check-out{" "}
-                    {visit.exit_gate ? (
-                      <span className="text-purple-600 dark:text-purple-400 lowercase">
-                        ({visit.exit_gate})
-                      </span>
-                    ) : (
-                      ""
-                    )}
-                  </p>
-                  <p className="text-[10px] font-bold text-gray-500 mt-0.5">
-                    {formatIST(visit.check_out_time)}
-                  </p>
-                </div>
+              {/* Activity log sequence: Student Movement vs Regular Visitor Visit */}
+              {isStudentMovement ? (
+                <>
+                  <div className="relative">
+                    <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-purple-500 ring-4 ring-white dark:ring-slate-900" />
+                    <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase leading-none">
+                      Exited Campus{" "}
+                      {visit.exit_gate ? (
+                        <span className="text-purple-600 dark:text-purple-400 lowercase">
+                          ({formatGateName(visit.exit_gate)})
+                        </span>
+                      ) : (
+                        ""
+                      )}
+                    </p>
+                    <p className="text-[10px] font-bold text-gray-500 mt-0.5">
+                      {formatIST(visit.check_out_time || visit.valid_from)}
+                    </p>
+                  </div>
+                  {visit.check_in_time && (
+                    <div className="relative">
+                      <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-slate-900" />
+                      <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase leading-none">
+                        Entered Campus{" "}
+                        {visit.entry_gate ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 lowercase">
+                            ({formatGateName(visit.entry_gate)})
+                          </span>
+                        ) : (
+                          ""
+                        )}
+                      </p>
+                      <p className="text-[10px] font-bold text-gray-500 mt-0.5">
+                        {formatIST(visit.check_in_time)}
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {visit.check_in_time && (
+                    <div className="relative">
+                      <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-slate-900" />
+                      <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase leading-none">
+                        Check-in{" "}
+                        {visit.entry_gate ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 lowercase">
+                            ({formatGateName(visit.entry_gate)})
+                          </span>
+                        ) : (
+                          ""
+                        )}
+                      </p>
+                      <p className="text-[10px] font-bold text-gray-500 mt-0.5">
+                        {formatIST(visit.check_in_time)}
+                      </p>
+                    </div>
+                  )}
+                  {visit.check_out_time && (
+                    <div className="relative">
+                      <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-purple-500 ring-4 ring-white dark:ring-slate-900" />
+                      <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase leading-none">
+                        Check-out{" "}
+                        {visit.exit_gate ? (
+                          <span className="text-purple-600 dark:text-purple-400 lowercase">
+                            ({formatGateName(visit.exit_gate)})
+                          </span>
+                        ) : (
+                          ""
+                        )}
+                      </p>
+                      <p className="text-[10px] font-bold text-gray-500 mt-0.5">
+                        {formatIST(visit.check_out_time)}
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
               {visit.status === "cancelled" && (
                 <div className="relative">
@@ -375,15 +435,15 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
 
           {visit.status === "checked_in" && isGuardOrAdmin && (
             <div className="w-full space-y-3">
-              {showExitGatePrompt ? (
+              {showGatePrompt ? (
                 <div className="bg-indigo-50 dark:bg-indigo-900/10 p-3 rounded-2xl border border-indigo-200 dark:border-indigo-900/50">
                   <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2 px-1">
-                    Select Exit Gate
+                    {isStudentMovement ? "Select Entry Gate" : "Select Exit Gate"}
                   </p>
                   <div className="mb-3">
                     <CustomSelect
-                      value={selectedExitGate}
-                      onChange={setSelectedExitGate}
+                      value={selectedGate}
+                      onChange={setSelectedGate}
                       options={CAMPUS_GATES.map((gate) => ({ value: gate, label: gate }))}
                       className="w-full text-xs font-bold py-2 px-3 border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 shadow-sm"
                     />
@@ -394,10 +454,10 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                       disabled={loading}
                       className="btn-primary flex-1 !py-2 !text-xs"
                     >
-                      Confirm Exit
+                      {isStudentMovement ? "Confirm Entry" : "Confirm Exit"}
                     </button>
                     <button
-                      onClick={() => setShowExitGatePrompt(false)}
+                      onClick={() => setShowGatePrompt(false)}
                       className="btn-secondary flex-1 !py-2 !text-xs"
                     >
                       Cancel
@@ -406,11 +466,11 @@ export function VisitDetails({ visit, onClose, onUpdate }: VisitDetailsProps) {
                 </div>
               ) : (
                 <button
-                  onClick={() => setShowExitGatePrompt(true)}
+                  onClick={() => setShowGatePrompt(true)}
                   disabled={loading}
                   className="btn-primary w-full !py-2.5 !text-xs"
                 >
-                  <CheckCircle2 className="w-4 h-4" /> Complete Visit
+                  <CheckCircle2 className="w-4 h-4" /> {isStudentMovement ? "Record Campus Entry" : "Complete Visit"}
                 </button>
               )}
             </div>

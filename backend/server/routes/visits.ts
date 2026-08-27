@@ -40,6 +40,56 @@ router.get('/public', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch public visits', details: err instanceof Error ? err.message : String(err) });
   }
 });
+function formatMovementAsVisit(m: any) {
+  const isCompleted = !!m.entry_time;
+  const isDayOuting = m.movement_type === 'day_outing';
+  return {
+    id: `mov-${m.id}`,
+    visitor_id: m.student_id,
+    host_id: null,
+    purpose: `[GATE TELEMETRY] ${isDayOuting ? 'Day Outing' : 'Hostel Leave'}${m.purpose ? ` — ${m.purpose}` : ''}`,
+    status: isCompleted ? 'completed' : 'checked_in',
+    approved_at: m.created_at,
+    approved_by: null,
+    check_in_time: m.entry_time,
+    check_out_time: m.exit_time,
+    valid_from: m.exit_time,
+    valid_until: m.expected_in,
+    expected_out_time: m.expected_in,
+    vehicle_number: null,
+    vehicle_type: null,
+    entry_gate: m.entry_gate || (isCompleted ? 'Main Gate' : null),
+    exit_gate: m.exit_gate || 'Main Gate',
+    additional_guests: 0,
+    pass_type: isDayOuting ? 'single_day' : 'multi_day',
+    is_vip: false,
+    vip_category: null,
+    vip_parking_slot: null,
+    overstay_notified: m.is_overdue || false,
+    escort_name: null,
+    created_at: m.exit_time || m.created_at,
+    updated_at: m.updated_at,
+    visitor: {
+      id: m.student_id,
+      name: m.student?.name || 'Student',
+      email: m.student?.email || '',
+      phone: m.student?.phone || '-',
+      photo_url: m.student?.photo_url || null,
+      id_proof_url: null,
+      is_blacklisted: false,
+      blacklist_reason: null,
+      created_at: m.student?.created_at || m.created_at,
+      updated_at: m.student?.updated_at || m.updated_at,
+    },
+    host: {
+      id: 'gate-security',
+      name: 'Gate Telemetry',
+      email: 'guard@iiitn.ac.in',
+      department_id: null,
+    },
+  };
+}
+
 router.get('/', requireAuth, async (req: AuthRequest, res) => {
   try {
     const authUser = req.user!;
@@ -62,50 +112,35 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
     const andConditions: any[] = [];
 
     // Role-based visibility scoping:
-    // - admin, guard, warden: Can see ALL visitor logs across the campus
-    // - host: Can ONLY see visits where they are the designated host
-    // - visitor: Can ONLY see visits created with their email address or username
-    // - student: Can ONLY see visits associated with their account/host ID
-    if (authUser.role === 'admin' || authUser.role === 'guard' || authUser.role === 'warden') {
-      // Full campus visibility
+    // - admin, warden: Can see ALL visitor logs across the campus
+    // - guard: Can see ALL visitor logs + ALL student gate telemetry movements
+    // - host / faculty: Can see visits hosted by him, preapproved by him, or owned by him (matching his email)
+    // - visitor: Can ONLY see visits created with his email address
+    // - student: Can ONLY see visits created with his email address + his personal gate telemetry movements
+    if (authUser.role === 'admin' || authUser.role === 'warden' || authUser.role === 'guard') {
+      // Full campus visibility for visit records
     } else if (authUser.role === 'host') {
-      andConditions.push({ host_id: authUser.id });
-    } else if (authUser.role === 'visitor') {
-      const visitorProfiles = await prisma.visitor.findMany({
-        where: {
-          OR: [
-            { email: { equals: authUser.email, mode: 'insensitive' } },
-            { name: { equals: authUser.name, mode: 'insensitive' } },
-          ],
-        },
-        select: { id: true },
-      });
-      const visitorIds = visitorProfiles.map((v: { id: string }) => v.id);
-      andConditions.push({
-        OR: [
-          ...(visitorIds.length > 0 ? [{ visitor_id: { in: visitorIds } }] : []),
-          { visitor: { email: { equals: authUser.email, mode: 'insensitive' } } },
-          { visitor: { name: { equals: authUser.name, mode: 'insensitive' } } },
-        ],
-      });
-    } else if (authUser.role === 'student') {
-      const visitorProfiles = await prisma.visitor.findMany({
-        where: {
-          OR: [
-            { email: { equals: authUser.email, mode: 'insensitive' } },
-            { name: { equals: authUser.name, mode: 'insensitive' } },
-          ],
-        },
-        select: { id: true },
-      });
-      const visitorIds = visitorProfiles.map((v: { id: string }) => v.id);
       andConditions.push({
         OR: [
           { host_id: authUser.id },
-          ...(visitorIds.length > 0 ? [{ visitor_id: { in: visitorIds } }] : []),
+          { approved_by: authUser.id },
+          { host: { email: { equals: authUser.email, mode: 'insensitive' } } },
           { visitor: { email: { equals: authUser.email, mode: 'insensitive' } } },
-          { visitor: { name: { equals: authUser.name, mode: 'insensitive' } } },
         ],
+      });
+    } else if (authUser.role === 'visitor') {
+      andConditions.push({
+        visitor: {
+          email: { equals: authUser.email, mode: 'insensitive' },
+          ...(authUser.name ? { name: { equals: authUser.name, mode: 'insensitive' } } : {}),
+        },
+      });
+    } else if (authUser.role === 'student') {
+      andConditions.push({
+        visitor: {
+          email: { equals: authUser.email, mode: 'insensitive' },
+          ...(authUser.name ? { name: { equals: authUser.name, mode: 'insensitive' } } : {}),
+        },
       });
     }
 
@@ -157,10 +192,10 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
     }
 
     const where = andConditions.length > 0 ? { AND: andConditions } : {};
-
     const take = limit ? Math.min(Number(limit), 200) : 50;
     const skip = offset ? Number(offset) : 0;
 
+    // Fetch visits
     const visits = await prisma.visit.findMany({
       where,
       include: {
@@ -168,10 +203,78 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
         host: { select: { id: true, name: true, email: true, department_id: true } },
       },
       orderBy: { created_at: 'desc' },
-      take,
-      skip,
+      take: (authUser.role === 'guard' || authUser.role === 'student') ? 200 : take,
+      skip: (authUser.role === 'guard' || authUser.role === 'student') ? 0 : skip,
     });
 
+    // Include Gate Telemetry (Student Movements) for Guard and Student roles
+    if (authUser.role === 'guard' || authUser.role === 'student') {
+      const movConditions: any[] = [];
+
+      if (authUser.role === 'student') {
+        movConditions.push({
+          OR: [
+            { student: { email: { equals: authUser.email, mode: 'insensitive' } } },
+            ...(authUser.roll_number ? [{ student: { roll_number: { equals: authUser.roll_number, mode: 'insensitive' } } }] : []),
+          ],
+        });
+      }
+
+      if (status) {
+        if (status === 'checked_in') {
+          movConditions.push({ entry_time: null });
+        } else if (status === 'completed') {
+          movConditions.push({ entry_time: { not: null } });
+        } else {
+          // 'pending', 'approved', 'denied', 'cancelled' don't apply to completed gate telemetry movements
+          movConditions.push({ id: '00000000-0000-0000-0000-000000000000' });
+        }
+      }
+
+      if (created_from || created_to) {
+        movConditions.push({
+          exit_time: {
+            ...(created_from ? { gte: new Date(created_from) } : {}),
+            ...(created_to ? { lte: new Date(created_to) } : {}),
+          },
+        });
+      }
+
+      if (date) {
+        const start = new Date(date); start.setHours(0, 0, 0, 0);
+        const end = new Date(date); end.setHours(23, 59, 59, 999);
+        movConditions.push({ exit_time: { gte: start, lte: end } });
+      }
+
+      if (search) {
+        movConditions.push({
+          OR: [
+            { purpose: { contains: search, mode: 'insensitive' } },
+            { student: { name: { contains: search, mode: 'insensitive' } } },
+            { student: { email: { contains: search, mode: 'insensitive' } } },
+            { student: { roll_number: { contains: search, mode: 'insensitive' } } },
+          ],
+        });
+      }
+
+      const movWhere = movConditions.length > 0 ? { AND: movConditions } : {};
+      const movements = await prisma.studentMovement.findMany({
+        where: movWhere,
+        include: { student: true },
+        orderBy: { exit_time: 'desc' },
+        take: 200,
+      });
+
+      const formattedMovements = movements.map(formatMovementAsVisit);
+      const combined = [...visits, ...formattedMovements].sort((a, b) => {
+        const timeA = new Date(a.created_at || a.check_in_time || 0).getTime();
+        const timeB = new Date(b.created_at || b.check_in_time || 0).getTime();
+        return timeB - timeA;
+      });
+
+      const paged = combined.slice(skip, skip + take);
+      return res.status(200).json(paged);
+    }
 
     res.status(200).json(visits);
   } catch (err: unknown) {
@@ -179,8 +282,8 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
     res.status(500).json({ error: 'Failed to fetch visits', details: err instanceof Error ? err.message : String(err) });
   }
 });
-router.post('/', optionalAuth, async (req: AuthRequest, res) => {
 
+router.post('/', optionalAuth, async (req: AuthRequest, res) => {
   try {
     const body = req.body;
 
@@ -321,7 +424,25 @@ router.post('/bulk', requireAuth, async (req: AuthRequest, res) => {
 });
 router.get('/:id', requireAuth, async (req: AuthRequest, res) => {
   try {
+    const authUser = req.user!;
     const id = req.params.id as string;
+
+    if (id.startsWith('mov-')) {
+      const movementId = id.replace('mov-', '');
+      const movement = await prisma.studentMovement.findUnique({
+        where: { id: movementId },
+        include: { student: true },
+      });
+      if (!movement) {
+        return res.status(404).json({ error: 'Movement log not found' });
+      }
+      if (authUser.role === 'student' && movement.student?.email?.toLowerCase() !== authUser.email.toLowerCase()) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      const formatted = formatMovementAsVisit(movement);
+      return res.status(200).json({ ...formatted, visitors: formatted.visitor, hosts: formatted.host });
+    }
+
     const visit = await prisma.visit.findUnique({
       where: { id },
       include: {
@@ -332,6 +453,21 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res) => {
 
     if (!visit) {
       return res.status(404).json({ error: 'Visit not found' });
+    }
+
+    if (authUser.role === 'visitor' || authUser.role === 'student') {
+      if (visit.visitor?.email?.toLowerCase() !== authUser.email.toLowerCase() && visit.host_id !== authUser.id) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+    } else if (authUser.role === 'host') {
+      if (
+        visit.host_id !== authUser.id &&
+        visit.approved_by !== authUser.id &&
+        visit.host?.email?.toLowerCase() !== authUser.email.toLowerCase() &&
+        visit.visitor?.email?.toLowerCase() !== authUser.email.toLowerCase()
+      ) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
     }
 
     res.status(200).json({ ...visit, visitors: visit.visitor, hosts: visit.host });
@@ -348,6 +484,42 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res) => {
     const body = req.body;
 
     const allowedRoles = ['admin', 'guard', 'warden', 'host'];
+
+    if (id.startsWith('mov-')) {
+      const movementId = id.replace('mov-', '');
+      const movement = await prisma.studentMovement.findUnique({
+        where: { id: movementId },
+        include: { student: true },
+      });
+      if (!movement) {
+        return res.status(404).json({ error: 'Movement log not found' });
+      }
+      if (!allowedRoles.includes(authUser.role)) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+
+      const entryTime = body.check_in_time ? new Date(body.check_in_time) : new Date();
+      const entryGate = body.entry_gate || body.exit_gate || 'Main Gate';
+
+      const [updatedMov] = await prisma.$transaction([
+        prisma.studentMovement.update({
+          where: { id: movementId },
+          data: {
+            entry_time: entryTime,
+            entry_gate: entryGate,
+          },
+          include: { student: true },
+        }),
+        prisma.student.update({
+          where: { id: movement.student_id },
+          data: { status: 'inside' },
+        }),
+      ]);
+
+      const formatted = formatMovementAsVisit(updatedMov);
+      return res.status(200).json({ ...formatted, visitors: formatted.visitor, hosts: formatted.host });
+    }
+
     const oldVisit = await prisma.visit.findUnique({
       where: { id },
       select: { host_id: true, status: true, check_in_time: true, check_out_time: true },
@@ -405,7 +577,7 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res) => {
         sendVisitCheckInEmail({
           ...emailData,
           checkInTime: new Date(body.check_in_time).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }),
-          entryGate: updated.entry_gate || 'Main Security Gate',
+          entryGate: updated.entry_gate || 'Main Gate',
         }).catch(err => console.error('CheckIn email error:', err));
       }
 
@@ -414,7 +586,7 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res) => {
         sendVisitCheckOutEmail({
           ...emailData,
           checkOutTime: new Date(body.check_out_time).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }),
-          exitGate: updated.exit_gate || 'Main Exit Gate',
+          exitGate: updated.exit_gate || 'Main Gate',
         }).catch(err => console.error('CheckOut email error:', err));
       }
     }
@@ -641,7 +813,7 @@ router.post('/self-service-kiosk', async (req, res) => {
         vehicle_number: vehicle_number?.trim() || null,
         is_vip: isVIP,
         vip_category: isVIP ? 'Dignitary Guest' : null,
-        entry_gate: 'Main Reception Kiosk',
+        entry_gate: 'Main Gate',
       },
       include: {
         visitor: true,

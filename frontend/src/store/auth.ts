@@ -156,6 +156,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem(TOKEN_KEY, data.token as string);
       const user = data.user as User;
       writeProfileCache(user);
+      api.invalidateAllCaches();
 
       log.info("[Auth] Login successful");
       set({ user, isAuthenticated: true, isLoading: false, error: null });
@@ -212,6 +213,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem(TOKEN_KEY, data.token as string);
       const user = data.user as User;
       writeProfileCache(user);
+      api.invalidateAllCaches();
 
       log.info("[Auth] Signup successful.");
       set({ user, isAuthenticated: true, isLoading: false, error: null });
@@ -229,6 +231,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: true, error: null });
 
       clearCaches();
+      api.invalidateAllCaches();
       ["vms_recent_visits", "vms_active_visitors", "vms_users"].forEach((k) => {
         try {
           localStorage.removeItem(k);

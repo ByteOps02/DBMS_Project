@@ -179,13 +179,13 @@ export const sendVisitCheckInEmail = async (data: VisitEmailData & { checkInTime
   <p style="margin:8px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">Welcome to IIIT Nagpur Campus</p>
 </td></tr>
 <tr><td style="padding:28px;">
-  <p style="margin:0 0 20px;font-size:14px;color:#555;line-height:1.7;">Hi <strong>${data.visitorName}</strong>, your gate entry has been recorded at <strong>${data.entryGate || 'Main Security Gate'}</strong>.</p>
+  <p style="margin:0 0 20px;font-size:14px;color:#555;line-height:1.7;">Hi <strong>${data.visitorName}</strong>, your gate entry has been recorded at <strong>${data.entryGate || 'Main Gate'}</strong>.</p>
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;">
     ${row('Reference ID', `<span style="font-family:monospace;font-size:12px;">${data.visitId}</span>`)}
     ${row('Check-In Time', data.checkInTime || new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }))}
     ${row('Host', data.hostName)}
     ${row('Purpose', data.purpose)}
-    ${row('Gate', data.entryGate || 'Main Gate Checkpoint')}
+    ${row('Gate', data.entryGate || 'Main Gate')}
     ${row('Status', '<span style="color:#0284c7;">&#10003;&nbsp; On Campus</span>')}
   </table>
   <p style="margin:0;font-size:12px;color:#888;line-height:1.6;">Please keep your badge/pass accessible until departure.</p>
@@ -205,7 +205,7 @@ export const sendVisitCheckOutEmail = async (data: VisitEmailData & { checkOutTi
   <p style="margin:8px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">Thank you for visiting IIIT Nagpur</p>
 </td></tr>
 <tr><td style="padding:28px;">
-  <p style="margin:0 0 20px;font-size:14px;color:#555;line-height:1.7;">Hi <strong>${data.visitorName}</strong>, your departure was successfully recorded at <strong>${data.exitGate || 'Main Exit Gate'}</strong>. Your gate pass is now closed.</p>
+  <p style="margin:0 0 20px;font-size:14px;color:#555;line-height:1.7;">Hi <strong>${data.visitorName}</strong>, your departure was successfully recorded at <strong>${data.exitGate || 'Main Gate'}</strong>. Your gate pass is now closed.</p>
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;">
     ${row('Reference ID', `<span style="font-family:monospace;font-size:12px;">${data.visitId}</span>`)}
     ${row('Check-Out Time', data.checkOutTime || new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }))}

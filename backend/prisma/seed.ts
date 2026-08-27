@@ -167,80 +167,81 @@ async function main() {
     status: "inside"
   });
 
-  for (let i = 1; i <= 60; i++) {
-    const isGirl = i % 4 === 0; // ~25% girls
-    const fn = isGirl 
-      ? girlNames[(i / 4) % girlNames.length] 
-      : boyNames[i % boyNames.length];
-    const ln = lastNames[(i * 3) % lastNames.length];
-    const name = `${fn} ${ln}`;
-    const year = (i % 4) + 1; // 1, 2, 3, 4
+  // 2. Generate balanced cohorts for all 4 years:
+  // - 1st Year (BT26): Girls on Floor 1, Boys on Floors 2 & 3
+  // - 2nd Year (BT25): Girls on Floor 1, Boys on Floors 4 & 5
+  // - 3rd Year (BT24): Girls on Floor 1, Boys on Floors 6, 7 & 8
+  // - 4th Year (BT23): Girls on Floor 1, Boys on Floors 9 & 10
+  let girlRoomIdx = 1;
+  const boyRoomIndices: Record<number, number> = { 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1 };
+
+  for (let year = 1; year <= 4; year++) {
     const yearPrefix = batchYearPrefixes[year];
-    const branchObj = branchConfigs[i % branchConfigs.length];
-    const roll_number = `BT${yearPrefix}${branchObj.code}${String(i).padStart(3, "0")}`;
-    
-    // Skip if already explicitly added
-    if (roll_number === "BT23CSE026") continue;
 
-    const email = `${roll_number.toLowerCase()}@iiitn.ac.in`;
-    const hostel_block = "Hostel Block A";
-    
-    // Room Number assignment according to floor allocation rules
-    let room_number = "101";
-    const roomOffset = ((i * 3) % 53) + 1; // 1 to 53
-    const formattedOffset = String(roomOffset).padStart(2, "0");
+    // 20 students per year (5 girls on Floor 1, 15 boys on designated year floors)
+    for (let j = 1; j <= 20; j++) {
+      const isGirl = j <= 5;
+      const branchObj = branchConfigs[(j + year) % branchConfigs.length];
+      const rollSeq = String(j + (year - 1) * 20).padStart(3, "0");
+      const roll_number = `BT${yearPrefix}${branchObj.code}${rollSeq}`;
 
-    if (isGirl) {
-      // 1st Floor: 101 to 153 (Girls of all years)
-      room_number = `1${formattedOffset}`;
-    } else {
-      // Boys according to year
-      if (year === 1) {
-        // 1st Year (BT26): 2nd & 3rd Floor (201-253, 301-353)
-        const floor = i % 2 === 0 ? 2 : 3;
-        room_number = `${floor}${formattedOffset}`;
-      } else if (year === 2) {
-        // 2nd Year (BT25): 4th & 5th Floor (401-453, 501-553)
-        const floor = i % 2 === 0 ? 4 : 5;
-        room_number = `${floor}${formattedOffset}`;
-      } else if (year === 3) {
-        // 3rd Year (BT24): 6th, 7th & 8th Floor (601-653, 701-753, 801-853)
-        const floor = 6 + (i % 3);
-        room_number = `${floor}${formattedOffset}`;
+      if (roll_number === "BT23CSE026") continue;
+
+      const fn = isGirl
+        ? girlNames[(j * 2 + year) % girlNames.length]
+        : boyNames[(j * 3 + year) % boyNames.length];
+      const ln = lastNames[(j * 5 + year * 7) % lastNames.length];
+      const name = `${fn} ${ln}`;
+      const email = `${roll_number.toLowerCase()}@iiitn.ac.in`;
+      const hostel_block = "Hostel Block A";
+
+      let room_number = "101";
+      if (isGirl) {
+        // Floor 1 (Girls Only): 101 to 153
+        const offset = String((girlRoomIdx % 53) + 1).padStart(2, "0");
+        room_number = `1${offset}`;
+        girlRoomIdx++;
       } else {
-        // 4th Year (BT23): 9th & 10th Floor (901-953, 1001-1053)
-        const floor = i % 2 === 0 ? 9 : 10;
-        room_number = `${floor}${formattedOffset}`;
+        // Boys partitioned by year:
+        let floor = 2;
+        if (year === 1) {
+          floor = j % 2 === 0 ? 2 : 3;
+        } else if (year === 2) {
+          floor = j % 2 === 0 ? 4 : 5;
+        } else if (year === 3) {
+          floor = 6 + (j % 3);
+        } else {
+          floor = j % 2 === 0 ? 9 : 10;
+        }
+        const offset = String((boyRoomIndices[floor] % 53) + 1).padStart(2, "0");
+        room_number = `${floor}${offset}`;
+        boyRoomIndices[floor]++;
       }
+
+      const branch = branchObj.name;
+      const phone = `98${Math.floor(10000000 + Math.random() * 90000000)}`;
+      const parent_name = `${ln} Family`;
+      const parent_phone = `91${Math.floor(10000000 + Math.random() * 90000000)}`;
+
+      let status = "inside";
+      if (j % 7 === 0) status = "on_leave";
+      else if (j % 4 === 0) status = "out_day";
+
+      studentsData.push({
+        roll_number,
+        name,
+        email,
+        phone,
+        hostel_block,
+        room_number,
+        branch,
+        year,
+        parent_name,
+        parent_phone,
+        status
+      });
     }
-
-    const branch = branchObj.name;
-    const phone = `98${Math.floor(10000000 + Math.random() * 90000000)}`;
-    const parent_name = `${lastNames[(i * 2) % lastNames.length]} Family`;
-    const parent_phone = `91${Math.floor(10000000 + Math.random() * 90000000)}`;
-
-    // Status distribution: 40 inside, 12 out_day, 6 on_leave, 2 overdue
-    let status = "inside";
-    if (i % 8 === 0) status = "on_leave";
-    else if (i % 4 === 0) status = "out_day";
-
-    studentsData.push({
-      roll_number,
-      name,
-      email,
-      phone,
-      hostel_block,
-      room_number,
-      branch,
-      year,
-      parent_name,
-      parent_phone,
-      status
-    });
   }
-
-
-
 
   for (const s of studentsData) {
     const student = await prisma.student.upsert({

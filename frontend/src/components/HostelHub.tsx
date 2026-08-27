@@ -80,6 +80,9 @@ export function HostelHub() {
 
   // Movements State
   const [movements, setMovements] = useState<any[]>([]);
+  const [movementSearch, setMovementSearch] = useState("");
+  const [movementGateFilter, setMovementGateFilter] = useState("");
+  const [movementStatusFilter, setMovementStatusFilter] = useState("");
 
   // Bulk Upload Modal
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -974,79 +977,189 @@ export function HostelHub() {
       )}
 
       {/* Tab: Gate Telemetry Log */}
-      {activeTab === "movements" && (
-        <div className="mt-6 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-x-auto shadow-sm">
-          <table className="w-full text-left text-sm divide-y divide-gray-100 dark:divide-slate-800 min-w-[700px]">
-            <thead className="bg-gray-50 dark:bg-slate-800/60 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+      {activeTab === "movements" && (() => {
+        const formatGateName = (gate?: string | null) => {
+          if (!gate) return "Main Gate";
+          const lower = gate.toLowerCase();
+          if (lower.includes("hostel")) return "Hostel Gate";
+          if (lower.includes("academic") || lower.includes("main") || lower.includes("campus") || lower.includes("north") || lower.includes("south")) return "Main Gate";
+          return gate;
+        };
 
-              <tr>
-                <th className="py-3.5 px-4">Student</th>
-                <th className="py-3.5 px-4">Type</th>
-                <th className="py-3.5 px-4">Exit Time & Gate</th>
-                <th className="py-3.5 px-4">Entry Time & Gate</th>
-                <th className="py-3.5 px-4">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-slate-800/60">
-              {movements.map((m) => (
-                <tr key={m.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/30">
-                  <td className="py-3 px-4 whitespace-nowrap">
-                    <div className="font-bold text-gray-900 dark:text-white">{m.student.name}</div>
-                    <div className="font-mono text-gray-400 text-xs">{m.student.roll_number}</div>
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap font-medium capitalize text-gray-700 dark:text-slate-300">
-                    {m.movement_type.replace("_", " ")}
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap text-gray-600 dark:text-slate-400">
-                    {formatIST(m.exit_time)} ({m.exit_gate || "Main Gate"})
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap text-gray-600 dark:text-slate-400">
-                    {m.entry_time ? `${formatIST(m.entry_time)} (${m.entry_gate || "Main Gate"})` : "— In Progress"}
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap">
-                    {(() => {
-                      const formatLateDuration = (minutes?: number) => {
-                        if (!minutes || minutes <= 0) return "";
-                        const hrs = Math.floor(minutes / 60);
-                        const mins = minutes % 60;
-                        if (hrs === 0) return `+${mins}m`;
-                        if (mins === 0) return `+${hrs}h`;
-                        return `+${hrs}h ${mins}m`;
-                      };
+        const filteredMovements = movements.filter((m) => {
+          const exitGateFormatted = formatGateName(m.exit_gate);
+          const entryGateFormatted = m.entry_time ? formatGateName(m.entry_gate) : "";
 
-                      const delayFormatted = formatLateDuration(m.curfew_delay_minutes);
+          if (movementGateFilter) {
+            if (exitGateFormatted !== movementGateFilter && entryGateFormatted !== movementGateFilter) {
+              return false;
+            }
+          }
 
-                      if (!m.entry_time) {
-                        return m.is_overdue ? (
-                          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400 border border-red-500/30 uppercase animate-pulse">
-                            🚨 Overdue {delayFormatted ? `(${delayFormatted})` : ""}
-                          </span>
-                        ) : (
-                          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-400 border border-sky-500/30 uppercase">
-                            🟢 Active Outing
-                          </span>
-                        );
-                      }
+          if (movementStatusFilter) {
+            if (movementStatusFilter === "active" && m.entry_time) return false;
+            if (movementStatusFilter === "completed" && !m.entry_time) return false;
+            if (movementStatusFilter === "overdue" && !m.is_overdue) return false;
+          }
 
-                      return m.is_overdue ? (
-                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400 border border-red-500/30 uppercase">
-                          Late Return {delayFormatted ? `(${delayFormatted})` : ""}
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-500/30 uppercase">
-                          Normal
-                        </span>
-                      );
-                    })()}
-                  </td>
+          if (movementSearch) {
+            const q = movementSearch.toLowerCase().trim();
+            const nameMatch = m.student?.name?.toLowerCase().includes(q);
+            const rollMatch = m.student?.roll_number?.toLowerCase().includes(q);
+            const typeMatch = m.movement_type?.toLowerCase().includes(q);
+            const exitMatch = exitGateFormatted.toLowerCase().includes(q);
+            const entryMatch = entryGateFormatted.toLowerCase().includes(q);
+            const purposeMatch = m.purpose?.toLowerCase().includes(q);
+            return nameMatch || rollMatch || typeMatch || exitMatch || entryMatch || purposeMatch;
+          }
 
+          return true;
+        });
 
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        return (
+          <div className="mt-6 space-y-4">
+            {/* Search & Filter Toolbar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={movementSearch}
+                  onChange={(e) => setMovementSearch(e.target.value)}
+                  placeholder="Search by student name, roll number, purpose, or gate..."
+                  className="w-full pl-10 pr-9 py-2 bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700/60 rounded-xl text-xs sm:text-sm font-medium text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
+                />
+                {movementSearch && (
+                  <button
+                    onClick={() => setMovementSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {/* Gate Filter */}
+                <select
+                  value={movementGateFilter}
+                  onChange={(e) => setMovementGateFilter(e.target.value)}
+                  className="py-2 px-3 bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700/60 rounded-xl text-xs font-bold text-gray-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 cursor-pointer"
+                >
+                  <option value="">All Gates</option>
+                  <option value="Main Gate">Main Gate</option>
+                  <option value="Hostel Gate">Hostel Gate</option>
+                </select>
+
+                {/* Status Filter */}
+                <select
+                  value={movementStatusFilter}
+                  onChange={(e) => setMovementStatusFilter(e.target.value)}
+                  className="py-2 px-3 bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700/60 rounded-xl text-xs font-bold text-gray-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 cursor-pointer"
+                >
+                  <option value="">All Status</option>
+                  <option value="active">Active Outing</option>
+                  <option value="completed">Returned / Completed</option>
+                  <option value="overdue">Overdue</option>
+                </select>
+
+                <div className="px-3 py-2 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/50 rounded-xl text-xs font-bold whitespace-nowrap">
+                  {filteredMovements.length} {filteredMovements.length === 1 ? "Record" : "Records"}
+                </div>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-x-auto shadow-sm">
+              <table className="w-full text-left text-sm divide-y divide-gray-100 dark:divide-slate-800 min-w-[700px]">
+                <thead className="bg-gray-50 dark:bg-slate-800/60 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                  <tr>
+                    <th className="py-3.5 px-4">Student</th>
+                    <th className="py-3.5 px-4">Type</th>
+                    <th className="py-3.5 px-4">Exit Time & Gate</th>
+                    <th className="py-3.5 px-4">Entry Time & Gate</th>
+                    <th className="py-3.5 px-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-slate-800/60">
+                  {filteredMovements.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-12 text-center text-gray-400 dark:text-slate-500">
+                        <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                        <p className="text-sm font-bold">No gate telemetry records found</p>
+                        <p className="text-xs mt-0.5">Try changing your search term or gate filter.</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredMovements.map((m) => (
+                      <tr key={m.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/30">
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="font-bold text-gray-900 dark:text-white">{m.student?.name || "Student"}</div>
+                          <div className="font-mono text-gray-400 text-xs">{m.student?.roll_number}</div>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap font-medium capitalize text-gray-700 dark:text-slate-300">
+                          {m.movement_type ? m.movement_type.replace("_", " ") : "Day Outing"}
+                          {m.purpose && (
+                            <span className="block text-[11px] text-gray-400 normal-case">{m.purpose}</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap text-gray-600 dark:text-slate-400 font-medium">
+                          {formatIST(m.exit_time)} <span className="text-cyan-600 dark:text-cyan-400 font-bold">({formatGateName(m.exit_gate)})</span>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap text-gray-600 dark:text-slate-400 font-medium">
+                          {m.entry_time ? (
+                            <>
+                              {formatIST(m.entry_time)} <span className="text-emerald-600 dark:text-emerald-400 font-bold">({formatGateName(m.entry_gate)})</span>
+                            </>
+                          ) : (
+                            <span className="text-amber-600 dark:text-amber-400 font-semibold">— In Progress</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          {(() => {
+                            const formatLateDuration = (minutes?: number) => {
+                              if (!minutes || minutes <= 0) return "";
+                              const hrs = Math.floor(minutes / 60);
+                              const mins = minutes % 60;
+                              if (hrs === 0) return `+${mins}m`;
+                              if (mins === 0) return `+${hrs}h`;
+                              return `+${hrs}h ${mins}m`;
+                            };
+
+                            const delayFormatted = formatLateDuration(m.curfew_delay_minutes);
+
+                            if (!m.entry_time) {
+                              return m.is_overdue ? (
+                                <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400 border border-red-500/30 uppercase animate-pulse">
+                                  🚨 Overdue {delayFormatted ? `(${delayFormatted})` : ""}
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-400 border border-sky-500/30 uppercase">
+                                  🟢 Active Outing
+                                </span>
+                              );
+                            }
+
+                            return m.is_overdue ? (
+                              <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400 border border-red-500/30 uppercase">
+                                Late Return {delayFormatted ? `(${delayFormatted})` : ""}
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-500/30 uppercase">
+                                Normal
+                              </span>
+                            );
+                          })()}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
 
 
       {/* Disciplinary Dossier Modal */}

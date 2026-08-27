@@ -12,6 +12,7 @@ import studentsRoutes from './routes/students.js';
 import emergencyRoutes from './routes/emergency.js';
 import vehiclesRoutes from './routes/vehicles.js';
 import lostAndFoundRoutes from './routes/lostAndFound.js';
+import healthRoutes from './routes/health.js';
 
 
 const app = express();
@@ -45,6 +46,8 @@ app.get('/', (req, res) => {
   res.send('IIIT Nagpur VMS API is running! 🚀');
 });
 
+app.use('/api/health', healthRoutes);
+app.use('/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/visits', visitsRoutes);
@@ -56,8 +59,6 @@ app.use('/api/students', studentsRoutes);
 app.use('/api/emergency', emergencyRoutes);
 app.use('/api/vehicles', vehiclesRoutes);
 app.use('/api/lost-and-found', lostAndFoundRoutes);
-
-
 
 // Global error handler
 app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
