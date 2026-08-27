@@ -191,7 +191,6 @@ export function ScanQrCode() {
           verbose: false,
         });
 
-        // Config: use full video scan so html5-qrcode does not inject ugly shaded regions
         const scanConfig = {
           fps: 25,
           aspectRatio: 1.0,
@@ -219,11 +218,7 @@ export function ScanQrCode() {
             cameraTarget,
             scanConfig,
             (decodedText) => {
-              setScanResult(decodedText);
-              if (scannerRef.current && isScanningRef.current) {
-                scannerRef.current.stop().catch(console.error);
-                isScanningRef.current = false;
-              }
+              handleScanSubmit(decodedText);
             },
             () => {}
           );
@@ -236,11 +231,7 @@ export function ScanQrCode() {
                 devices[0].id,
                 scanConfig,
                 (decodedText) => {
-                  setScanResult(decodedText);
-                  if (scannerRef.current && isScanningRef.current) {
-                    scannerRef.current.stop().catch(console.error);
-                    isScanningRef.current = false;
-                  }
+                  handleScanSubmit(decodedText);
                 },
                 () => {}
               );
@@ -256,11 +247,7 @@ export function ScanQrCode() {
                 { facingMode: "user" },
                 scanConfig,
                 (decodedText) => {
-                  setScanResult(decodedText);
-                  if (scannerRef.current && isScanningRef.current) {
-                    scannerRef.current.stop().catch(console.error);
-                    isScanningRef.current = false;
-                  }
+                  handleScanSubmit(decodedText);
                 },
                 () => {}
               );
@@ -306,6 +293,14 @@ export function ScanQrCode() {
       stopScanner();
     };
   }, [isAuthenticated, checkingAuth, visit, isCameraActive, selectedCameraId, scannerMode]);
+
+  const handleScanSubmit = useCallback((value: string) => {
+    setScanResult(value);
+    if (scannerRef.current && isScanningRef.current) {
+      scannerRef.current.stop().catch(console.error);
+      isScanningRef.current = false;
+    }
+  }, []);
 
   // Process Scanned or Manually Submitted Visitor Pass
   useEffect(() => {
@@ -405,7 +400,7 @@ export function ScanQrCode() {
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualInput.trim() || isVerifying) return;
-    setScanResult(manualInput.trim());
+    handleScanSubmit(manualInput.trim());
   };
 
   const toggleTorch = async () => {
@@ -428,7 +423,7 @@ export function ScanQrCode() {
     );
 
   return (
-    <div className="px-3 sm:px-6 lg:px-8 pb-28 sm:pb-32 animate-fadeIn max-w-5xl mx-auto">
+    <div className="px-4 sm:px-6 lg:px-8 pb-32 animate-fadeIn max-w-5xl mx-auto">
       <div className="print:hidden">
         <div className="flex items-center gap-3 mb-2">
           <BackButton />
@@ -438,11 +433,11 @@ export function ScanQrCode() {
           icon={QrCode}
           gradient="from-indigo-600 to-sky-600"
           title="Gate Scanner & Checkpoint"
-          description="High-speed camera QR scanning for student outing passes and visitor check-in/out."
+          description="Instant camera QR verification for student outing gatepasses and visitor check-in/out."
         />
 
         {/* Mode Switcher */}
-        <div className="mt-6 flex justify-center sm:justify-start">
+        <div className="mt-4 sm:mt-6 flex justify-center sm:justify-start">
           <div className="grid grid-cols-2 w-full sm:w-auto p-1.5 bg-gray-100 dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-inner gap-1">
             <button
               type="button"
@@ -482,17 +477,17 @@ export function ScanQrCode() {
           {!visit && !optimisticVisit && (
             <>
               {/* Top Command Bar */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 relative z-30">
+              <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 relative z-30">
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl text-indigo-600 dark:text-indigo-400 shrink-0">
                     <MapPin className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-[200px]">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase text-gray-400 dark:text-slate-500 tracking-wider">
+                      <span className="text-xs font-bold uppercase text-gray-500 dark:text-slate-400 tracking-wider">
                         Active Visitor Checkpoint
                       </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase border border-emerald-500/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase border border-emerald-500/20">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                         Live Gate
                       </span>
@@ -512,9 +507,9 @@ export function ScanQrCode() {
                   <button
                     type="button"
                     onClick={() => setSoundEnabled(!soundEnabled)}
-                    className={`btn btn-sm text-xs font-bold py-2 px-3 shadow-xs flex-1 sm:flex-initial justify-center ${
+                    className={`btn btn-sm text-xs font-bold py-2.5 px-3.5 shadow-xs flex-1 sm:flex-initial justify-center transition-all ${
                       soundEnabled
-                        ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60"
                         : "btn-secondary"
                     }`}
                     title="Toggle Audio Feedback"
@@ -526,7 +521,7 @@ export function ScanQrCode() {
                   <button
                     type="button"
                     onClick={() => setIsCameraActive(!isCameraActive)}
-                    className={`btn btn-sm text-xs font-bold py-2 px-4 shadow-xs flex-1 sm:flex-initial justify-center transition-all ${
+                    className={`btn btn-sm text-xs font-bold py-2.5 px-4 shadow-xs flex-1 sm:flex-initial justify-center transition-all ${
                       isCameraActive 
                         ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/30 border-rose-500" 
                         : "btn-primary shadow-indigo-500/20"
@@ -540,12 +535,12 @@ export function ScanQrCode() {
 
               {/* Camera Scanner Viewfinder */}
               {isCameraActive && (
-                <div className="p-4 sm:p-6 rounded-3xl bg-slate-950 border-2 border-indigo-500/30 flex flex-col items-center justify-center animate-fadeIn shadow-2xl relative overflow-hidden">
+                <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-950 border border-slate-800 shadow-2xl flex flex-col items-center justify-center animate-fadeIn relative overflow-hidden">
                   {/* Top Bar inside Camera */}
                   <div className="w-full flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800/80">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping inline-block" />
-                      <span className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                      <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
                         <Camera className="w-4 h-4" /> Live Visitor QR Camera
                       </span>
                     </div>
@@ -595,7 +590,7 @@ export function ScanQrCode() {
                   </div>
 
                   {/* Camera Viewport Box */}
-                  <div className="w-full max-w-sm aspect-square relative rounded-2xl overflow-hidden border-2 border-indigo-500/50 ring-4 ring-indigo-500/10 shadow-2xl bg-black flex items-center justify-center">
+                  <div className="w-full max-w-[340px] sm:max-w-[380px] aspect-square relative rounded-2xl overflow-hidden border-2 border-indigo-500/50 ring-4 ring-indigo-500/10 shadow-2xl bg-black flex items-center justify-center">
                     <div id="qr-reader" className="w-full h-full"></div>
 
                     {isCameraLoading && (
@@ -647,77 +642,75 @@ export function ScanQrCode() {
 
                   <p className="text-xs text-slate-400 font-medium mt-3.5 text-center flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                    <span>Point camera directly at the Visitor Pass QR Code displayed on mobile or printed badge</span>
+                    <span>Point camera directly at Visitor Pass QR Code on mobile or printed badge</span>
                   </p>
                 </div>
               )}
 
               {/* Fast-Track Manual Pass Entry / Laser Scanner Input Bar */}
-              <div className="p-1 rounded-3xl bg-gradient-to-r from-indigo-500/30 via-sky-500/30 to-purple-500/30 shadow-xl">
-                <div className="p-5 sm:p-6 rounded-[1.4rem] bg-white dark:bg-slate-900 space-y-3.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                      <QrCode className="w-4 h-4 text-indigo-500 animate-pulse" />
-                      Fast-Track Visitor Pass Scanner (QR / Pass ID / Code)
-                    </label>
-                    <span className="hidden sm:inline-flex text-[11px] font-mono text-gray-400">
-                      Auto-detects Check-In & Check-Out
-                    </span>
+              <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <QrCode className="w-4 h-4 text-indigo-500 animate-pulse" />
+                    Fast-Track Visitor Pass Scanner (QR / Pass ID / Code)
+                  </label>
+                  <span className="hidden sm:inline-flex text-[11px] font-medium text-gray-400 dark:text-slate-500">
+                    Auto-detects Check-In & Check-Out
+                  </span>
+                </div>
+
+                <form onSubmit={handleManualSubmit} className="flex flex-col sm:flex-row items-stretch gap-2.5">
+                  <div className="relative flex-1">
+                    <input
+                      ref={manualInputRef}
+                      type="text"
+                      value={manualInput}
+                      onChange={(e) => setManualInput(e.target.value)}
+                      disabled={isVerifying}
+                      placeholder="Scan Pass QR or enter Pass ID..."
+                      className="w-full py-3 pl-4 pr-10 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 rounded-xl sm:rounded-2xl text-sm font-mono font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:font-sans placeholder:font-normal placeholder:text-gray-400 shadow-inner"
+                    />
+                    {manualInput && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setManualInput("");
+                          manualInputRef.current?.focus();
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-lg transition-colors"
+                        title="Clear input"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
 
-                  <form onSubmit={handleManualSubmit} className="flex flex-col sm:flex-row items-stretch gap-2.5">
-                    <div className="relative flex-1">
-                      <input
-                        ref={manualInputRef}
-                        type="text"
-                        value={manualInput}
-                        onChange={(e) => setManualInput(e.target.value)}
-                        disabled={isVerifying}
-                        placeholder="Scan Pass QR or enter Pass ID..."
-                        className="w-full py-3.5 pl-4 pr-10 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 rounded-2xl text-sm sm:text-base font-mono font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:font-sans placeholder:font-normal placeholder:text-gray-400 shadow-inner"
-                      />
-                      {manualInput && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setManualInput("");
-                            manualInputRef.current?.focus();
-                          }}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-lg transition-colors"
-                          title="Clear input"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
+                  <button
+                    type="submit"
+                    disabled={isVerifying || !manualInput.trim()}
+                    className="btn btn-primary py-3 px-6 text-xs sm:text-sm font-bold uppercase tracking-wider shadow-md shrink-0 justify-center min-w-[150px]"
+                  >
+                    {isVerifying ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Verifying...</span>
+                      </>
+                    ) : (
+                      <span>Verify Visitor</span>
+                    )}
+                  </button>
+                </form>
 
-                    <button
-                      type="submit"
-                      disabled={isVerifying || !manualInput.trim()}
-                      className="btn btn-primary py-3.5 px-6 text-xs sm:text-sm font-bold uppercase tracking-wider shadow-md shrink-0 justify-center min-w-[150px]"
-                    >
-                      {isVerifying ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          <span>Verifying...</span>
-                        </>
-                      ) : (
-                        <span>Verify Visitor</span>
-                      )}
-                    </button>
-                  </form>
-
-                  <p className="text-xs text-gray-400 dark:text-slate-500 font-medium flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
-                    Continuous USB/Bluetooth laser scanner or keyboard entry ready.
-                  </p>
-                </div>
+                <p className="text-xs text-gray-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
+                  Ready for continuous USB/Bluetooth laser barcode scanner or keyboard entry.
+                </p>
               </div>
             </>
           )}
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/10 border-2 border-red-100 dark:border-red-900/30 p-6 rounded-3xl flex items-start gap-4 animate-fadeIn">
+            <div className="bg-red-50 dark:bg-red-900/10 border-2 border-red-100 dark:border-red-900/30 p-6 rounded-2xl sm:rounded-3xl flex items-start gap-4 animate-fadeIn">
               <AlertTriangle className="w-8 h-8 text-red-600 shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-black text-red-900 dark:text-red-400 uppercase tracking-tight">
@@ -729,7 +722,7 @@ export function ScanQrCode() {
                 <button
                   type="button"
                   onClick={handleScanAnother}
-                  className="btn-danger mt-4 !py-2 !px-4 flex items-center gap-2"
+                  className="btn-danger mt-4 !py-2 !px-4 flex items-center gap-2 text-xs font-bold"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>Scan Next / Restart</span>
@@ -740,7 +733,7 @@ export function ScanQrCode() {
 
           {(visit || optimisticVisit) && !error && (
             <div id="generated-pass" className="print:m-0 w-full flex justify-center animate-in zoom-in-95 duration-300">
-              <div className="bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border border-slate-200 dark:border-slate-800 w-full shadow-2xl">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 w-full shadow-2xl">
                 <div
                   className={`p-6 sm:p-8 transition-colors duration-500 flex items-center justify-between ${
                     isVerifying
@@ -778,7 +771,7 @@ export function ScanQrCode() {
 
                 <div className="p-6 sm:p-8 space-y-8">
                   <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-8 text-center sm:text-left">
-                    <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-4xl sm:text-5xl font-black text-slate-300 overflow-hidden shadow-lg border-4 border-white dark:border-slate-800 ring-4 ring-slate-50 dark:ring-slate-900/50 shrink-0">
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-4xl sm:text-5xl font-black text-slate-300 overflow-hidden shadow-lg border-4 border-white dark:border-slate-800 ring-4 ring-slate-50 dark:ring-slate-900/50 shrink-0">
                       {visit?.visitor?.photo_url ? (
                         <img src={visit.visitor.photo_url} className="w-full h-full object-cover" alt="Visitor" />
                       ) : (
@@ -786,7 +779,7 @@ export function ScanQrCode() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                      <h3 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white uppercase tracking-tighter truncate leading-none mb-3">
+                      <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight truncate leading-none mb-3">
                         {visit?.visitor?.name || optimisticVisit?.name}
                       </h3>
                       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-center sm:items-start justify-center sm:justify-start">
@@ -803,24 +796,24 @@ export function ScanQrCode() {
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 pt-6 border-t border-slate-100 dark:border-slate-800/50">
-                    <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center">
-                      <span className="block text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                    <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                         Purpose
                       </span>
                       <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 truncate capitalize">
                         {(visit?.purpose || optimisticVisit?.purpose || "").replace("_", " ")}
                       </p>
                     </div>
-                    <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center">
-                      <span className="block text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                    <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                         Host
                       </span>
                       <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
                         {visit?.host?.name || "Pending..."}
                       </p>
                     </div>
-                    <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center">
-                      <span className="block text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                    <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                         Vehicle
                       </span>
                       <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 uppercase truncate">
@@ -828,8 +821,8 @@ export function ScanQrCode() {
                         <span className="truncate">{visit?.vehicle_number || optimisticVisit?.vehicle || "None"}</span>
                       </p>
                     </div>
-                    <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center">
-                      <span className="block text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                    <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-center">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                         Gate
                       </span>
                       <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 truncate">
@@ -842,13 +835,13 @@ export function ScanQrCode() {
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 print-hide">
                     <button
                       onClick={handleScanAnother}
-                      className="btn-primary flex-1 !py-3.5 !rounded-2xl !text-sm"
+                      className="btn-primary flex-1 !py-3.5 !rounded-xl !text-sm font-bold"
                     >
                       Scan Next Visitor
                     </button>
                     <button
                       onClick={() => window.print()}
-                      className="btn-secondary !px-6 !py-3.5 !rounded-2xl"
+                      className="btn-secondary !px-6 !py-3.5 !rounded-xl"
                       title="Print Receipt"
                     >
                       <Printer className="w-5 h-5" />

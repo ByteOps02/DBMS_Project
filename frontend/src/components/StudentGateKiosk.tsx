@@ -136,11 +136,11 @@ export function StudentGateKiosk() {
       const res = await api.vehicles.lookup(plateQuery.trim());
       setVehicleResult(res.pass);
       playSound("success");
-      toast.success(`Authorized Vehicle: ${res.pass.license_plate} (${res.pass.owner_name})`);
+      toast.success(`Authorized: ${res.pass.license_plate} (${res.pass.owner_name})`);
     } catch (err: unknown) {
       setVehicleResult({ unauthorized: true, plate: plateQuery.trim() });
       playSound("error");
-      toast.error(err instanceof Error ? err.message : "Vehicle not authorized");
+      toast.error(err instanceof Error ? err.message : "Vehicle not registered");
     } finally {
       setVehicleSearching(false);
     }
@@ -220,7 +220,6 @@ export function StudentGateKiosk() {
       setIsCameraLoading(true);
       setCameraError(null);
 
-      // Give React a tick to mount #student-qr-reader
       await new Promise((resolve) => setTimeout(resolve, 80));
       if (!isMounted) return;
 
@@ -236,7 +235,6 @@ export function StudentGateKiosk() {
       await stopExistingScanner();
 
       try {
-        // Enumerate devices to populate available cameras list & find best camera
         let devices: Array<{ id: string; label: string }> = [];
         try {
           const rawDevices = await Html5Qrcode.getCameras();
@@ -257,18 +255,12 @@ export function StudentGateKiosk() {
         });
 
         const scanConfig = {
-          fps: 20,
-          qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-            const size = Math.floor(minEdge * 0.72);
-            return { width: size, height: size };
-          },
+          fps: 25,
           aspectRatio: 1.0,
         };
 
         let cameraTarget: any = selectedCameraId;
         if (!cameraTarget) {
-          // Look for back/environment camera in enumerated devices
           const backCam = devices.find(d => 
             d.label.toLowerCase().includes("back") || 
             d.label.toLowerCase().includes("environment") ||
@@ -295,8 +287,7 @@ export function StudentGateKiosk() {
           );
           started = true;
         } catch (firstErr) {
-          console.warn("Camera start failed with primary target, trying user/fallback mode...", firstErr);
-          // Fallback to user facing mode or first device ID
+          console.warn("Camera start failed with primary target, trying fallback...", firstErr);
           if (devices.length > 0) {
             try {
               await scanner.start(
@@ -339,7 +330,6 @@ export function StudentGateKiosk() {
           isScanningRef.current = true;
           setCameraError(null);
 
-          // Check if torch/flashlight is supported
           try {
             const capabilities = scanner.getRunningTrackCameraCapabilities();
             setTorchSupported(Boolean(capabilities?.torchFeature?.()?.isSupported?.()));
@@ -387,19 +377,19 @@ export function StudentGateKiosk() {
   };
 
   return (
-    <div className="space-y-6 pb-24 sm:pb-32">
+    <div className="space-y-6">
       {/* Top Command & Checkpoint Bar */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <div className="p-2.5 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-sky-800/40 shrink-0">
             <MapPin className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-[200px]">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase text-gray-400 dark:text-slate-500 tracking-wider">
+              <span className="text-xs font-bold uppercase text-gray-500 dark:text-slate-400 tracking-wider">
                 Checkpoint Gate
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase border border-emerald-500/20">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase border border-emerald-500/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                 Live Gate
               </span>
@@ -409,7 +399,7 @@ export function StudentGateKiosk() {
                 value={selectedGate}
                 onChange={setSelectedGate}
                 options={CAMPUS_GATES.map((gate) => ({ value: gate, label: gate }))}
-                className="!py-1.5 !px-3 text-xs sm:text-sm font-bold"
+                className="!py-1.5 !px-3 text-xs sm:text-sm font-semibold"
               />
             </div>
           </div>
@@ -419,9 +409,9 @@ export function StudentGateKiosk() {
           <button
             type="button"
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className={`btn btn-sm text-xs font-bold py-2 px-3 shadow-xs flex-1 sm:flex-initial justify-center ${
+            className={`btn btn-sm text-xs font-bold py-2.5 px-3.5 shadow-xs flex-1 sm:flex-initial justify-center transition-all ${
               soundEnabled
-                ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60"
                 : "btn-secondary"
             }`}
             title="Toggle Audio Feedback"
@@ -433,7 +423,7 @@ export function StudentGateKiosk() {
           <button
             type="button"
             onClick={toggleCamera}
-            className={`btn btn-sm text-xs font-bold py-2 px-4 shadow-xs flex-1 sm:flex-initial justify-center transition-all ${
+            className={`btn btn-sm text-xs font-bold py-2.5 px-4 shadow-xs flex-1 sm:flex-initial justify-center transition-all ${
               isCameraActive 
                 ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/30 border-rose-500" 
                 : "btn-primary shadow-sky-500/20"
@@ -447,12 +437,12 @@ export function StudentGateKiosk() {
 
       {/* Camera Live Viewfinder when Active */}
       {isCameraActive && (
-        <div className="p-4 sm:p-6 rounded-3xl bg-slate-950 border-2 border-sky-500/30 flex flex-col items-center justify-center animate-fadeIn shadow-2xl relative overflow-hidden">
+        <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-950 border border-slate-800 shadow-2xl flex flex-col items-center justify-center animate-fadeIn relative overflow-hidden">
           {/* Header in Camera card */}
           <div className="w-full flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800/80">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping inline-block" />
-              <span className="text-xs font-black uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
                 <Camera className="w-4 h-4" /> Live Camera Scanner
               </span>
             </div>
@@ -502,7 +492,7 @@ export function StudentGateKiosk() {
           </div>
 
           {/* Camera Viewport Box */}
-          <div className="w-full max-w-sm aspect-square relative rounded-2xl overflow-hidden border-2 border-sky-500/50 ring-4 ring-sky-500/10 shadow-2xl bg-black flex items-center justify-center">
+          <div className="w-full max-w-[340px] sm:max-w-[380px] aspect-square relative rounded-2xl overflow-hidden border-2 border-sky-500/50 ring-4 ring-sky-500/10 shadow-2xl bg-black flex items-center justify-center">
             <div id="student-qr-reader" className="w-full h-full" />
 
             {isCameraLoading && (
@@ -560,76 +550,74 @@ export function StudentGateKiosk() {
       )}
 
       {/* Main High-Speed Pass Scanner Terminal */}
-      <div className="p-1 rounded-3xl bg-gradient-to-r from-sky-500/30 via-indigo-500/30 to-purple-500/30 shadow-xl">
-        <div className="p-5 sm:p-6 rounded-[1.4rem] bg-white dark:bg-slate-900 space-y-3.5">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <QrCode className="w-4 h-4 text-sky-500 animate-pulse" />
-              Fast-Track Pass Scanner (QR / Barcode / Roll No)
-            </label>
-            <span className="hidden sm:inline-flex text-[11px] font-mono text-gray-400">
-              Auto-detects Exit & Return
-            </span>
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleScanSubmit(scanInput);
-            }}
-            className="flex flex-col sm:flex-row items-stretch gap-2.5"
-          >
-            <div className="relative flex-1">
-              <input
-                ref={inputRef}
-                type="text"
-                value={scanInput}
-                onChange={(e) => setScanInput(e.target.value)}
-                disabled={processing}
-                autoFocus
-                placeholder="Scan QR / Barcode or enter Roll No (e.g. BT23CSE026)..."
-                className="w-full py-3.5 pl-4 pr-10 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 rounded-2xl text-sm sm:text-base font-mono font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all placeholder:font-sans placeholder:font-normal placeholder:text-gray-400 shadow-inner"
-              />
-              {scanInput && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setScanInput("");
-                    inputRef.current?.focus();
-                  }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-lg transition-colors"
-                  title="Clear input"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-            
-            <button
-              type="submit"
-              disabled={processing || !scanInput.trim()}
-              className="btn btn-primary py-3.5 px-6 text-xs sm:text-sm font-bold uppercase tracking-wider shadow-md shrink-0 justify-center min-w-[140px]"
-            >
-              {processing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Verifying...</span>
-                </>
-              ) : (
-                <span>Verify Pass</span>
-              )}
-            </button>
-          </form>
-
-          <p className="text-xs text-gray-400 dark:text-slate-500 font-medium flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
-            Scanner Ready for continuous USB/Bluetooth laser scanner or keyboard entry. Press Enter.
-          </p>
+      <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm space-y-3.5">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+            <QrCode className="w-4 h-4 text-sky-500 animate-pulse" />
+            Fast-Track Pass Scanner (QR / Barcode / Roll No)
+          </label>
+          <span className="hidden sm:inline-flex text-[11px] font-medium text-gray-400 dark:text-slate-500">
+            Auto-detects Exit & Entry
+          </span>
         </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleScanSubmit(scanInput);
+          }}
+          className="flex flex-col sm:flex-row items-stretch gap-2.5"
+        >
+          <div className="relative flex-1">
+            <input
+              ref={inputRef}
+              type="text"
+              value={scanInput}
+              onChange={(e) => setScanInput(e.target.value)}
+              disabled={processing}
+              autoFocus
+              placeholder="Scan QR or enter Roll No (e.g. BT23CSE026)..."
+              className="w-full py-3 pl-4 pr-10 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 rounded-xl sm:rounded-2xl text-sm font-mono font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all placeholder:font-sans placeholder:font-normal placeholder:text-gray-400 shadow-inner"
+            />
+            {scanInput && (
+              <button
+                type="button"
+                onClick={() => {
+                  setScanInput("");
+                  inputRef.current?.focus();
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-lg transition-colors"
+                title="Clear input"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          
+          <button
+            type="submit"
+            disabled={processing || !scanInput.trim()}
+            className="btn btn-primary py-3 px-6 text-xs sm:text-sm font-bold uppercase tracking-wider shadow-md shrink-0 justify-center min-w-[140px]"
+          >
+            {processing ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>Verifying...</span>
+              </>
+            ) : (
+              <span>Verify Pass</span>
+            )}
+          </button>
+        </form>
+
+        <p className="text-xs text-gray-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
+          Ready for continuous USB/Bluetooth laser barcode scanner or keyboard entry.
+        </p>
       </div>
 
       {/* Quick Vehicle License Plate Lookup Bar */}
-      <div className="p-3.5 sm:p-4 rounded-2xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xs">
+      <div className="p-3.5 sm:p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-950/20 border border-purple-200/80 dark:border-purple-900/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xs">
         <form onSubmit={handleVehicleLookup} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
           <div className="flex items-center gap-2.5 flex-1">
             <div className="p-2 rounded-xl bg-purple-600 text-white shrink-0 shadow-sm">
@@ -690,25 +678,24 @@ export function StudentGateKiosk() {
       {/* Live Scan Verification Result Display Card */}
       {lastScan && (
         <div
-          className={`p-5 sm:p-6 rounded-3xl border-2 shadow-2xl transition-all animate-fadeIn relative ${
+          className={`p-5 sm:p-6 rounded-2xl sm:rounded-3xl border shadow-xl transition-all animate-fadeIn relative ${
             lastScan.is_overdue
-              ? "bg-red-50/90 dark:bg-red-950/40 border-red-500/60"
+              ? "bg-red-50/90 dark:bg-red-950/40 border-red-500/50"
               : lastScan.action === "exit"
-              ? "bg-amber-50/90 dark:bg-amber-950/30 border-amber-500/60"
-              : "bg-emerald-50/90 dark:bg-emerald-950/30 border-emerald-500/60"
+              ? "bg-amber-50/90 dark:bg-amber-950/30 border-amber-500/50"
+              : "bg-emerald-50/90 dark:bg-emerald-950/30 border-emerald-500/50"
           }`}
         >
-          {/* Dismiss button for current scan */}
           <button
             type="button"
             onClick={() => setLastScan(null)}
-            className="absolute top-4 right-4 p-1.5 rounded-xl bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 text-gray-600 dark:text-slate-300 transition-all"
+            className="absolute top-4 right-4 p-1.5 rounded-xl bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-gray-600 dark:text-slate-300 transition-all"
             title="Dismiss result"
           >
             <X className="w-4 h-4" />
           </button>
 
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 pb-5 border-b border-gray-200/60 dark:border-slate-800 pr-8 md:pr-0">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-5 border-b border-gray-200/60 dark:border-slate-800 pr-8 md:pr-0">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white dark:bg-slate-800 shadow-md border border-gray-200 dark:border-slate-700 overflow-hidden shrink-0 flex items-center justify-center text-2xl font-black text-sky-600">
                 {lastScan.student.photo_url ? (
@@ -765,14 +752,14 @@ export function StudentGateKiosk() {
                 <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white mt-1">
                   {lastScan.student.name}
                 </h2>
-                <p className="text-xs font-mono font-bold text-gray-600 dark:text-slate-400">
+                <p className="text-xs font-mono font-bold text-gray-500 dark:text-slate-400">
                   {lastScan.student.roll_number} • B.Tech {lastScan.student.branch} (Year {lastScan.student.year || 1})
                 </p>
               </div>
             </div>
 
             <div className="text-left md:text-right bg-white/80 dark:bg-slate-900/80 p-3 rounded-2xl border border-gray-200/50 dark:border-slate-800 shadow-xs w-full md:w-auto">
-              <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">
+              <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">
                 Expected In-Time / Curfew
               </p>
               <p className="text-base sm:text-lg font-black text-gray-900 dark:text-white flex items-center gap-1.5 md:justify-end mt-0.5">
@@ -783,27 +770,27 @@ export function StudentGateKiosk() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 text-xs">
-            <div className="p-2.5 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-gray-200/40 dark:border-slate-800">
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Hostel & Room</span>
-              <p className="font-bold text-gray-900 dark:text-white mt-0.5 truncate">
+            <div className="p-3 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-gray-200/40 dark:border-slate-800">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Hostel & Room</span>
+              <p className="font-bold text-gray-900 dark:text-white mt-0.5 truncate text-sm">
                 {lastScan.student.hostel_block}, Rm {lastScan.student.room_number}
               </p>
             </div>
-            <div className="p-2.5 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-gray-200/40 dark:border-slate-800">
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Student Phone</span>
-              <p className="font-mono font-bold text-gray-900 dark:text-white mt-0.5 truncate">
+            <div className="p-3 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-gray-200/40 dark:border-slate-800">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Student Phone</span>
+              <p className="font-mono font-bold text-gray-900 dark:text-white mt-0.5 truncate text-sm">
                 {lastScan.student.phone || "—"}
               </p>
             </div>
-            <div className="p-2.5 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-gray-200/40 dark:border-slate-800">
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Parent Phone</span>
-              <p className="font-mono font-bold text-gray-900 dark:text-white mt-0.5 truncate">
+            <div className="p-3 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-gray-200/40 dark:border-slate-800">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Parent Phone</span>
+              <p className="font-mono font-bold text-gray-900 dark:text-white mt-0.5 truncate text-sm">
                 {lastScan.student.parent_phone || "—"}
               </p>
             </div>
-            <div className="p-2.5 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-gray-200/40 dark:border-slate-800">
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Curfew Status</span>
-              <p className={`font-bold mt-0.5 truncate ${lastScan.is_overdue ? "text-red-500" : "text-emerald-500"}`}>
+            <div className="p-3 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-gray-200/40 dark:border-slate-800">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Curfew Status</span>
+              <p className={`font-bold mt-0.5 truncate text-sm ${lastScan.is_overdue ? "text-red-500" : "text-emerald-500"}`}>
                 {lastScan.is_overdue ? "Curfew Violated" : "Within Curfew"}
               </p>
             </div>
@@ -812,8 +799,8 @@ export function StudentGateKiosk() {
       )}
 
       {/* Recent Scans Real-time Ticker */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm">
-        <h3 className="text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+      <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm">
+        <h3 className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
           <Clock className="w-4 h-4 text-sky-500" /> Recent Checkpoint Activity
         </h3>
 
