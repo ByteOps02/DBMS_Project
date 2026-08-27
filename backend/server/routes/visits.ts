@@ -179,28 +179,8 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
     res.status(500).json({ error: 'Failed to fetch visits', details: err instanceof Error ? err.message : String(err) });
   }
 });
-router.get('/:id', requireAuth, async (req: AuthRequest, res) => {
-  try {
-    const id = req.params.id as string;
-    const visit = await prisma.visit.findUnique({
-      where: { id },
-      include: {
-        visitor: true,
-        host: { select: { id: true, name: true, email: true, department_id: true } },
-      },
-    });
-
-    if (!visit) {
-      return res.status(404).json({ error: 'Visit not found' });
-    }
-
-    res.status(200).json({ ...visit, visitors: visit.visitor, hosts: visit.host });
-  } catch (err: unknown) {
-    console.error('[API GET /visits/:id]', err);
-    res.status(500).json({ error: 'Failed to fetch visit', details: err instanceof Error ? err.message : String(err) });
-  }
-});
 router.post('/', optionalAuth, async (req: AuthRequest, res) => {
+
   try {
     const body = req.body;
 
@@ -339,7 +319,29 @@ router.post('/bulk', requireAuth, async (req: AuthRequest, res) => {
     res.status(500).json({ error: 'Failed to process bulk upload', details: err instanceof Error ? err.message : String(err) });
   }
 });
+router.get('/:id', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const id = req.params.id as string;
+    const visit = await prisma.visit.findUnique({
+      where: { id },
+      include: {
+        visitor: true,
+        host: { select: { id: true, name: true, email: true, department_id: true } },
+      },
+    });
+
+    if (!visit) {
+      return res.status(404).json({ error: 'Visit not found' });
+    }
+
+    res.status(200).json({ ...visit, visitors: visit.visitor, hosts: visit.host });
+  } catch (err: unknown) {
+    console.error('[API GET /visits/:id]', err);
+    res.status(500).json({ error: 'Failed to fetch visit', details: err instanceof Error ? err.message : String(err) });
+  }
+});
 router.patch('/:id', requireAuth, async (req: AuthRequest, res) => {
+
   try {
     const authUser = req.user!;
     const id = req.params.id as string;
