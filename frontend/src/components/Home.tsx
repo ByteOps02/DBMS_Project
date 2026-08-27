@@ -13,7 +13,9 @@ import {
   ScanLine,
   ChevronDown,
   Laptop,
-  UserPlus
+  UserPlus,
+  CalendarPlus,
+  LogIn
 } from "lucide-react";
 
 import { ThemeSwitcher } from "./ThemeSwitcher";
@@ -158,7 +160,7 @@ const Home = () => {
           <span>Main Gate & Hostel Block A Online</span>
         </div>
 
-        <div className="hidden md:flex gap-2.5 items-center">
+        <div className="hidden md:flex gap-2 items-center">
           <ThemeSwitcher />
           <button
             onClick={() => navigate("/kiosk")}
@@ -174,25 +176,26 @@ const Home = () => {
             <GraduationCap className="w-3.5 h-3.5 text-purple-500" />
             <span>Student Pass</span>
           </button>
-
           <button
             onClick={() => navigate("/request-visit")}
-            className="btn-outline !py-1.5 !px-3.5 !text-xs sm:!text-sm !rounded-xl"
+            className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-gray-100/80 hover:bg-emerald-50 text-gray-700 hover:text-emerald-600 dark:bg-slate-800/80 dark:hover:bg-slate-800 dark:text-slate-200 dark:hover:text-emerald-400 border border-gray-200/80 dark:border-slate-700/80 transition-all flex items-center gap-1.5 shadow-xs"
           >
-            Request Visit
+            <CalendarPlus className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Request Visit</span>
           </button>
           <button
             onClick={() => navigate("/signup")}
-            className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800 transition-all flex items-center gap-1.5 shadow-xs"
+            className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-gray-100/80 hover:bg-sky-50 text-gray-700 hover:text-sky-600 dark:bg-slate-800/80 dark:hover:bg-slate-800 dark:text-slate-200 dark:hover:text-sky-400 border border-gray-200/80 dark:border-slate-700/80 transition-all flex items-center gap-1.5 shadow-xs"
           >
-            <UserPlus className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+            <UserPlus className="w-3.5 h-3.5 text-sky-500" />
             <span>Sign Up</span>
           </button>
           <button
             onClick={() => navigate("/login")}
-            className="btn-primary !py-1.5 !px-5 !text-xs sm:!text-sm !rounded-xl !shadow-md"
+            className="btn-primary !py-1.5 !px-4 !text-xs sm:!text-sm !rounded-xl !shadow-md flex items-center gap-1.5"
           >
-            Log In
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Log In</span>
           </button>
         </div>
 
@@ -218,22 +221,27 @@ const Home = () => {
       >
         <div className="px-4 py-4 space-y-2">
           {[
-            { label: "Reception Kiosk", path: "/kiosk" },
-            { label: "Student Pass", path: "/app/student-pass" },
-            { label: "Request Visit", path: "/request-visit" },
-            { label: "Log In", path: "/login" },
-            { label: "Sign Up", path: "/signup" },
-          ].map(({ label, path }) => (
+            { label: "Reception Kiosk", path: "/kiosk", icon: Laptop, color: "text-sky-500" },
+            { label: "Student Pass", path: "/app/student-pass", icon: GraduationCap, color: "text-purple-500" },
+            { label: "Request Visit", path: "/request-visit", icon: CalendarPlus, color: "text-emerald-500" },
+            { label: "Sign Up", path: "/signup", icon: UserPlus, color: "text-sky-500" },
+            { label: "Log In", path: "/login", icon: LogIn, color: "text-blue-600" },
+          ].map(({ label, path, icon: Icon, color }) => (
             <button
               key={label}
               onClick={() => {
                 navigate(path);
                 setMobileMenuOpen(false);
               }}
-              className="w-full text-left px-4 py-3 text-gray-700 dark:text-slate-200 hover:bg-sky-50 dark:hover:bg-slate-800 rounded-xl transition-all font-semibold text-sm flex items-center justify-between"
+              className="w-full text-left px-3.5 py-2.5 text-gray-700 dark:text-slate-200 hover:bg-sky-50 dark:hover:bg-slate-800/80 rounded-xl transition-all font-semibold text-sm flex items-center justify-between group"
             >
-              <span>{label}</span>
-              <ArrowRight className="w-4 h-4 text-gray-400" />
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-gray-100 dark:bg-slate-800">
+                  <Icon className={`w-4 h-4 ${color}`} />
+                </div>
+                <span>{label}</span>
+              </div>
+              <ArrowRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
             </button>
           ))}
         </div>

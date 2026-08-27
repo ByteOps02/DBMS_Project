@@ -11,6 +11,7 @@ interface ClaimStudentPassModalProps {
 }
 
 export function ClaimStudentPassModal({ isOpen, onClose }: ClaimStudentPassModalProps) {
+  const { user } = useAuthStore();
   const [rollNumber, setRollNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +78,7 @@ export function ClaimStudentPassModal({ isOpen, onClose }: ClaimStudentPassModal
         </div>
 
         <p className="text-xs text-gray-600 dark:text-slate-300 leading-relaxed mb-5">
-          Are you an enrolled resident student of <strong>Hostel Block A</strong>? Enter your official College Roll Number to verify against the Student Directory and activate your permanent <strong>Student GatePass</strong>.
+          Are you an enrolled resident student? Enter your official College Roll Number. Your account email (<strong className="text-sky-600 dark:text-sky-400 font-mono font-medium">{user?.email || "logged in account"}</strong>) must match the Student Directory record to switch to Student and activate your pass.
         </p>
 
         {error && (
